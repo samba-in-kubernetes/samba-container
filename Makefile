@@ -8,3 +8,9 @@ tag.centos8: build.centos8
 
 push.centos8: tag.centos8
 	podman image push quay.io/obnox/samba-centos8:latest
+
+.PHONY: \
+	build \
+	build.centos8 \
+	tag.centos8 \
+	push.centos8
