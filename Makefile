@@ -2,3 +2,6 @@ build: build.centos8
 
 build.centos8:
 	podman build --tag centos8:samba -f ./Dockerfile.centos8
+
+tag.centos8: build.centos8
+	podman tag centos8:samba quay.io/obnox/samba-centos8:latest
