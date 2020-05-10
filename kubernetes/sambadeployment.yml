@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: samba-pvc-deployment
+  labels:
+    app: samba
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: samba
+  template:
+    metadata:
+      labels:
+        app: samba
+    spec:
+      volumes:
+      - name: myvol
+        persistentVolumeClaim:
+          claimName: mypvc
+      containers:
+      - name: samba
+        image: quay.io/obnox/samba-centos8:latest
+        ports:
+        - containerPort: 139
+        - containerPort: 445
+        volumeMounts:
+        - mountPath: "/share"
+          name: myvol
