@@ -4,7 +4,7 @@ FROM centos:8
 
 MAINTAINER Michael Adam <obnox@samba.org>
 
-RUN dnf -y install samba
+RUN dnf -y install samba samba-client
 
 # Run tini as PID 1 and avoid signal handling issues
 #ADD https://github.com/krallin/tini/releases/download/v0.16.1/tini-static-amd64 /tini
