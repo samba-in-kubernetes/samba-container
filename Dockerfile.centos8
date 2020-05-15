@@ -23,7 +23,7 @@ RUN chmod +x /usr/local/bin/setuser.sh
 VOLUME ["/share"]
 
 #EXPOSE 137/udp 138/udp 139 445
-EXPOSE 139 145
+EXPOSE 139 445
 
 #ENTRYPOINT ["/tini", "--", "/usr/sbin/smbd"]
 ENTRYPOINT ["/usr/sbin/smbd", "--foreground", "--log-stdout", "--no-process-group"]
