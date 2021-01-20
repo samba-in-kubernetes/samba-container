@@ -16,3 +16,5 @@ jobs:
     - uses: actions/checkout@v2
     - name: Build the container image
       run: make build
+    - name: Test the image
+      run: make test
