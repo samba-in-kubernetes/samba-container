@@ -1,11 +1,19 @@
+CONTAINER_CMD ?=
+ifeq ($(CONTAINER_CMD),)
+	CONTAINER_CMD:=$(shell docker version >/dev/null 2>&1 && echo docker)
+endif
+ifeq ($(CONTAINER_CMD),)
+	CONTAINER_CMD:=$(shell podman version >/dev/null 2>&1 && echo podman)
+endif
+
 build:
-	podman build --tag centos8:samba -f ./Dockerfile.centos8
+	$(CONTAINER_CMD) build --tag centos8:samba -f ./Dockerfile.centos8 .
 .PHONY: build
 
 tag: build
-	podman tag centos8:samba quay.io/obnox/samba-centos8:latest
+	$(CONTAINER_CMD) tag centos8:samba quay.io/obnox/samba-centos8:latest
 .PHONY: tag
 
 push: tag
-	podman image push quay.io/obnox/samba-centos8:latest
+	$(CONTAINER_CMD) image push quay.io/obnox/samba-centos8:latest
 .PHONY: push
