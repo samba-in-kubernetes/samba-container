@@ -1,0 +1,43 @@
+FROM quay.io/phlogistonjohn/sambacc:default AS builder
+
+# the changeset hash on the next line ensures we get a specifc
+# version of sambacc. When sambacc actually gets tagged, it should
+# be changed to use the tag.
+RUN /usr/local/bin/build.sh c8c419ecb406
+
+FROM fedora
+
+MAINTAINER John Mulligan <jmulligan@redhat.com>
+ENV SAMBACC_VERSION="0.1"
+
+COPY smb.conf /etc/samba/smb.conf
+COPY --from=builder \
+    /var/tmp/build/sambacc/dist/sambacc-$SAMBACC_VERSION-py3-none-any.whl \
+    /tmp/sambacc-$SAMBACC_VERSION-py3-none-any.whl
+RUN dnf install -y \
+    findutils \
+    python-pip \
+    python3-jsonschema \
+    python3-samba \
+    samba \
+    samba-client \
+    samba-winbind \
+    samba-winbind-clients \
+    tdb-tools \
+    && pip install /tmp/sambacc-$SAMBACC_VERSION-py3-none-any.whl \
+    && rm -f /tmp/sambacc-$SAMBACC_VERSION-py3-none-any.whl \
+    && ln -s /usr/local/share/sambacc/examples/minimal.json /etc/samba/container.json \
+    && yum clean all \
+    && true
+
+
+VOLUME ["/share"]
+
+EXPOSE 445
+
+ENV SAMBACC_CONFIG="/etc/samba/container.json:/etc/samba/users.json"
+ENV SAMBA_CONTAINER_ID="demo"
+ENTRYPOINT ["samba-container"]
+CMD ["run", "smbd"]
+
+# vim:set syntax=dockerfile:
