@@ -11,6 +11,8 @@ PUSH_CMD:=$(CONTAINER_CMD) push $(PUSH_OPTS)
 
 SERVER_DIR:=images/samba
 CLIENT_DIR:=images/client
+SERVER_SRC_FILE:=$(SERVER_DIR)/Dockerfile.centos8
+CLIENT_SRC_FILE:=$(CLIENT_DIR)/Dockerfile.centos8
 
 TAG?=latest
 SERVER_NAME:=samba-container:$(TAG)
@@ -23,7 +25,7 @@ build: build-server
 .PHONY: build
 
 build-server:
-	$(BUILD_CMD) --tag $(SERVER_NAME) -f $(SERVER_DIR)/Dockerfile.centos8 $(SERVER_DIR)
+	$(BUILD_CMD) --tag $(SERVER_NAME) -f $(SERVER_SRC_FILE) $(SERVER_DIR)
 .PHONY: build-server
 
 push-server: build-server
@@ -31,7 +33,7 @@ push-server: build-server
 .PHONY: push-server
 
 build-client:
-	$(BUILD_CMD) --tag $(CLIENT_NAME) -f $(CLIENT_DIR)/Dockerfile.centos8 $(CLIENT_DIR)
+	$(BUILD_CMD) --tag $(CLIENT_NAME) -f $(CLIENT_SRC_FILE) $(CLIENT_DIR)
 .PHONY: build-client
 
 push-client: build-client
