@@ -11,7 +11,7 @@ PUSH_CMD:=$(CONTAINER_CMD) push $(PUSH_OPTS)
 
 SERVER_DIR:=images/samba
 CLIENT_DIR:=images/client
-SERVER_SRC_FILE:=$(SERVER_DIR)/Dockerfile.centos8
+SERVER_SRC_FILE:=$(SERVER_DIR)/Dockerfile.fedora
 CLIENT_SRC_FILE:=$(CLIENT_DIR)/Dockerfile.centos8
 
 TAG?=latest
