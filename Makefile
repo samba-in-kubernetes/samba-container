@@ -21,7 +21,7 @@ SERVER_REPO_NAME:=quay.io/obnox/samba-centos8:$(TAG)
 SERVER_REPO_NAME:=quay.io/obnox/samba-client-centos8:$(TAG)
 
 
-build: build-server
+build: build-server build-client
 .PHONY: build
 
 build-server:
