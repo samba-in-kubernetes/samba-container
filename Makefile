@@ -12,10 +12,11 @@ PUSH_CMD:=$(CONTAINER_CMD) push $(PUSH_OPTS)
 SERVER_DIR:=images/samba
 CLIENT_DIR:=images/client
 
-SERVER_NAME:=centos8:samba
-CLIENT_NAME:=centos8:samba-client
-SERVER_REPO_NAME:=quay.io/obnox/samba-centos8:latest
-SERVER_REPO_NAME:=quay.io/obnox/samba-client-centos8:latest
+TAG?=latest
+SERVER_NAME:=samba-container:$(TAG)
+CLIENT_NAME:=samba-client-container:$(TAG)
+SERVER_REPO_NAME:=quay.io/obnox/samba-centos8:$(TAG)
+SERVER_REPO_NAME:=quay.io/obnox/samba-client-centos8:$(TAG)
 
 
 build: build-server
@@ -38,5 +39,5 @@ push-client: build-client
 .PHONY: push-client
 
 test: build
-	CONTAINER_COMMAND=$(CONTAINER_CMD) hack/test-samba-container.sh
+	CONTAINER_COMMAND=$(CONTAINER_CMD) LOCAL_TAG=$(SERVER_NAME) hack/test-samba-container.sh
 .PHONY: test

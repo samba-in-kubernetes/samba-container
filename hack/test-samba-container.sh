@@ -1,6 +1,6 @@
 #!/bin/bash
 
-LOCAL_TAG="${LOCAL_TAG:-centos8:samba}"
+LOCAL_TAG="${LOCAL_TAG:-samba-container:latest}"
 
 if [ -z "${CONTAINER_CMD}" ]; then
 	CONTAINER_CMD=$(command -v docker || echo "")
