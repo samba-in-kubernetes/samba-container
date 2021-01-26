@@ -6,6 +6,9 @@ ifeq ($(CONTAINER_CMD),)
 	CONTAINER_CMD:=$(shell podman version >/dev/null 2>&1 && echo podman)
 endif
 
+BUILD_CMD:=$(CONTAINER_CMD) build $(BUILD_OPTS)
+PUSH_CMD:=$(CONTAINER_CMD) push $(PUSH_OPTS)
+
 SERVER_DIR:=images/samba
 CLIENT_DIR:=images/client
 
@@ -19,19 +22,19 @@ build: build-server
 .PHONY: build
 
 build-server:
-	$(CONTAINER_CMD) build --tag $(SERVER_NAME) -f $(SERVER_DIR)/Dockerfile.centos8 $(SERVER_DIR)
+	$(BUILD_CMD) --tag $(SERVER_NAME) -f $(SERVER_DIR)/Dockerfile.centos8 $(SERVER_DIR)
 .PHONY: build-server
 
 push-server: build-server
-	$(CONTAINER_CMD) image push $(SERVER_NAME) $(SERVER_REPO_NAME)
+	$(PUSH_CMD) $(SERVER_NAME) $(SERVER_REPO_NAME)
 .PHONY: push-server
 
 build-client:
-	$(CONTAINER_CMD) build --tag $(CLIENT_NAME) -f $(CLIENT_DIR)/Dockerfile.centos8 $(CLIENT_DIR)
+	$(BUILD_CMD) --tag $(CLIENT_NAME) -f $(CLIENT_DIR)/Dockerfile.centos8 $(CLIENT_DIR)
 .PHONY: build-client
 
 push-client: build-client
-	$(CONTAINER_CMD) image push $(CLIENT_NAME) $(CLIENT_REPO_NAME)
+	$(PUSH_CMD) $(CLIENT_NAME) $(CLIENT_REPO_NAME)
 .PHONY: push-client
 
 test: build
