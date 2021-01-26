@@ -9,23 +9,29 @@ endif
 SERVER_DIR:=images/samba
 CLIENT_DIR:=images/client
 
+SERVER_NAME:=centos8:samba
+CLIENT_NAME:=centos8:samba-client
+SERVER_REPO_NAME:=quay.io/obnox/samba-centos8:latest
+SERVER_REPO_NAME:=quay.io/obnox/samba-client-centos8:latest
+
+
 build: build-server
 .PHONY: build
 
 build-server:
-	$(CONTAINER_CMD) build --tag centos8:samba -f $(SERVER_DIR)/Dockerfile.centos8 $(SERVER_DIR)
+	$(CONTAINER_CMD) build --tag $(SERVER_NAME) -f $(SERVER_DIR)/Dockerfile.centos8 $(SERVER_DIR)
 .PHONY: build-server
 
 push-server: build-server
-	$(CONTAINER_CMD) image push centos8:samba quay.io/obnox/samba-centos8:latest
+	$(CONTAINER_CMD) image push $(SERVER_NAME) $(SERVER_REPO_NAME)
 .PHONY: push-server
 
 build-client:
-	$(CONTAINER_CMD) build --tag centos8:samba-client -f $(CLIENT_DIR)/Dockerfile.centos8 $(CLIENT_DIR)
+	$(CONTAINER_CMD) build --tag $(CLIENT_NAME) -f $(CLIENT_DIR)/Dockerfile.centos8 $(CLIENT_DIR)
 .PHONY: build-client
 
 push-client: build-client
-	$(CONTAINER_CMD) image push centos8:samba-client quay.io/obnox/samba-client-centos8:latest
+	$(CONTAINER_CMD) image push $(CLIENT_NAME) $(CLIENT_REPO_NAME)
 .PHONY: push-client
 
 test: build
