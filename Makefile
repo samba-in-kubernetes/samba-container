@@ -18,7 +18,7 @@ TAG?=latest
 SERVER_NAME:=samba-container:$(TAG)
 CLIENT_NAME:=samba-client-container:$(TAG)
 SERVER_REPO_NAME:=quay.io/samba.org/samba-server:$(TAG)
-SERVER_REPO_NAME:=quay.io/samba.org/samba-client:$(TAG)
+CLIENT_REPO_NAME:=quay.io/samba.org/samba-client:$(TAG)
 
 
 build: build-server build-client
