@@ -32,6 +32,8 @@ jobs:
       - name: log in to quay.io
         run: podman login -u "${{ secrets.QUAY_USER }}" -p "${{ secrets.QUAY_PASS }}" quay.io
       - name: push server image
-        run: make push-server
+        # note: forcing use of podman here, since we did podman login above
+        run: make CONTAINER_CMD=podman push-server
       - name: push client image
-        run: make push-client
+        # note: forcing use of podman here, since we did podman login above
+        run: make CONTAINER_CMD=podman push-client
