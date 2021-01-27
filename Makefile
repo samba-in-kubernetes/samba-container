@@ -9,7 +9,7 @@ endif
 BUILD_CMD:=$(CONTAINER_CMD) build $(BUILD_OPTS)
 PUSH_CMD:=$(CONTAINER_CMD) push $(PUSH_OPTS)
 
-SERVER_DIR:=images/samba
+SERVER_DIR:=images/server
 CLIENT_DIR:=images/client
 SERVER_SRC_FILE:=$(SERVER_DIR)/Dockerfile.fedora
 CLIENT_SRC_FILE:=$(CLIENT_DIR)/Dockerfile.centos8
