@@ -1,0 +1,45 @@
+{
+  "samba-container-config": "v0",
+  "configs": {
+    "wbtest": {
+      "shares": [
+        "share"
+      ],
+      "globals": [
+        "noprinting",
+        "wbtest"
+      ],
+      "instance_name": "WB1"
+    }
+  },
+  "shares": {
+    "share": {
+      "options": {
+        "path": "/share",
+        "read only": "no"
+      }
+    }
+  },
+  "_NOTE": "Change the security and workgroup keys to match your domain.",
+  "globals": {
+    "noprinting": {
+      "options": {
+        "load printers": "no",
+        "printing": "bsd",
+        "printcap name": "/dev/null",
+        "disable spoolss": "yes"
+      }
+    },
+    "wbtest": {
+      "options": {
+        "log level": "10",
+        "security": "ads",
+        "workgroup": "CHANGEME",
+        "realm": "CHANGEME.YOURDOMAIN.TLD",
+        "server min protocol": "SMB2",
+        "idmap config * : backend": "autorid",
+        "idmap config * : range": "2000-9999999"
+      }
+    }
+  }
+}
