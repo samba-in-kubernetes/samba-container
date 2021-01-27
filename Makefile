@@ -41,5 +41,5 @@ push-client: build-client
 .PHONY: push-client
 
 test: build
-	CONTAINER_COMMAND=$(CONTAINER_CMD) LOCAL_TAG=$(SERVER_NAME) hack/test-samba-container.sh
+	CONTAINER_CMD=$(CONTAINER_CMD) LOCAL_TAG=$(SERVER_NAME) hack/test-samba-container.sh
 .PHONY: test
