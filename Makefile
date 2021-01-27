@@ -25,19 +25,19 @@ build: build-server build-client
 .PHONY: build
 
 build-server:
-	$(BUILD_CMD) --tag $(SERVER_NAME) -f $(SERVER_SRC_FILE) $(SERVER_DIR)
+	$(BUILD_CMD) --tag $(SERVER_NAME) --tag $(SERVER_REPO_NAME) -f $(SERVER_SRC_FILE) $(SERVER_DIR)
 .PHONY: build-server
 
 push-server: build-server
-	$(PUSH_CMD) $(SERVER_NAME) $(SERVER_REPO_NAME)
+	$(PUSH_CMD) $(SERVER_REPO_NAME)
 .PHONY: push-server
 
 build-client:
-	$(BUILD_CMD) --tag $(CLIENT_NAME) -f $(CLIENT_SRC_FILE) $(CLIENT_DIR)
+	$(BUILD_CMD) --tag $(CLIENT_NAME) --tag $(CLIENT_REPO_NAME) -f $(CLIENT_SRC_FILE) $(CLIENT_DIR)
 .PHONY: build-client
 
 push-client: build-client
-	$(PUSH_CMD) $(CLIENT_NAME) $(CLIENT_REPO_NAME)
+	$(PUSH_CMD) $(CLIENT_REPO_NAME)
 .PHONY: push-client
 
 test: build
