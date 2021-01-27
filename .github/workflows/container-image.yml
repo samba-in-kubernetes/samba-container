@@ -18,3 +18,20 @@ jobs:
       run: make build
     - name: Test the image
       run: make test
+
+  push:
+
+    # verify it passes build and test first
+    needs: build
+
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: log in to quay.io
+        run: podman login -u "${{ secrets.QUAY_USER }}" -p "${{ secrets.QUAY_PASS }}" quay.io
+      - name: push server image
+        run: make push-server
+      - name: push client image
+        run: make push-client
