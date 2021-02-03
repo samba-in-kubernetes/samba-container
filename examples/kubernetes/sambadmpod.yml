@@ -1,0 +1,177 @@
+#
+# A Samba smbd + winbindd pod that automatically becomes a domain member.
+# This setup requires the config map "samba-conainer-config" to match
+# your test domain. It requires the Administrator password to be present
+# in the "ad-join-secret" secret.
+#
+# This configuration assumes you can reach your AD's DNS via the normal
+# Kubernetes DNS configuration. If not you may wish to look into the
+# customizing the Pod DNS settings or Kubernetes DNS customization.
+#
+# Edit the lines below that contain "CHANGEME" and make them match
+# your domain's setting.
+#
+# Edit the string value for "JOIN_PASSWORD" in the secret below and
+# make sure it matches your domain administrator's password.
+#
+# You can tweak the samba-sharedir volume under "volumes" at the end
+# of the pod yaml below. Use this to toggle between a temporary share
+# or a PVC backed share.
+#
+# NOTE: All settings below can be modified but those mentioned above
+# will get you a running container more quickly, feel free to start
+# there and then begin tinkering!
+#
+---
+# Configuration for the samba domain member pod.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: samba-container-config
+data:
+  config.json: |
+    {
+      "samba-container-config": "v0",
+      "configs": {
+        "sambadm1": {
+          "shares": [
+            "share"
+          ],
+          "globals": [
+            "noprinting",
+            "sambadm1"
+          ],
+          "instance_name": "SMBDM1"
+        }
+      },
+      "shares": {
+        "share": {
+          "options": {
+            "path": "/share",
+            "read only": "no"
+          }
+        }
+      },
+      "_NOTE": "Change the security and workgroup keys to match your domain.",
+      "globals": {
+        "noprinting": {
+          "options": {
+            "load printers": "no",
+            "printing": "bsd",
+            "printcap name": "/dev/null",
+            "disable spoolss": "yes"
+          }
+        },
+        "sambadm1": {
+          "options": {
+            "log level": "10",
+            "security": "ads",
+            "workgroup": "CHANGEME",
+            "realm": "CHANGEME.YOURDOMAIN.TLD",
+            "server min protocol": "SMB2",
+            "idmap config * : backend": "autorid",
+            "idmap config * : range": "2000-9999999"
+          }
+        }
+      }
+    }
+---
+# Secret used to pass a AD join password to the winbind pod.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ad-join-secret
+type: Opaque
+stringData:
+  # Change the value below to the password for your test AD Domain
+  JOIN_PASSWORD: Passw0rd
+---
+# The pod itself.
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: samba-dm-example
+  name: samba-dm
+spec:
+  shareProcessNamespace: true
+  containers:
+    - image: quay.io/samba.org/samba-server:latest
+      name: smb
+      command:
+      - "samba-container"
+      - "--debug-delay=1"
+      - "run"
+      - "smbd"
+      env:
+      - name: SAMBACC_CONFIG
+        value: /etc/samba-container/config.json
+      - name: SAMBA_CONTAINER_ID
+        value: sambadm1
+      - name: SAMBACC_VERSION
+        value: "0.1"
+      - name: HOSTNAME
+        value: sambadm1
+      ports:
+      - containerPort: 445
+        hostPort: 455
+        protocol: TCP
+        name: "smb"
+      securityContext:
+        allowPrivilegeEscalation: true
+      volumeMounts:
+      - mountPath: "/share"
+        name: samba-sharedir
+      - mountPath: "/etc/samba-container"
+        name: samba-container-config
+      - mountPath: "/var/lib/samba"
+        name: samba-state-dir
+      - mountPath: "/run/samba/winbindd"
+        name: samba-sockets-dir
+    - image: quay.io/samba.org/samba-server:latest
+      name: winbind
+      command:
+      - "samba-container"
+      - "run"
+      - "--insecure-auto-join"
+      - "winbindd"
+      env:
+      - name: INSECURE_JOIN_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: ad-join-secret
+            key: JOIN_PASSWORD
+      - name: SAMBACC_VERSION
+        value: "0.1"
+      - name: SAMBACC_CONFIG
+        value: /etc/samba-container/config.json
+      - name: SAMBA_CONTAINER_ID
+        value: sambadm1
+      - name: HOSTNAME
+        value: sambadm1
+      securityContext:
+        allowPrivilegeEscalation: true
+      volumeMounts:
+      - mountPath: "/etc/samba-container"
+        name: samba-container-config
+      - mountPath: "/var/lib/samba"
+        name: samba-state-dir
+      - mountPath: "/run/samba/winbindd"
+        name: samba-sockets-dir
+  volumes:
+  - configMap:
+      name: samba-container-config
+    name: samba-container-config
+  - emptyDir:
+      medium: Memory
+    name: samba-sockets-dir
+  - emptyDir: {}
+    name: samba-state-dir
+# Comment out the section below to skip using a PVC for the share
+  - persistentVolumeClaim:
+      claimName: mypvc
+    name: samba-sharedir
+# Uncomment the section below to use an empty dir for the share
+#  - emptyDir:
+#      medium: Memory
+#    name: samba-sharedir
