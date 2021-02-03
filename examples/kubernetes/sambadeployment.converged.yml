@@ -23,7 +23,6 @@ spec:
       - name: samba
         image: quay.io/samba.org/samba-server:latest
         ports:
-        - containerPort: 139
         - containerPort: 445
         volumeMounts:
         - mountPath: "/share"
