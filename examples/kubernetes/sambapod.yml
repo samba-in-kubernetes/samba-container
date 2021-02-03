@@ -9,7 +9,7 @@ spec:
         claimName: mypvc
   containers:
     - name: mycontainer
-      image: quay.io/obnox/samba-centos8:latest
+      image: quay.io/samba.org/samba-server:latest
       ports:
         - containerPort: 139
           name: "samba139"
