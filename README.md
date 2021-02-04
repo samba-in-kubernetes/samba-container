@@ -1,9 +1,19 @@
 # samba-container
 
-Simple samba container that exports one share "share",
-which should be handed in from the host.
-Just one user is given access to the samba share.
-By default, this is "sambauser" with password "samba".
+Container images for [Samba](https://samba.org) services.
+
+In the default configuration, the server container image exports one share,
+named "share", which is expected to be a volume provided by the host. A default
+user, named "sambauser" is predefined with a password of "samba".
+
+The entrypoint for the server is the `samba-container` script. This tool is
+designed to help automate the management of samba tools & services in a
+container environment. This script is part of the
+[sambacc project](https://github.com/samba-in-kubernetes/sambacc).
+The behavior of this tool can customized via a JSON based configuration file.
+
+The project also provides a simple samba client container image that can be
+useful for testing.
 
 
 ## Build the container
@@ -15,25 +25,23 @@ make build
 ## Run the container
 
 ```
-podman run --name samba --publish 10139:139 --publish 10445:445 --volume=/path/on/host/to/share:/share:Z --rm  samba-centos8:latest
+podman run --name samba --publish 10445:445 --volume=/path/on/host/to/share:/share:Z --rm  quay.io/samba.org/samba-server:latest
 ```
 
 The port mapping (`--publish`) is only needed when running as non-root, e.g. for
 testing purposes.
 
-## changing the user
+## Changing the configuration
 
-The "setuser" script can be used to create a new user
-and reconfigure samba to restrict access to this user.
+The behavior of the container can be changed by invoking it with specific
+arguments for the `samba-container` script and/or setting environment
+variables.
 
-Example:
-
+You can include a custom configuration via the following method:
 ```
-podman exec samba-c8 setuser.sh <username> <password>
+$EDITOR /path/to/config/config.json
+podman run --name samba  --publish 10445:445 --volume=/path/on/host/to/share:/share:Z --volume=/path/to/config:/etc/samba-container -e SAMBACC_CONFIG=/etc/samba-container/config.json -e SAMBA_CONTAINER_ID=myid  --rm  quay.io/samba.org/samba-server:latest
 ```
 
-Similarly for use in scripts:
-
-```
-echo -e "pass\npass" | podman exec -i samba-c8 setuser.sh <username>
-```
+The configuration may be used to define custom users or different share
+configurations.
