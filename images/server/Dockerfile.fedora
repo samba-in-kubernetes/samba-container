@@ -1,4 +1,4 @@
-FROM quay.io/phlogistonjohn/sambacc:default AS builder
+FROM quay.io/samba.org/sambacc:latest AS builder
 
 # the changeset hash on the next line ensures we get a specifc
 # version of sambacc. When sambacc actually gets tagged, it should
