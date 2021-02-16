@@ -83,8 +83,10 @@ metadata:
   name: ad-join-secret
 type: Opaque
 stringData:
-  # Change the value below to the password for your test AD Domain
-  JOIN_PASSWORD: Passw0rd
+  # Change the value below to match the username and password for a user that
+  # can join systems your test AD Domain
+  join.json: |
+    {"username": "Administrator", "password": "Passw0rd"}
 ---
 # The pod itself.
 apiVersion: v1
@@ -133,14 +135,8 @@ spec:
       command:
       - "samba-container"
       - "run"
-      - "--insecure-auto-join"
       - "winbindd"
       env:
-      - name: INSECURE_JOIN_PASSWORD
-        valueFrom:
-          secretKeyRef:
-            name: ad-join-secret
-            key: JOIN_PASSWORD
       - name: SAMBACC_VERSION
         value: "0.1"
       - name: SAMBACC_CONFIG
@@ -158,10 +154,62 @@ spec:
         name: samba-state-dir
       - mountPath: "/run/samba/winbindd"
         name: samba-sockets-dir
+  initContainers:
+    - image: quay.io/samba.org/samba-server:latest
+      name: init
+      args:
+      - "init"
+      env:
+      - name: SAMBACC_VERSION
+        value: "0.1"
+      - name: SAMBACC_CONFIG
+        value: /etc/samba-container/config.json
+      - name: SAMBA_CONTAINER_ID
+        value: sambadm1
+      - name: HOSTNAME
+        value: sambadm1
+      securityContext:
+        allowPrivilegeEscalation: true
+      volumeMounts:
+      - mountPath: "/etc/samba-container"
+        name: samba-container-config
+      - mountPath: "/var/lib/samba"
+        name: samba-state-dir
+    - image: quay.io/samba.org/samba-server:latest
+      name: must-join
+      args:
+      - "must-join"
+      - "--files"
+      - "--join-file=/etc/join-data/join.json"
+      env:
+      - name: SAMBACC_VERSION
+        value: "0.1"
+      - name: SAMBACC_CONFIG
+        value: /etc/samba-container/config.json
+      - name: SAMBA_CONTAINER_ID
+        value: sambadm1
+      - name: HOSTNAME
+        value: sambadm1
+      securityContext:
+        allowPrivilegeEscalation: true
+      volumeMounts:
+      - mountPath: "/etc/samba-container"
+        name: samba-container-config
+      - mountPath: "/var/lib/samba"
+        name: samba-state-dir
+      - mountPath: "/etc/join-data"
+        name: samba-join-data
+        readOnly: true
   volumes:
   - configMap:
       name: samba-container-config
     name: samba-container-config
+  - secret:
+      secretName: ad-join-secret
+      items:
+      - key: join.json
+        path: join.json
+    name: samba-join-data
   - emptyDir:
       medium: Memory
     name: samba-sockets-dir
