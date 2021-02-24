@@ -11,6 +11,8 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    env:
+      BUILDAH_FORMAT: oci
 
     steps:
     - uses: actions/checkout@v2
