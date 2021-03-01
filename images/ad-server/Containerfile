@@ -1,0 +1,10 @@
+FROM fedora
+
+RUN dnf install -y samba-dc procps-ng /usr/bin/smbclient
+RUN rm -f /etc/samba/smb.conf
+COPY provision.sh /usr/local/bin/provision.sh
+COPY run.sh /usr/local/bin/run.sh
+COPY populate.sh /usr/local/bin/populate.sh
+
+ENV POPULATE=/usr/local/bin/populate.sh
+ENTRYPOINT ["/usr/local/bin/run.sh"]
