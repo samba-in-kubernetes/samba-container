@@ -8,23 +8,45 @@ on:
 
 jobs:
 
-  build:
-
+  build-server:
     runs-on: ubuntu-latest
     env:
       BUILDAH_FORMAT: oci
-
     steps:
     - uses: actions/checkout@v2
-    - name: Build the container image
-      run: make build
-    - name: Test the image
-      run: make test
+    - name: Build the server image
+      run: make build-server
+
+  build-ad-server:
+    runs-on: ubuntu-latest
+    env:
+      BUILDAH_FORMAT: oci
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build the ad server image
+      run: make build-ad-server
+
+  build-client:
+    runs-on: ubuntu-latest
+    env:
+      BUILDAH_FORMAT: oci
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build the client image
+      run: make build-client
+
+  test-server:
+    #needs: build-server
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Test the server image
+      run: make test-server
 
   push:
 
     # verify it passes build and test first
-    needs: build
+    needs: test-server
 
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
