@@ -34,7 +34,7 @@ g addmembers employees johnm,ckent,bwayne,pparker,bbanner
 g addmembers characters ckent,bwayne,pparker,bbanner,tomas.gould
 
 #bulk
-for i in $(range 0 42); do
+for i in $(seq 0 42); do
     u create "user${i}" "$PW" --surname=Hue-Sir --given-name="George${i}"
     g addmembers bulk "user${i}"
 done
