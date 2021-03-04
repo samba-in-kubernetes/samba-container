@@ -15,6 +15,7 @@ CLIENT_DIR:=images/client
 SERVER_SRC_FILE:=$(SERVER_DIR)/Dockerfile.fedora
 SERVER_SOURCES:=$(SERVER_DIR)/smb.conf
 AD_SERVER_SRC_FILE:=$(AD_SERVER_DIR)/Containerfile
+AD_SERVER_SOURCES:=$(AD_SERVER_DIR)/populate.sh $(AD_SERVER_DIR)/provision.sh $(AD_SERVER_DIR)/run.sh
 CLIENT_SRC_FILE:=$(CLIENT_DIR)/Dockerfile
 
 TAG?=latest
@@ -27,6 +28,7 @@ AD_SERVER_REPO_NAME:=quay.io/samba.org/samba-ad-server:$(TAG)
 CLIENT_REPO_NAME:=quay.io/samba.org/samba-client:$(TAG)
 
 BUILDFILE_SERVER:=.build.server
+BUILDFILE_AD_SERVER:=.build.ad-server
 BUILDFILE_CLIENT:=.build.client
 
 build: build-server build-ad-server build-client
@@ -41,9 +43,10 @@ push-server: build-server
 	$(PUSH_CMD) $(SERVER_REPO_NAME)
 .PHONY: push-server
 
-build-ad-server:
+build-ad-server: $(BUILDFILE_AD_SERVER)
+$(BUILDFILE_AD_SERVER): Makefile $(AD_SERVER_SRC_FILE) $(AD_SERVER_SOURCES)
 	$(BUILD_CMD) --tag $(AD_SERVER_NAME) --tag $(AD_SERVER_REPO_NAME) -f $(AD_SERVER_SRC_FILE) $(AD_SERVER_DIR)
-.PHONY: build-ad-server
+	$(CONTAINER_CMD) inspect -f '{{.Id}}' $(AD_SERVER_NAME) > $(BUILDFILE_AD_SERVER)
 
 push-ad-server: build-ad-server
 	$(PUSH_CMD) $(AD_SERVER_REPO_NAME)
