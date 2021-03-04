@@ -14,7 +14,7 @@ AD_SERVER_DIR:=images/ad-server
 CLIENT_DIR:=images/client
 SERVER_SRC_FILE:=$(SERVER_DIR)/Dockerfile.fedora
 AD_SERVER_SRC_FILE:=$(AD_SERVER_DIR)/Containerfile
-CLIENT_SRC_FILE:=$(CLIENT_DIR)/Dockerfile.centos8
+CLIENT_SRC_FILE:=$(CLIENT_DIR)/Dockerfile
 
 TAG?=latest
 SERVER_NAME:=samba-container:$(TAG)
