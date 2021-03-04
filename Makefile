@@ -20,10 +20,12 @@ TAG?=latest
 SERVER_NAME:=samba-container:$(TAG)
 AD_SERVER_NAME:=samba-ad-container:$(TAG)
 CLIENT_NAME:=samba-client-container:$(TAG)
+
 SERVER_REPO_NAME:=quay.io/samba.org/samba-server:$(TAG)
 AD_SERVER_REPO_NAME:=quay.io/samba.org/samba-ad-server:$(TAG)
 CLIENT_REPO_NAME:=quay.io/samba.org/samba-client:$(TAG)
 
+BUILDFILE_CLIENT:=.build.client
 
 build: build-server build-ad-server build-client
 .PHONY: build
@@ -44,9 +46,10 @@ push-ad-server: build-ad-server
 	$(PUSH_CMD) $(AD_SERVER_REPO_NAME)
 .PHONY: push-ad-server
 
-build-client:
+build-client: $(BUILDFILE_CLIENT)
+$(BUILDFILE_CLIENT): Makefile $(CLIENT_SRC_FILE)
 	$(BUILD_CMD) --tag $(CLIENT_NAME) --tag $(CLIENT_REPO_NAME) -f $(CLIENT_SRC_FILE) $(CLIENT_DIR)
-.PHONY: build-client
+	$(CONTAINER_CMD) inspect -f '{{.Id}}' $(CLIENT_NAME) > $(BUILDFILE_CLIENT)
 
 push-client: build-client
 	$(PUSH_CMD) $(CLIENT_REPO_NAME)
