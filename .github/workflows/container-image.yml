@@ -43,6 +43,14 @@ jobs:
     - name: Test the server image
       run: make test-server
 
+  test-ad-server:
+    #needs: build-ad-server
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Test the ad server image
+      run: make test-ad-server
+
   push:
 
     # verify it passes build and test first
