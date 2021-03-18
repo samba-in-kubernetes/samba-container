@@ -57,7 +57,7 @@ jobs:
     - name: import image
       run: k3d image import samba-ad-container:latest
     - name: run the ad-dc deployment test
-      run: ./hack/test-samba-ad-server-kubernetes.sh
+      run: ./tests/test-samba-ad-server-kubernetes.sh
 
   push:
 
