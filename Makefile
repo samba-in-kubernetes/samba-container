@@ -65,5 +65,5 @@ test: test-server
 .PHONY: test
 
 test-server: build-server
-	CONTAINER_CMD=$(CONTAINER_CMD) LOCAL_TAG=$(SERVER_NAME) hack/test-samba-container.sh
+	CONTAINER_CMD=$(CONTAINER_CMD) LOCAL_TAG=$(SERVER_NAME) tests/test-samba-container.sh
 .PHONY: test-server

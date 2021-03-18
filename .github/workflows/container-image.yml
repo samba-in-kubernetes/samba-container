@@ -43,6 +43,22 @@ jobs:
     - name: Test the server image
       run: make test-server
 
+  test-ad-server-kubernetes:
+    #runs-on: ubuntu-latest
+    # need to explicitly use 20.04 to avoid problems with jq...
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v2
+    - uses: nolar/setup-k3d-k3s@v1
+    - name: get nodes
+      run: kubectl get nodes
+    - name: build container
+      run: make CONTAINER_CMD=docker build-ad-server
+    - name: import image
+      run: k3d image import samba-ad-container:latest
+    - name: run the ad-dc deployment test
+      run: ./tests/test-samba-ad-server-kubernetes.sh
+
   push:
 
     # verify it passes build and test first
