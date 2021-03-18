@@ -15,13 +15,8 @@ spec:
         app: samba-ad
     spec:
       containers:
-      - name: samba
-        # Pointing to locally built image,
-        # change here to use a registry.
-        image: samba-ad-container:latest
-        # Need imagePullPolicy Never for working with local images.
-        # Otherwise we get "ErrImagePull".
-        imagePullPolicy: Never
+      - name: samba-ad
+        image: quay.io/samba.org/samba-ad-server:latest
         securityContext:
           capabilities:
             add: ["SYS_ADMIN"]
