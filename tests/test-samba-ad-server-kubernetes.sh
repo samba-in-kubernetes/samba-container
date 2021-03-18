@@ -2,7 +2,7 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${0}")" && pwd)"
 BASE_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-DEPLOYMENT_YAML="${BASE_DIR}/examples/kubernetes/samba-ad-server-deployment.yml"
+DEPLOYMENT_YAML="${BASE_DIR}/tests/files/samba-ad-server-deployment.yml"
 DEPLOYMENT_NAME="samba-ad-server"
 
 _error() {
