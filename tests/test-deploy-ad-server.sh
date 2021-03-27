@@ -1,18 +1,11 @@
 #!/usr/bin/env bash
 
-
 SCRIPT_DIR="$(cd "$(dirname "${0}")" && pwd)"
-BASE_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-DEPLOYMENT_YAML="${BASE_DIR}/tests/files/samba-ad-server-deployment.yml"
-DEPLOYMENT_NAME="samba-ad-server"
 
-_error() {
-	echo "$@"
-	exit 1
-}
+source "${SCRIPT_DIR}/common.sh"
 
 echo "Creating ad server deployment..."
-ERROR_MSG=$(kubectl create -f "${DEPLOYMENT_YAML}" 2>&1 1>/dev/null)
+ERROR_MSG=$(kubectl create -f "${AD_DEPLOYMENT_YAML}" 2>&1 1>/dev/null)
 if [ $? -ne 0 ] ; then
 	if [[ "${ERROR_MSG}" =~ "AlreadyExists" ]] ; then
 		echo "Deployment exists already. Continuing."
@@ -23,7 +16,7 @@ fi
 
 kubectl get deployment
 
-replicaset="$(kubectl describe deployment ${DEPLOYMENT_NAME} | grep -s "NewReplicaSet:" | awk '{ print $2 }')"
+replicaset="$(kubectl describe deployment ${AD_DEPLOYMENT_NAME} | grep -s "NewReplicaSet:" | awk '{ print $2 }')"
 [ $? -eq 0 ] || _error "Error getting replicaset"
 
 podname="$(kubectl get pod | grep $replicaset | awk '{ print $1 }')"
