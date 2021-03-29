@@ -4,7 +4,7 @@ set -e
 
 REALM="DOMAIN1.SINK.TEST"
 DOMAIN="DOMAIN1"
-DCNAME="samba1"
+DCNAME="dc1"
 PW="Passw0rd"
 
 #if ! grep -q $HOSTNAME /etc/hosts ; then
