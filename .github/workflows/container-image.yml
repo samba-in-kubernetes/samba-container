@@ -52,10 +52,14 @@ jobs:
     - uses: nolar/setup-k3d-k3s@v1
     - name: get nodes
       run: kubectl get nodes
-    - name: build container
+    - name: build ad container
       run: make CONTAINER_CMD=docker build-ad-server
-    - name: import image
+    - name: import ad server image
       run: k3d image import samba-ad-container:latest
+    - name: build file server container
+      run: make CONTAINER_CMD=docker build-server
+    - name: import file server image
+      run: k3d image import samba-container:latest
     - name: run the ad-dc deployment test
       run: ./tests/test-samba-ad-server-kubernetes.sh
 
