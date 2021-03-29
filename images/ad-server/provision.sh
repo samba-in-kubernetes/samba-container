@@ -4,6 +4,7 @@ set -e
 
 REALM="DOMAIN1.SINK.TEST"
 DOMAIN="DOMAIN1"
+DCNAME="samba1"
 PW="Passw0rd"
 
 #if ! grep -q $HOSTNAME /etc/hosts ; then
@@ -14,7 +15,7 @@ PW="Passw0rd"
 echo 'Provisioning...'
 
 samba-tool domain provision \
-    --option="netbios name=samba1" \
+    --option="netbios name=${DCNAME}" \
     --use-rfc2307 \
     --dns-backend="SAMBA_INTERNAL" \
     --server-role=dc \
