@@ -2,8 +2,8 @@
 
 set -e
 
-REALM="ZZZ-BEST.X.ASYNCHRONO.US"
-DOM="ZZZ-BEST"
+REALM="DOMAIN1.SINK.TEST"
+DOM="DOMAIN1"
 PW="Passw0rd"
 
 #if ! grep -q $HOSTNAME /etc/hosts ; then
