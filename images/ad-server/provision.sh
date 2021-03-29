@@ -3,7 +3,7 @@
 set -e
 
 REALM="DOMAIN1.SINK.TEST"
-DOM="DOMAIN1"
+DOMAIN="DOMAIN1"
 PW="Passw0rd"
 
 #if ! grep -q $HOSTNAME /etc/hosts ; then
@@ -19,6 +19,6 @@ samba-tool domain provision \
     --dns-backend="SAMBA_INTERNAL" \
     --server-role=dc \
     --realm="${REALM}" \
-    --domain="${DOM}" \
+    --domain="${DOMAIN}" \
     --adminpass="${PW}"
 
