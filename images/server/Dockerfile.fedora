@@ -13,9 +13,6 @@ MAINTAINER John Mulligan <jmulligan@redhat.com>
 ENV SAMBACC_VERSION="0.1"
 
 COPY smb.conf /etc/samba/smb.conf
-COPY --from=builder \
-    /var/tmp/build/sambacc/dist/sambacc-$SAMBACC_VERSION-py3-none-any.whl \
-    /tmp/sambacc-$SAMBACC_VERSION-py3-none-any.whl
 RUN dnf install -y \
     findutils \
     python-pip \
@@ -26,10 +23,15 @@ RUN dnf install -y \
     samba-winbind \
     samba-winbind-clients \
     tdb-tools \
-    && pip install /tmp/sambacc-$SAMBACC_VERSION-py3-none-any.whl \
+    && dnf clean all \
+    && true
+
+COPY --from=builder \
+    /var/tmp/build/sambacc/dist/sambacc-$SAMBACC_VERSION-py3-none-any.whl \
+    /tmp/sambacc-$SAMBACC_VERSION-py3-none-any.whl
+RUN pip install /tmp/sambacc-$SAMBACC_VERSION-py3-none-any.whl \
     && rm -f /tmp/sambacc-$SAMBACC_VERSION-py3-none-any.whl \
     && ln -s /usr/local/share/sambacc/examples/minimal.json /etc/samba/container.json \
-    && yum clean all \
     && true
 
 
