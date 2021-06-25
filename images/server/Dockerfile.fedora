@@ -1,9 +1,11 @@
 FROM quay.io/samba.org/sambacc:latest AS builder
+ARG SAMBACC_VER=a2cfac7ae49e
+ARG SAMBACC_REPO=
 
 # the changeset hash on the next line ensures we get a specifc
 # version of sambacc. When sambacc actually gets tagged, it should
 # be changed to use the tag.
-RUN /usr/local/bin/build.sh a2cfac7ae49e
+RUN /usr/local/bin/build.sh ${SAMBACC_VER} ${SAMBACC_REPO}
 
 FROM fedora
 
