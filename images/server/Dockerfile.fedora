@@ -1,6 +1,6 @@
 FROM quay.io/samba.org/sambacc:latest AS builder
-ARG SAMBACC_VER=a2cfac7ae49e
-ARG SAMBACC_REPO=
+ARG SAMBACC_VER=b279787f9550
+ARG SAMBACC_REPO=https://github.com/samba-in-kubernetes/sambacc
 
 # the changeset hash on the next line ensures we get a specifc
 # version of sambacc. When sambacc actually gets tagged, it should
@@ -13,7 +13,7 @@ MAINTAINER John Mulligan <jmulligan@redhat.com>
 ENV SAMBACC_VERSION="0.1"
 
 COPY smb.conf /etc/samba/smb.conf
-RUN dnf install -y \
+RUN dnf install --setopt=install_weak_deps=False -y \
     findutils \
     python-pip \
     python3-jsonschema \
@@ -23,7 +23,10 @@ RUN dnf install -y \
     samba-winbind \
     samba-winbind-clients \
     tdb-tools \
+    ctdb \
     && dnf clean all \
+    && cp --preserve=all /etc/ctdb/functions /usr/share/ctdb/functions \
+    && cp --preserve=all /etc/ctdb/notify.sh /usr/share/ctdb/notify.sh \
     && true
 
 COPY --from=builder \
