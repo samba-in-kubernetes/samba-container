@@ -1,0 +1,290 @@
+#
+# An example of running samba with ctdb replication as a kubernetes
+# StatefulSet.
+#
+# This is *highly experimental* and not meant for real use. Use only if you're
+# interested in helping test or develop samba-container/sambacc CTDB support.
+#
+# This does not integrate with active directory.
+# This directly uses "rook-cephfs" for ReadWriteMany PVCs. If you have some
+# other storage class that supports rwx pvcs you need to edit the yaml below.
+# This only works with creating a clean set of pvcs & stateful set and scaling
+# up. It does *not* currently support pods getting restarted or scaling down.
+#
+# Use at your own risk, and have fun!
+#
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ctdb-shared
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: rook-cephfs
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: samba-share-data
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: rook-cephfs
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sssamba
+  labels:
+    app: clustered-samba
+spec:
+  ports:
+  - port: 445
+    name: smb
+  clusterIP: None
+  selector:
+    app: clustered-samba
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: clustered-samba
+spec:
+  serviceName: "sssamba"
+  replicas: 3
+  selector:
+    matchLabels:
+      app: clustered-samba
+  template:
+    metadata:
+      labels:
+        app: clustered-samba
+    spec:
+      shareProcessNamespace: true
+      initContainers:
+        - image: quay.io/samba.org/samba-server:ctdb
+          imagePullPolicy: Always
+          name: init
+          args:
+          - "--config=/usr/local/share/sambacc/examples/ctdb.json"
+          - "--id=demo"
+          - "--skip-if-file=/var/lib/ctdb/shared/nodes"
+          - "init"
+          env: []
+          securityContext:
+            allowPrivilegeEscalation: true
+          volumeMounts:
+          - mountPath: "/var/lib/samba"
+            name: samba-state-dir
+          - mountPath: "/var/lib/ctdb/shared"
+            name: ctdb-shared
+        - image: quay.io/samba.org/samba-server:ctdb
+          imagePullPolicy: Always
+          name: import
+          args:
+          - "--config=/usr/local/share/sambacc/examples/ctdb.json"
+          - "--id=demo"
+          - "--skip-if-file=/var/lib/ctdb/shared/nodes"
+          - "import"
+          securityContext:
+            allowPrivilegeEscalation: true
+          volumeMounts:
+          - mountPath: "/var/lib/samba"
+            name: samba-state-dir
+          - mountPath: "/var/lib/ctdb/shared"
+            name: ctdb-shared
+        - image: quay.io/samba.org/samba-server:ctdb
+          imagePullPolicy: Always
+          name: import-users
+          args:
+          - "--config=/usr/local/share/sambacc/examples/ctdb.json"
+          - "--id=demo"
+          - "--skip-if-file=/var/lib/ctdb/shared/nodes"
+          - "import-users"
+          securityContext:
+            allowPrivilegeEscalation: true
+          volumeMounts:
+          - mountPath: "/var/lib/samba"
+            name: samba-state-dir
+          - mountPath: "/var/lib/ctdb/shared"
+            name: ctdb-shared
+        - image: quay.io/samba.org/samba-server:ctdb
+          imagePullPolicy: Always
+          name: ctdb-migrate
+          args:
+          - "--config=/usr/local/share/sambacc/examples/ctdb.json"
+          - "--id=demo"
+          - "--skip-if-file=/var/lib/ctdb/shared/nodes"
+          - "ctdb-migrate"
+          - "--dest-dir=/var/lib/ctdb/persistent"
+          env:
+          - name: SAMBACC_CTDB
+            value: "ctdb-is-experimental"
+          securityContext:
+            allowPrivilegeEscalation: true
+          volumeMounts:
+          - mountPath: "/var/lib/samba"
+            name: samba-state-dir
+          - mountPath: "/var/lib/ctdb/persistent"
+            name: ctdb-persistent
+          - mountPath: "/var/lib/ctdb/shared"
+            name: ctdb-shared
+        - image: quay.io/samba.org/samba-server:ctdb
+          imagePullPolicy: Always
+          name: ctdb-set-node
+          args:
+          - "--config=/usr/local/share/sambacc/examples/ctdb.json"
+          - "--id=demo"
+          - "ctdb-set-node"
+          - "--hostname=$(HOSTNAME)"
+          - "--take-node-number-from-hostname=after-last-dash"
+          env:
+          - name: SAMBACC_CTDB
+            value: "ctdb-is-experimental"
+          - name: HOSTNAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          securityContext:
+            allowPrivilegeEscalation: true
+          volumeMounts:
+          - mountPath: "/var/lib/ctdb/shared"
+            name: ctdb-shared
+          - mountPath: "/etc/ctdb"
+            name: ctdb-config
+        - image: quay.io/samba.org/samba-server:ctdb
+          imagePullPolicy: Always
+          name: ctdb-must-have-node
+          args:
+          - "--config=/usr/local/share/sambacc/examples/ctdb.json"
+          - "--id=demo"
+          - "ctdb-must-have-node"
+          - "--hostname=$(HOSTNAME)"
+          - "--take-node-number-from-hostname=after-last-dash"
+          env:
+          - name: SAMBACC_CTDB
+            value: "ctdb-is-experimental"
+          - name: HOSTNAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          securityContext:
+            allowPrivilegeEscalation: true
+          volumeMounts:
+          - mountPath: "/var/lib/ctdb/shared"
+            name: ctdb-shared
+          - mountPath: "/etc/ctdb"
+            name: ctdb-config
+      containers:
+        - image: quay.io/samba.org/samba-server:ctdb
+          imagePullPolicy: Always
+          name: ctdb
+          args:
+          - "--config=/usr/local/share/sambacc/examples/ctdb.json"
+          - "--id=demo"
+          - "--debug-delay=2"
+          - "run"
+          - "ctdbd"
+          - "--setup=smb_ctdb"
+          - "--setup=ctdb_config"
+          - "--setup=ctdb_etc"
+          - "--setup=ctdb_nodes"
+          env:
+          - name: SAMBACC_CTDB
+            value: "ctdb-is-experimental"
+          volumeMounts:
+          - mountPath: "/var/lib/ctdb/shared"
+            name: ctdb-shared
+          - mountPath: "/var/lib/ctdb/persistent"
+            name: ctdb-persistent
+          - mountPath: "/var/lib/ctdb/volatile"
+            name: ctdb-volatile
+          - mountPath: "/etc/ctdb"
+            name: ctdb-config
+          - mountPath: "/var/run/ctdb"
+            name: ctdb-sockets-dir
+        - image: quay.io/samba.org/samba-server:ctdb
+          imagePullPolicy: Always
+          name: ctdb-manage-nodes
+          args:
+          - "--config=/usr/local/share/sambacc/examples/ctdb.json"
+          - "--id=demo"
+          - "ctdb-manage-nodes"
+          - "--hostname=$(HOSTNAME)"
+          - "--take-node-number-from-hostname=after-last-dash"
+          env:
+          - name: SAMBACC_CTDB
+            value: "ctdb-is-experimental"
+          - name: HOSTNAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          volumeMounts:
+          - mountPath: "/var/lib/ctdb/shared"
+            name: ctdb-shared
+          - mountPath: "/etc/ctdb"
+            name: ctdb-config
+          - mountPath: "/var/run/ctdb"
+            name: ctdb-sockets-dir
+        - image: quay.io/samba.org/samba-server:ctdb
+          imagePullPolicy: Always
+          name: smb
+          args:
+          - "--config=/usr/local/share/sambacc/examples/ctdb.json"
+          - "--id=demo"
+          - "--debug-delay=12"
+          - "run"
+          - "smbd"
+          - "--setup=users"
+          - "--setup=smb_ctdb"
+          ports:
+          - containerPort: 445
+            protocol: TCP
+            name: "smb"
+          securityContext:
+            allowPrivilegeEscalation: true
+          volumeMounts:
+          - mountPath: "/share"
+            name: samba-share-data
+          - mountPath: "/var/lib/ctdb/shared"
+            name: ctdb-shared
+          - mountPath: "/var/lib/ctdb/persistent"
+            name: ctdb-persistent
+          - mountPath: "/var/lib/ctdb/volatile"
+            name: ctdb-volatile
+          - mountPath: "/etc/ctdb"
+            name: ctdb-config
+          - mountPath: "/var/run/ctdb"
+            name: ctdb-sockets-dir
+      volumes:
+      # /etc/ctdb
+      - emptyDir: {}
+        name: ctdb-config
+      # /var/lib/ctdb/persistent
+      - emptyDir: {}
+        name: ctdb-persistent
+      # /var/lib/ctdb/volatile
+      - emptyDir: {}
+        name: ctdb-volatile
+      # /var/lib/ctdb/shared
+      - persistentVolumeClaim:
+          claimName: ctdb-shared
+        name: ctdb-shared
+      # /var/run/ctdb
+      - emptyDir:
+          medium: Memory
+        name: ctdb-sockets-dir
+      # /var/lib/samba
+      - emptyDir: {}
+        name: samba-state-dir
+      # /share
+      - persistentVolumeClaim:
+          claimName: samba-share-data
+        name: samba-share-data
