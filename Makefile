@@ -13,6 +13,7 @@ SERVER_DIR:=images/server
 AD_SERVER_DIR:=images/ad-server
 CLIENT_DIR:=images/client
 SERVER_SRC_FILE:=$(SERVER_DIR)/Dockerfile.fedora
+NIGHTLY_SERVER_SRC_FILE:=$(SERVER_DIR)/Dockerfile.nightly
 SERVER_SOURCES:=$(SERVER_DIR)/smb.conf
 AD_SERVER_SRC_FILE:=$(AD_SERVER_DIR)/Containerfile
 AD_SERVER_SOURCES:=$(AD_SERVER_DIR)/populate.sh $(AD_SERVER_DIR)/provision.sh $(AD_SERVER_DIR)/run.sh
@@ -20,18 +21,21 @@ CLIENT_SRC_FILE:=$(CLIENT_DIR)/Dockerfile
 
 TAG?=latest
 SERVER_NAME:=samba-container:$(TAG)
+NIGHTLY_SERVER_NAME:=samba-container:nightly
 AD_SERVER_NAME:=samba-ad-container:$(TAG)
 CLIENT_NAME:=samba-client-container:$(TAG)
 
 SERVER_REPO_NAME:=quay.io/samba.org/samba-server:$(TAG)
+NIGHTLY_SERVER_REPO_NAME:=quay.io/samba.org/samba-server:nightly
 AD_SERVER_REPO_NAME:=quay.io/samba.org/samba-ad-server:$(TAG)
 CLIENT_REPO_NAME:=quay.io/samba.org/samba-client:$(TAG)
 
 BUILDFILE_SERVER:=.build.server
+BUILDFILE_NIGHTLY_SERVER:=.build.nightly-server
 BUILDFILE_AD_SERVER:=.build.ad-server
 BUILDFILE_CLIENT:=.build.client
 
-build: build-server build-ad-server build-client
+build: build-server build-nightly-server build-ad-server build-client
 .PHONY: build
 
 build-server: $(BUILDFILE_SERVER)
@@ -39,9 +43,18 @@ $(BUILDFILE_SERVER): Makefile $(SERVER_SRC_FILE) $(SERVER_SOURCES)
 	$(BUILD_CMD) --tag $(SERVER_NAME) --tag $(SERVER_REPO_NAME) -f $(SERVER_SRC_FILE) $(SERVER_DIR)
 	$(CONTAINER_CMD) inspect -f '{{.Id}}' $(SERVER_NAME) > $(BUILDFILE_SERVER)
 
+build-nightly-server: $(BUILDFILE_NIGHTLY_SERVER)
+$(BUILDFILE_NIGHTLY_SERVER): Makefile $(NIGHTLY_SERVER_SRC_FILE) $(SERVER_SOURCES)
+	$(BUILD_CMD) --tag $(NIGHTLY_SERVER_NAME) --tag $(NIGHTLY_SERVER_REPO_NAME) -f $(NIGHTLY_SERVER_SRC_FILE) $(SERVER_DIR)
+	$(CONTAINER_CMD) inspect -f '{{.Id}}' $(NIGHTLY_SERVER_NAME) > $(BUILDFILE_NIGHTLY_SERVER)
+
 push-server: build-server
 	$(PUSH_CMD) $(SERVER_REPO_NAME)
 .PHONY: push-server
+
+push-nightly-server: build-nightly-server
+	$(PUSH_CMD) $(NIGHTLY_SERVER_REPO_NAME)
+.PHONY: push-nightly-server
 
 build-ad-server: $(BUILDFILE_AD_SERVER)
 $(BUILDFILE_AD_SERVER): Makefile $(AD_SERVER_SRC_FILE) $(AD_SERVER_SOURCES)
@@ -61,9 +74,13 @@ push-client: build-client
 	$(PUSH_CMD) $(CLIENT_REPO_NAME)
 .PHONY: push-client
 
-test: test-server
+test: test-server test-nightly-server
 .PHONY: test
 
 test-server: build-server
 	CONTAINER_CMD=$(CONTAINER_CMD) LOCAL_TAG=$(SERVER_NAME) tests/test-samba-container.sh
 .PHONY: test-server
+
+test-nightly-server: build-nightly-server
+	CONTAINER_CMD=$(CONTAINER_CMD) LOCAL_TAG=$(NIGHTLY_SERVER_NAME) tests/test-samba-container.sh
+.PHONY: test-nightly-server
