@@ -1,0 +1,52 @@
+FROM quay.io/samba.org/sambacc:latest AS builder
+ARG SAMBACC_VER=f6480c5861a56ef9d1ebb965aebb14732ec2690c
+ARG SAMBACC_REPO=https://github.com/samba-in-kubernetes/sambacc
+
+# the changeset hash on the next line ensures we get a specifc
+# version of sambacc. When sambacc actually gets tagged, it should
+# be changed to use the tag.
+RUN /usr/local/bin/build.sh ${SAMBACC_VER} ${SAMBACC_REPO}
+
+FROM fedora
+
+MAINTAINER John Mulligan <jmulligan@redhat.com>
+ENV SAMBACC_VERSION="0.1"
+
+COPY smb.conf /etc/samba/smb.conf
+RUN curl http://artifacts.ci.centos.org/gluster/nightly-samba/master/fedora/samba-nightly-master.repo -o /etc/yum.repos.d/samba-nightly-master.repo
+RUN dnf install --setopt=install_weak_deps=False -y \
+    findutils \
+    python-pip \
+    python3-jsonschema \
+    python3-samba \
+    samba \
+    samba-client \
+    samba-winbind \
+    samba-winbind-clients \
+    tdb-tools \
+    ctdb \
+    && dnf clean all \
+    && cp --preserve=all /etc/ctdb/functions /usr/share/ctdb/functions \
+    && cp --preserve=all /etc/ctdb/notify.sh /usr/share/ctdb/notify.sh \
+    && true
+
+COPY --from=builder \
+    /var/tmp/build/sambacc/dist/sambacc-$SAMBACC_VERSION-py3-none-any.whl \
+    /tmp/sambacc-$SAMBACC_VERSION-py3-none-any.whl
+RUN pip install /tmp/sambacc-$SAMBACC_VERSION-py3-none-any.whl \
+    && rm -f /tmp/sambacc-$SAMBACC_VERSION-py3-none-any.whl \
+    && ln -s /usr/local/share/sambacc/examples/minimal.json /etc/samba/container.json \
+    && true
+
+
+VOLUME ["/share"]
+
+EXPOSE 445
+
+ENV SAMBACC_CONFIG="/etc/samba/container.json:/etc/samba/users.json"
+ENV SAMBA_CONTAINER_ID="demo"
+ENV SAMBA_SPECIFICS="daemon_cli_debug_output"
+ENTRYPOINT ["samba-container"]
+CMD ["run", "smbd"]
+
+# vim:set syntax=dockerfile:
