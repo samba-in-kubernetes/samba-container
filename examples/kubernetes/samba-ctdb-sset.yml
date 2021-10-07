@@ -69,7 +69,7 @@ spec:
     spec:
       shareProcessNamespace: true
       initContainers:
-        - image: quay.io/samba.org/samba-server:ctdb
+        - image: quay.io/samba.org/samba-server:latest
           imagePullPolicy: Always
           name: init
           args:
@@ -85,7 +85,7 @@ spec:
             name: samba-state-dir
           - mountPath: "/var/lib/ctdb/shared"
             name: ctdb-shared
-        - image: quay.io/samba.org/samba-server:ctdb
+        - image: quay.io/samba.org/samba-server:latest
           imagePullPolicy: Always
           name: import
           args:
@@ -100,7 +100,7 @@ spec:
             name: samba-state-dir
           - mountPath: "/var/lib/ctdb/shared"
             name: ctdb-shared
-        - image: quay.io/samba.org/samba-server:ctdb
+        - image: quay.io/samba.org/samba-server:latest
           imagePullPolicy: Always
           name: import-users
           args:
@@ -115,7 +115,7 @@ spec:
             name: samba-state-dir
           - mountPath: "/var/lib/ctdb/shared"
             name: ctdb-shared
-        - image: quay.io/samba.org/samba-server:ctdb
+        - image: quay.io/samba.org/samba-server:latest
           imagePullPolicy: Always
           name: ctdb-migrate
           args:
@@ -136,7 +136,7 @@ spec:
             name: ctdb-persistent
           - mountPath: "/var/lib/ctdb/shared"
             name: ctdb-shared
-        - image: quay.io/samba.org/samba-server:ctdb
+        - image: quay.io/samba.org/samba-server:latest
           imagePullPolicy: Always
           name: ctdb-set-node
           args:
@@ -159,7 +159,7 @@ spec:
             name: ctdb-shared
           - mountPath: "/etc/ctdb"
             name: ctdb-config
-        - image: quay.io/samba.org/samba-server:ctdb
+        - image: quay.io/samba.org/samba-server:latest
           imagePullPolicy: Always
           name: ctdb-must-have-node
           args:
@@ -183,7 +183,7 @@ spec:
           - mountPath: "/etc/ctdb"
             name: ctdb-config
       containers:
-        - image: quay.io/samba.org/samba-server:ctdb
+        - image: quay.io/samba.org/samba-server:latest
           imagePullPolicy: Always
           name: ctdb
           args:
@@ -210,7 +210,7 @@ spec:
             name: ctdb-config
           - mountPath: "/var/run/ctdb"
             name: ctdb-sockets-dir
-        - image: quay.io/samba.org/samba-server:ctdb
+        - image: quay.io/samba.org/samba-server:latest
           imagePullPolicy: Always
           name: ctdb-manage-nodes
           args:
@@ -233,7 +233,7 @@ spec:
             name: ctdb-config
           - mountPath: "/var/run/ctdb"
             name: ctdb-sockets-dir
-        - image: quay.io/samba.org/samba-server:ctdb
+        - image: quay.io/samba.org/samba-server:latest
           imagePullPolicy: Always
           name: smb
           args:
