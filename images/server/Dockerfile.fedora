@@ -1,5 +1,5 @@
 FROM quay.io/samba.org/sambacc:latest AS builder
-ARG SAMBACC_VER=b279787f9550
+ARG SAMBACC_VER=f6480c5861a56ef9d1ebb965aebb14732ec2690c
 ARG SAMBACC_REPO=https://github.com/samba-in-kubernetes/sambacc
 
 # the changeset hash on the next line ensures we get a specifc
