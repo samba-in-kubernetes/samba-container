@@ -7,7 +7,7 @@ ARG SAMBACC_REPO=https://github.com/samba-in-kubernetes/sambacc
 # be changed to use the tag.
 RUN /usr/local/bin/build.sh ${SAMBACC_VER} ${SAMBACC_REPO}
 
-FROM fedora
+FROM registry.fedoraproject.org/fedora:34
 
 MAINTAINER John Mulligan <jmulligan@redhat.com>
 ENV SAMBACC_VERSION="0.1"
