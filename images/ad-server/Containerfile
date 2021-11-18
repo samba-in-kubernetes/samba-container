@@ -1,4 +1,4 @@
-FROM fedora
+FROM registry.fedoraproject.org/fedora:34
 
 RUN dnf install -y samba-dc procps-ng /usr/bin/smbclient
 RUN rm -f /etc/samba/smb.conf
