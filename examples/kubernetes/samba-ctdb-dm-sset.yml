@@ -30,7 +30,8 @@ data:
           ],
           "globals": [
             "noprinting",
-            "sambadm1"
+            "sambadm1",
+            "vfs_fileid"
           ],
           "instance_features": ["ctdb"],
           "instance_name": "SAMBASWC"
@@ -63,6 +64,12 @@ data:
             "server min protocol": "SMB2",
             "idmap config * : backend": "autorid",
             "idmap config * : range": "2000-9999999"
+          }
+        },
+        "vfs_fileid": {
+          "options": {
+            "vfs objects": "fileid",
+            "fileid:algorithm": "fsid"
           }
         }
       }
