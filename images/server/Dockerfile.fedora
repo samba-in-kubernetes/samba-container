@@ -1,16 +1,16 @@
 FROM quay.io/samba.org/sambacc:latest AS builder
-ARG SAMBACC_VER=fd747527ed86d01821c4a3b72f1c4f893bb1ca36
+ARG SAMBACC_VER=master
 ARG SAMBACC_REPO=https://github.com/samba-in-kubernetes/sambacc
 
 # the changeset hash on the next line ensures we get a specifc
 # version of sambacc. When sambacc actually gets tagged, it should
 # be changed to use the tag.
-RUN /usr/local/bin/build.sh ${SAMBACC_VER} ${SAMBACC_REPO}
+RUN SAMBACC_DISTNAME=latest \
+    /usr/local/bin/build.sh ${SAMBACC_VER} ${SAMBACC_REPO}
 
 FROM registry.fedoraproject.org/fedora:34
 
 MAINTAINER John Mulligan <jmulligan@redhat.com>
-ENV SAMBACC_VERSION="0.1"
 
 COPY smb.conf /etc/samba/smb.conf
 RUN dnf install --setopt=install_weak_deps=False -y \
@@ -30,10 +30,13 @@ RUN dnf install --setopt=install_weak_deps=False -y \
     && true
 
 COPY --from=builder \
-    /var/tmp/build/sambacc/dist/sambacc-$SAMBACC_VERSION-py3-none-any.whl \
-    /tmp/sambacc-$SAMBACC_VERSION-py3-none-any.whl
-RUN pip install /tmp/sambacc-$SAMBACC_VERSION-py3-none-any.whl \
-    && rm -f /tmp/sambacc-$SAMBACC_VERSION-py3-none-any.whl \
+    /srv/dist/latest/sambacc-*.whl \
+    /tmp/
+RUN true \
+    && wheel="$(find /tmp/ -type f -name 'sambacc-*.whl')" \
+    && [ $(echo "$wheel" | wc -l) = 1 ] \
+    && pip install "$wheel" \
+    && rm -f "$wheel" \
     && ln -s /usr/local/share/sambacc/examples/minimal.json /etc/samba/container.json \
     && true
 
