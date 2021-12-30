@@ -21,6 +21,10 @@ case "${install_packages_from}" in
 esac
 
 dnf install --setopt=install_weak_deps=False -y \
+    findutils \
+    python-pip \
+    python3-jsonschema \
+    python3-samba \
     samba-dc \
     procps-ng \
     /usr/bin/smbclient
