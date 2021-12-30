@@ -1,14 +1,35 @@
-FROM registry.fedoraproject.org/fedora:34
+FROM quay.io/samba.org/sambacc:latest AS builder
+ARG SAMBACC_VER=master
+ARG SAMBACC_REPO=https://github.com/samba-in-kubernetes/sambacc
 
+# The SAMBACC_VER value controls what version of sambacc we'll be building.
+# This can be a branch name, a tag, or a version hash.  When building tagged
+# versions of samba-containers we should use a sambacc tag.
+# SAMBACC_DISTNAME controls where the script will output a built wheel.
+RUN SAMBACC_DISTNAME=latest \
+    /usr/local/bin/build.sh ${SAMBACC_VER} ${SAMBACC_REPO}
+
+FROM registry.fedoraproject.org/fedora:34
 ARG INSTALL_PACKAGES_FROM=default
 ARG SAMBA_SPECIFICS=
+
+MAINTAINER John Mulligan <jmulligan@redhat.com>
 
 COPY install-packages.sh /usr/local/bin/install-packages.sh
 RUN /usr/local/bin/install-packages.sh "$INSTALL_PACKAGES_FROM"
 
-COPY provision.sh /usr/local/bin/provision.sh
-COPY run.sh /usr/local/bin/run.sh
-COPY populate.sh /usr/local/bin/populate.sh
+COPY --from=builder \
+    /srv/dist/latest/sambacc-*.whl \
+    /tmp/
+COPY install-sambacc.sh /usr/local/bin/install-sambacc.sh
+RUN /usr/local/bin/install-sambacc.sh \
+    "/tmp" "/usr/local/share/sambacc/examples/addc.json"
 
-ENV POPULATE=/usr/local/bin/populate.sh
-ENTRYPOINT ["/usr/local/bin/run.sh"]
+
+ENV SAMBACC_CONFIG="/etc/samba/container.json:/etc/samba/users.json"
+ENV SAMBA_CONTAINER_ID="demo"
+ENV SAMBA_SPECIFICS="$SAMBA_SPECIFICS"
+ENTRYPOINT ["samba-dc-container"]
+CMD ["run", "--setup=provision", "--setup=populate"]
+
+# vim:set syntax=dockerfile:
