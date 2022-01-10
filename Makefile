@@ -51,6 +51,7 @@ build: build-server build-nightly-server build-ad-server build-client
 .PHONY: build
 
 build-server: $(BUILDFILE_SERVER)
+.PHONY: build-server
 $(BUILDFILE_SERVER): Makefile $(SERVER_SRC_FILE) $(SERVER_SOURCES)
 	$(BUILD_CMD) \
 		--tag $(SERVER_NAME) --tag $(SERVER_REPO_NAME) \
@@ -58,6 +59,7 @@ $(BUILDFILE_SERVER): Makefile $(SERVER_SRC_FILE) $(SERVER_SOURCES)
 	$(CONTAINER_CMD) inspect -f '{{.Id}}' $(SERVER_NAME) > $(BUILDFILE_SERVER)
 
 build-nightly-server: $(BUILDFILE_NIGHTLY_SERVER)
+.PHONY: build-nightly-server
 $(BUILDFILE_NIGHTLY_SERVER): Makefile $(SERVER_SRC_FILE) $(SERVER_SOURCES)
 	$(BUILD_CMD) \
 		--build-arg=INSTALL_PACKAGES_FROM="samba-nightly" \
@@ -75,6 +77,7 @@ push-nightly-server: build-nightly-server
 .PHONY: push-nightly-server
 
 build-ad-server: $(BUILDFILE_AD_SERVER)
+.PHONY: build-ad-server
 $(BUILDFILE_AD_SERVER): Makefile $(AD_SERVER_SRC_FILE) $(AD_SERVER_SOURCES)
 	$(BUILD_CMD) --tag $(AD_SERVER_NAME) --tag $(AD_SERVER_REPO_NAME) -f $(AD_SERVER_SRC_FILE) $(AD_SERVER_DIR)
 	$(CONTAINER_CMD) inspect -f '{{.Id}}' $(AD_SERVER_NAME) > $(BUILDFILE_AD_SERVER)
@@ -84,6 +87,7 @@ push-ad-server: build-ad-server
 .PHONY: push-ad-server
 
 build-client: $(BUILDFILE_CLIENT)
+.PHONY: build-client
 $(BUILDFILE_CLIENT): Makefile $(CLIENT_SRC_FILE)
 	$(BUILD_CMD) --tag $(CLIENT_NAME) --tag $(CLIENT_REPO_NAME) -f $(CLIENT_SRC_FILE) $(CLIENT_DIR)
 	$(CONTAINER_CMD) inspect -f '{{.Id}}' $(CLIENT_NAME) > $(BUILDFILE_CLIENT)
