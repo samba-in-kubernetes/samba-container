@@ -23,8 +23,10 @@ SERVER_DIR:=images/server
 AD_SERVER_DIR:=images/ad-server
 CLIENT_DIR:=images/client
 SERVER_SRC_FILE:=$(SERVER_DIR)/Containerfile
-NIGHTLY_SERVER_SRC_FILE:=$(SERVER_DIR)/Dockerfile.nightly
-SERVER_SOURCES:=$(SERVER_DIR)/smb.conf
+SERVER_SOURCES:=\
+	$(SERVER_DIR)/smb.conf \
+	$(SERVER_DIR)/install-packages.sh \
+	$(SERVER_DIR)/install-sambacc.sh
 AD_SERVER_SRC_FILE:=$(AD_SERVER_DIR)/Containerfile
 AD_SERVER_SOURCES:=$(AD_SERVER_DIR)/populate.sh $(AD_SERVER_DIR)/provision.sh $(AD_SERVER_DIR)/run.sh
 CLIENT_SRC_FILE:=$(CLIENT_DIR)/Dockerfile
@@ -50,12 +52,18 @@ build: build-server build-nightly-server build-ad-server build-client
 
 build-server: $(BUILDFILE_SERVER)
 $(BUILDFILE_SERVER): Makefile $(SERVER_SRC_FILE) $(SERVER_SOURCES)
-	$(BUILD_CMD) --tag $(SERVER_NAME) --tag $(SERVER_REPO_NAME) -f $(SERVER_SRC_FILE) $(SERVER_DIR)
+	$(BUILD_CMD) \
+		--tag $(SERVER_NAME) --tag $(SERVER_REPO_NAME) \
+		-f $(SERVER_SRC_FILE) $(SERVER_DIR)
 	$(CONTAINER_CMD) inspect -f '{{.Id}}' $(SERVER_NAME) > $(BUILDFILE_SERVER)
 
 build-nightly-server: $(BUILDFILE_NIGHTLY_SERVER)
-$(BUILDFILE_NIGHTLY_SERVER): Makefile $(NIGHTLY_SERVER_SRC_FILE) $(SERVER_SOURCES)
-	$(BUILD_CMD) --tag $(NIGHTLY_SERVER_NAME) --tag $(NIGHTLY_SERVER_REPO_NAME) -f $(NIGHTLY_SERVER_SRC_FILE) $(SERVER_DIR)
+$(BUILDFILE_NIGHTLY_SERVER): Makefile $(SERVER_SRC_FILE) $(SERVER_SOURCES)
+	$(BUILD_CMD) \
+		--build-arg=INSTALL_PACKAGES_FROM="samba-nightly" \
+		--build-arg=SAMBA_SPECIFICS="daemon_cli_debug_output" \
+		--tag $(NIGHTLY_SERVER_NAME) --tag $(NIGHTLY_SERVER_REPO_NAME) \
+		-f $(SERVER_SRC_FILE) $(SERVER_DIR)
 	$(CONTAINER_CMD) inspect -f '{{.Id}}' $(NIGHTLY_SERVER_NAME) > $(BUILDFILE_NIGHTLY_SERVER)
 
 push-server: build-server
