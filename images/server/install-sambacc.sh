@@ -8,7 +8,7 @@ container_json_file="$2"
 wheeldir=/tmp
 wheel="$(find "${wheeldir}" -type f -name 'sambacc-*.whl')" \
 
-if ! [ $(echo "$wheel" | wc -l) = 1 ]; then
+if ! [ "$(echo "$wheel" | wc -l)" = 1 ]; then
     echo "more than one wheel file found"
     exit 1
 fi
