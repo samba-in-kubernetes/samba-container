@@ -18,6 +18,7 @@ endif
 
 BUILD_CMD:=$(CONTAINER_CMD) build $(BUILD_OPTS)
 PUSH_CMD:=$(CONTAINER_CMD) push $(PUSH_OPTS)
+SHELLCHECK:=shellcheck
 
 SERVER_DIR:=images/server
 AD_SERVER_DIR:=images/ad-server
@@ -106,3 +107,12 @@ test-server: build-server
 test-nightly-server: build-nightly-server
 	CONTAINER_CMD=$(CONTAINER_CMD) LOCAL_TAG=$(NIGHTLY_SERVER_NAME) tests/test-samba-container.sh
 .PHONY: test-nightly-server
+
+
+check: check-shell-scripts
+.PHONY: check
+
+# rule requires shellcheck and find to run
+check-shell-scripts:
+	$(SHELLCHECK) -P tests/ -eSC2181 -fgcc $$(find  -name '*.sh')
+.PHONY: check-shell-scripts
