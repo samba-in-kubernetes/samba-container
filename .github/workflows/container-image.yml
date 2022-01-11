@@ -8,6 +8,27 @@ on:
 
 jobs:
 
+  check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    # We need a newer version of shellcheck to avoid problems with the
+    # relative imports. Our scripts work on v0.7.2 and up but not the
+    # v0.7.0 preinstalled in the ubutnu image
+    - name: Update shellcheck
+      run: |
+        shellcheck_version="v0.8.0"
+        url="https://github.com/koalaman/shellcheck/releases/download/${shellcheck_version}/shellcheck-${shellcheck_version}.linux.x86_64.tar.xz"
+        curl -Lo /tmp/shellcheck.tar.xz "$url"
+        mkdir /tmp/shellcheck
+        tar -xf /tmp/shellcheck.tar.xz -C /tmp/shellcheck
+        mkdir -p ~/bin
+        install -m0755 /tmp/shellcheck/shellcheck-${shellcheck_version}/shellcheck  ~/bin/shellcheck
+    - name: Show shellcheck version
+      run: $HOME/bin/shellcheck --version
+    - name: Run static check tools
+      run: make check SHELLCHECK=$HOME/bin/shellcheck
+
   build-server:
     runs-on: ubuntu-latest
     env:
