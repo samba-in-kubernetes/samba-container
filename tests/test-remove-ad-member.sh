@@ -4,7 +4,7 @@ SCRIPT_DIR="$(cd "$(dirname "${0}")" && pwd)"
 
 source "${SCRIPT_DIR}/common.sh"
 
-if [ ${KEEP} -eq 1 ]; then
+if [ "${KEEP}" -eq 1 ]; then
 	echo "keeping ad member pod (KEEP=1)"
 	exit 0
 fi
