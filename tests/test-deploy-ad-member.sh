@@ -28,12 +28,12 @@ until [ $tries -ge 120 ] || echo $podstatus | grep -q 'Running'; do
 	sleep 1
 	echo -n "."
 	tries=$(( tries + 1 ))
-	podstatus="$(kubectl get pod $podname -o go-template='{{.status.phase}}')"
+	podstatus="$(kubectl get pod "$podname" -o go-template='{{.status.phase}}')"
 done
 echo
 kubectl get pod
 echo
-echo $podstatus | grep -q 'Running' || _error "Pod did not reach Running state"
+echo "$podstatus" | grep -q 'Running' || _error "Pod did not reach Running state"
 
 echo "waiting for samba to become reachable"
 tries=0

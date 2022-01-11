@@ -16,10 +16,10 @@ fi
 
 kubectl get deployment
 
-replicaset="$(kubectl describe deployment ${AD_DEPLOYMENT_NAME} | grep -s "NewReplicaSet:" | awk '{ print $2 }')"
+replicaset="$(kubectl describe deployment "${AD_DEPLOYMENT_NAME}" | grep -s "NewReplicaSet:" | awk '{ print $2 }')"
 [ $? -eq 0 ] || _error "Error getting replicaset"
 
-podname="$(kubectl get pod | grep $replicaset | awk '{ print $1 }')"
+podname="$(kubectl get pod | grep "$replicaset" | awk '{ print $1 }')"
 [ $? -eq 0 ] || _error "Error getting podname"
 
 echo "Samba ad pod is $podname"
@@ -31,12 +31,12 @@ until [ $tries -ge 120 ] || echo $podstatus | grep -q 'Running'; do
 	sleep 1
 	echo -n "."
 	tries=$(( tries + 1 ))
-	podstatus="$(kubectl get pod $podname -o go-template='{{.status.phase}}')"
+	podstatus="$(kubectl get pod "$podname" -o go-template='{{.status.phase}}')"
 done
 echo
 kubectl get pod
 echo
-echo $podstatus | grep -q 'Running' || _error "Pod did not reach Running state"
+echo "$podstatus" | grep -q 'Running' || _error "Pod did not reach Running state"
 
 echo "waiting for samba to become reachable"
 tries=0
@@ -76,15 +76,15 @@ echo >> "${TMPFILE}"
 FIRSTLINE="$(head -1 ./tests/files/coredns-snippet.template)"
 LASTLINE="    }"
 
-sed -i .backup -e "/$FIRSTLINE/,/$LASTLINE/d" ${TMPFILE}
+sed -i .backup -e "/$FIRSTLINE/,/$LASTLINE/d" "${TMPFILE}"
 
-cat tests/files/coredns-snippet.template \
-	| sed -e "s/AD_SERVER_IP/${AD_POD_IP}/" \
+sed -e "s/AD_SERVER_IP/${AD_POD_IP}/" \
+	< tests/files/coredns-snippet.template \
 	>> "${TMPFILE}"
 
 echo >> "${TMPFILE}"
 
-kubectl patch cm -n kube-system coredns -p "$(cat ${TMPFILE})"
+kubectl patch cm -n kube-system coredns -p "$(cat "${TMPFILE}")"
 [ $? -eq 0 ] || _error "Error patching coredns config map"
 
 echo "ad setup done"
