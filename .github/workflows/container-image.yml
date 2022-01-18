@@ -90,7 +90,7 @@ jobs:
     needs: test-server
 
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && github.repository == 'samba-in-kubernetes/samba-container'
 
     steps:
       - uses: actions/checkout@v2
