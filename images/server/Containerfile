@@ -26,6 +26,8 @@ COPY install-sambacc.sh /usr/local/bin/install-sambacc.sh
 RUN /usr/local/bin/install-sambacc.sh \
     "/tmp" "/usr/local/share/sambacc/examples/minimal.json"
 
+COPY post-install-sambacc.sh /usr/local/bin/post-install-sambacc.sh
+RUN /usr/local/bin/post-install-sambacc.sh
 
 VOLUME ["/share"]
 
