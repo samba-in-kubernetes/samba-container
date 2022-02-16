@@ -1,6 +1,6 @@
 # Copyright 2020 Michael Adam
 
-FROM centos:8
+FROM quay.io/centos/centos:stream8
 
 MAINTAINER Michael Adam <obnox@samba.org>
 
