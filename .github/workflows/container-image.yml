@@ -1,10 +1,12 @@
-name: Container Image CI
+name: Samba Container Image CI
 
 on:
   push:
     branches: [ master ]
   pull_request:
     branches: [ master ]
+  schedule:
+    - cron: '0 2 * * *'
 
 jobs:
 
@@ -64,6 +66,25 @@ jobs:
     - name: Test the server image
       run: make test-server
 
+  # Reminder: the nightly-server images consume nightly samba rpm builds
+  # it is not *just* an image that gets built nightly
+  build-nightly-server:
+    runs-on: ubuntu-latest
+    env:
+      BUILDAH_FORMAT: oci
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build the nightly server image
+      run: make build-nightly-server
+
+  test-nightly-server:
+    #needs: build-nightly-server
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Test the nightly server image
+      run: make test-nightly-server
+
   test-ad-server-kubernetes:
     #runs-on: ubuntu-latest
     # need to explicitly use 20.04 to avoid problems with jq...
@@ -85,22 +106,25 @@ jobs:
       run: ./tests/test-samba-ad-server-kubernetes.sh
 
   push:
-
-    # verify it passes build and test first
-    needs: test-server
-
+    # verify it passes the test jobs first
+    needs:
+      - test-server
+      - test-nightly-server
+      - test-ad-server-kubernetes
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.repository == 'samba-in-kubernetes/samba-container'
-
+    if: (github.event_name == 'push' || github.event_name == 'schedule') && github.repository == 'samba-in-kubernetes/samba-container'
+    env:
+      # note: forcing use of podman as we will log in using podman explicilty
+      CONTAINER_CMD: podman
     steps:
       - uses: actions/checkout@v2
       - name: log in to quay.io
         run: podman login -u "${{ secrets.QUAY_USER }}" -p "${{ secrets.QUAY_PASS }}" quay.io
       - name: push server image
-        # note: forcing use of podman here, since we did podman login above
-        run: make CONTAINER_CMD=podman push-server
+        run: make push-server
       - name: push ad-server image
-        run: make CONTAINER_CMD=podman push-ad-server
+        run: make push-ad-server
       - name: push client image
-        # note: forcing use of podman here, since we did podman login above
-        run: make CONTAINER_CMD=podman push-client
+        run: make push-client
+      - name: push nightly server image
+        run: make push-nightly-server
