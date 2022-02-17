@@ -13,7 +13,7 @@ get_custom_repo() {
 install_packages_from="$1"
 case "${install_packages_from}" in
     samba-nightly)
-        get_custom_repo "http://artifacts.ci.centos.org/gluster/nightly-samba/master/fedora/samba-nightly-master.repo"
+        get_custom_repo "http://artifacts.ci.centos.org/samba/pkgs/master/fedora/samba-nightly-master.repo"
     ;;
     custom-repo)
         get_custom_repo "${INSTALL_CUSTOM_REPO}"
