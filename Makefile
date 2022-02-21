@@ -29,23 +29,30 @@ SERVER_SOURCES:=\
 	$(SERVER_DIR)/install-packages.sh \
 	$(SERVER_DIR)/install-sambacc.sh
 AD_SERVER_SRC_FILE:=$(AD_SERVER_DIR)/Containerfile
-AD_SERVER_SOURCES:=$(AD_SERVER_DIR)/populate.sh $(AD_SERVER_DIR)/provision.sh $(AD_SERVER_DIR)/run.sh
+AD_SERVER_SOURCES:=\
+	$(AD_SERVER_DIR)/populate.sh \
+	$(AD_SERVER_DIR)/provision.sh \
+	$(AD_SERVER_DIR)/run.sh \
+	$(AD_SERVER_DIR)/install-packages.sh
 CLIENT_SRC_FILE:=$(CLIENT_DIR)/Dockerfile
 
 TAG?=latest
 SERVER_NAME:=samba-container:$(TAG)
 NIGHTLY_SERVER_NAME:=samba-container:nightly
 AD_SERVER_NAME:=samba-ad-container:$(TAG)
+NIGHTLY_AD_SERVER_NAME:=samba-ad-container:nightly
 CLIENT_NAME:=samba-client-container:$(TAG)
 
 SERVER_REPO_NAME:=quay.io/samba.org/samba-server:$(TAG)
 NIGHTLY_SERVER_REPO_NAME:=quay.io/samba.org/samba-server:nightly
 AD_SERVER_REPO_NAME:=quay.io/samba.org/samba-ad-server:$(TAG)
+NIGHTLY_AD_SERVER_REPO_NAME:=quay.io/samba.org/samba-ad-server:nightly
 CLIENT_REPO_NAME:=quay.io/samba.org/samba-client:$(TAG)
 
 BUILDFILE_SERVER:=.build.server
 BUILDFILE_NIGHTLY_SERVER:=.build.nightly-server
 BUILDFILE_AD_SERVER:=.build.ad-server
+BUILDFILE_NIGHTLY_AD_SERVER:=.build.nightly-ad-server
 BUILDFILE_CLIENT:=.build.client
 
 build: build-server build-nightly-server build-ad-server build-client
@@ -83,9 +90,22 @@ $(BUILDFILE_AD_SERVER): Makefile $(AD_SERVER_SRC_FILE) $(AD_SERVER_SOURCES)
 	$(BUILD_CMD) --tag $(AD_SERVER_NAME) --tag $(AD_SERVER_REPO_NAME) -f $(AD_SERVER_SRC_FILE) $(AD_SERVER_DIR)
 	$(CONTAINER_CMD) inspect -f '{{.Id}}' $(AD_SERVER_NAME) > $(BUILDFILE_AD_SERVER)
 
+build-nightly-ad-server: $(BUILDFILE_NIGHTLY_AD_SERVER)
+.PHONY: build-nightly-ad-server
+$(BUILDFILE_NIGHTLY_AD_SERVER): Makefile $(AD_SERVER_SRC_FILE) $(AD_SERVER_SOURCES)
+	$(BUILD_CMD) \
+		--build-arg=INSTALL_PACKAGES_FROM="samba-nightly" \
+		--tag $(NIGHTLY_AD_SERVER_NAME) --tag $(NIGHTLY_AD_SERVER_REPO_NAME) \
+		-f $(AD_SERVER_SRC_FILE) $(AD_SERVER_DIR)
+	$(CONTAINER_CMD) inspect -f '{{.Id}}' $(NIGHTLY_AD_SERVER_NAME) > $(BUILDFILE_NIGHTLY_AD_SERVER)
+
 push-ad-server: build-ad-server
 	$(PUSH_CMD) $(AD_SERVER_REPO_NAME)
 .PHONY: push-ad-server
+
+push-nightly-ad-server: build-nightly-ad-server
+	$(PUSH_CMD) $(NIGHLTY_AD_SERVER_REPO_NAME)
+.PHONY: push-nightly-ad-server
 
 build-client: $(BUILDFILE_CLIENT)
 .PHONY: build-client
