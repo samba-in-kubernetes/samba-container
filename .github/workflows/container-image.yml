@@ -77,6 +77,15 @@ jobs:
     - name: Build the nightly server image
       run: make build-nightly-server
 
+  build-nightly-ad-server:
+    runs-on: ubuntu-latest
+    env:
+      BUILDAH_FORMAT: oci
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build the nightly ad server image
+      run: make build-nightly-ad-server
+
   test-nightly-server:
     #needs: build-nightly-server
     runs-on: ubuntu-latest
@@ -105,12 +114,35 @@ jobs:
     - name: run the ad-dc deployment test
       run: ./tests/test-samba-ad-server-kubernetes.sh
 
+  test-nightly-ad-server-kubernetes:
+      #runs-on: ubuntu-latest
+      # need to explicitly use 20.04 to avoid problems with jq...
+      runs-on: ubuntu-20.04
+      env:
+        IMG_TAG: nightly
+      steps:
+      - uses: actions/checkout@v2
+      - uses: nolar/setup-k3d-k3s@v1
+      - name: get nodes
+        run: kubectl get nodes
+      - name: build nighlty ad container
+        run: make CONTAINER_CMD=docker build-nightly-ad-server
+      - name: import nighlty ad server image
+        run: k3d image import samba-ad-container:nightly
+      - name: build nightly file server container
+        run: make CONTAINER_CMD=docker build-nightly-server
+      - name: import nightly file server image
+        run: k3d image import samba-container:nightly
+      - name: run the ad-dc deployment test
+        run: ./tests/test-samba-ad-server-kubernetes.sh
+
   push:
     # verify it passes the test jobs first
     needs:
       - test-server
       - test-nightly-server
       - test-ad-server-kubernetes
+      - test-nightly-ad-server-kubernetes
     runs-on: ubuntu-latest
     if: (github.event_name == 'push' || github.event_name == 'schedule') && github.repository == 'samba-in-kubernetes/samba-container'
     env:
@@ -128,3 +160,5 @@ jobs:
         run: make push-client
       - name: push nightly server image
         run: make push-nightly-server
+      - name: push nightly ad server image
+        run: make push-nightly-ad-server
