@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 
 SCRIPT_DIR="$(cd "$(dirname "${0}")" && pwd)"
+IMG_TAG=${IMG_TAG:-"latest"}
 
 source "${SCRIPT_DIR}/common.sh"
 
 echo "Creating ad member pod..."
-ERROR_MSG=$(kubectl create -f "${MEMBER_POD_YAML}" 2>&1 1>/dev/null)
+ERROR_MSG=$(IMG_TAG=${IMG_TAG} envsubst < "${MEMBER_POD_YAML}" | kubectl create -f - 2>&1 1>/dev/null)
 if [ $? -ne 0 ] ; then
 	if [[ "${ERROR_MSG}" =~ "AlreadyExists" ]] ; then
 		echo "pod exists already. Continuing."
