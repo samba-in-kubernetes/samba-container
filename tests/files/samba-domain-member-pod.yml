@@ -74,7 +74,7 @@ metadata:
 spec:
   shareProcessNamespace: true
   containers:
-    - image: samba-container:latest
+    - image: samba-container:$IMG_TAG
       # Need imagePullPolicy Never for working with local images.
       # Otherwise we get "ErrImagePull".
       imagePullPolicy: Never
@@ -109,7 +109,7 @@ spec:
         name: samba-state-dir
       - mountPath: "/run/samba/winbindd"
         name: samba-sockets-dir
-    - image: quay.io/samba.org/samba-server:latest
+    - image: quay.io/samba.org/samba-server:$IMG_TAG
       name: winbind
       command:
       - "samba-container"
@@ -134,7 +134,7 @@ spec:
       - mountPath: "/run/samba/winbindd"
         name: samba-sockets-dir
   initContainers:
-    - image: quay.io/samba.org/samba-server:latest
+    - image: quay.io/samba.org/samba-server:$IMG_TAG
       name: init
       args:
       - "init"
@@ -154,7 +154,7 @@ spec:
         name: samba-container-config
       - mountPath: "/var/lib/samba"
         name: samba-state-dir
-    - image: quay.io/samba.org/samba-server:latest
+    - image: quay.io/samba.org/samba-server:$IMG_TAG
       name: must-join
       args:
       - "must-join"
