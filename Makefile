@@ -104,7 +104,7 @@ push-ad-server: build-ad-server
 .PHONY: push-ad-server
 
 push-nightly-ad-server: build-nightly-ad-server
-	$(PUSH_CMD) $(NIGHLTY_AD_SERVER_REPO_NAME)
+	$(PUSH_CMD) $(NIGHTLY_AD_SERVER_REPO_NAME)
 .PHONY: push-nightly-ad-server
 
 build-client: $(BUILDFILE_CLIENT)
