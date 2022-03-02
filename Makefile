@@ -136,3 +136,7 @@ check: check-shell-scripts
 check-shell-scripts:
 	$(SHELLCHECK) -P tests/ -eSC2181 -fgcc $$(find  -name '*.sh')
 .PHONY: check-shell-scripts
+
+clean:
+	$(RM) $(BUILDFILE_SERVER) $(BUILDFILE_NIGHTLY_SERVER) $(BUILDFILE_AD_SERVER) $(BUILDFILE_NIGHTLY_AD_SERVER) $(BUILDFILE_CLIENT)
+.PHONY: clean
