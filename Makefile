@@ -30,10 +30,8 @@ SERVER_SOURCES:=\
 	$(SERVER_DIR)/install-sambacc.sh
 AD_SERVER_SRC_FILE:=$(AD_SERVER_DIR)/Containerfile
 AD_SERVER_SOURCES:=\
-	$(AD_SERVER_DIR)/populate.sh \
-	$(AD_SERVER_DIR)/provision.sh \
-	$(AD_SERVER_DIR)/run.sh \
-	$(AD_SERVER_DIR)/install-packages.sh
+	$(AD_SERVER_DIR)/install-packages.sh \
+	$(AD_SERVER_DIR)/install-sambacc.sh
 CLIENT_SRC_FILE:=$(CLIENT_DIR)/Dockerfile
 
 TAG?=latest
