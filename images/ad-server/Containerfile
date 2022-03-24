@@ -9,7 +9,7 @@ ARG SAMBACC_REPO=https://github.com/samba-in-kubernetes/sambacc
 RUN SAMBACC_DISTNAME=latest \
     /usr/local/bin/build.sh ${SAMBACC_VER} ${SAMBACC_REPO}
 
-FROM registry.fedoraproject.org/fedora:34
+FROM registry.fedoraproject.org/fedora:35
 ARG INSTALL_PACKAGES_FROM=default
 ARG SAMBA_SPECIFICS=
 
