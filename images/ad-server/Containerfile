@@ -19,11 +19,12 @@ COPY install-packages.sh /usr/local/bin/install-packages.sh
 RUN /usr/local/bin/install-packages.sh "$INSTALL_PACKAGES_FROM"
 
 COPY --from=builder \
-    /srv/dist/latest/sambacc-*.whl \
-    /tmp/
+    /srv/dist/latest \
+    /tmp/sambacc-dist-latest
 COPY install-sambacc.sh /usr/local/bin/install-sambacc.sh
 RUN /usr/local/bin/install-sambacc.sh \
-    "/tmp" "/usr/local/share/sambacc/examples/addc.json"
+    "/tmp/sambacc-dist-latest" \
+    && rm -rf /tmp/sambacc-dist-latest
 
 
 ENV SAMBACC_CONFIG="/etc/samba/container.json:/etc/samba/users.json"
