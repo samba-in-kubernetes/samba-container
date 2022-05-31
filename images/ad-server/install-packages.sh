@@ -11,8 +11,11 @@ get_custom_repo() {
 }
 
 install_packages_from="$1"
+samba_version_suffix="$2"
 case "${install_packages_from}" in
     samba-nightly)
+        # unset version suffix for nightly builds
+        samba_version_suffix=""
         get_custom_repo "http://artifacts.ci.centos.org/samba/pkgs/master/fedora/samba-nightly-master.repo"
     ;;
     custom-repo)
@@ -26,7 +29,7 @@ dnf install --setopt=install_weak_deps=False -y \
     python3-jsonschema \
     python3-samba \
     python3-pyxattr \
-    samba-dc \
+    "samba-dc${samba_version_suffix}" \
     procps-ng \
     /usr/bin/smbclient
 dnf clean all
