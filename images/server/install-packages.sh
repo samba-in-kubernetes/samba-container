@@ -11,8 +11,11 @@ get_custom_repo() {
 }
 
 install_packages_from="$1"
+samba_version_suffix="$2"
 case "${install_packages_from}" in
     samba-nightly)
+        # unset version suffix for nightly builds
+        samba_version_suffix=""
         get_custom_repo "http://artifacts.ci.centos.org/samba/pkgs/master/fedora/samba-nightly-master.repo"
     ;;
     custom-repo)
@@ -26,12 +29,12 @@ dnf install --setopt=install_weak_deps=False -y \
     python3-jsonschema \
     python3-samba \
     python3-pyxattr \
-    samba \
-    samba-client \
-    samba-winbind \
-    samba-winbind-clients \
+    "samba${samba_version_suffix}" \
+    "samba-client${samba_version_suffix}" \
+    "samba-winbind${samba_version_suffix}" \
+    "samba-winbind-clients${samba_version_suffix}" \
     tdb-tools \
-    ctdb
+    "ctdb${samba_version_suffix}"
 dnf clean all
 
 cp --preserve=all /etc/ctdb/functions /usr/share/ctdb/functions
