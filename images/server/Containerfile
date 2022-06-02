@@ -1,5 +1,5 @@
 FROM quay.io/samba.org/sambacc:latest AS builder
-ARG SAMBACC_VER=master
+ARG SAMBACC_VER=v0.2
 ARG SAMBACC_REPO=https://github.com/samba-in-kubernetes/sambacc
 
 # The SAMBACC_VER value controls what version of sambacc we'll be building.
@@ -11,7 +11,7 @@ RUN SAMBACC_DISTNAME=latest \
 
 FROM registry.fedoraproject.org/fedora:35
 ARG INSTALL_PACKAGES_FROM=default
-ARG SAMBA_VERSION_SUFFIX=""
+ARG SAMBA_VERSION_SUFFIX="-4.15.7"
 ARG SAMBA_SPECIFICS=daemon_cli_debug_output
 
 MAINTAINER John Mulligan <jmulligan@redhat.com>
