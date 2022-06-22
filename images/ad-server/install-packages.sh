@@ -12,6 +12,7 @@ get_custom_repo() {
 
 install_packages_from="$1"
 samba_version_suffix="$2"
+install_custom_repo="$3"
 case "${install_packages_from}" in
     samba-nightly)
         # unset version suffix for nightly builds
@@ -19,7 +20,7 @@ case "${install_packages_from}" in
         get_custom_repo "http://artifacts.ci.centos.org/samba/pkgs/master/fedora/samba-nightly-master.repo"
     ;;
     custom-repo)
-        get_custom_repo "${INSTALL_CUSTOM_REPO}"
+        get_custom_repo "${install_custom_repo}"
     ;;
 esac
 
