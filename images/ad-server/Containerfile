@@ -13,13 +13,15 @@ FROM registry.fedoraproject.org/fedora:35
 ARG INSTALL_PACKAGES_FROM=default
 ARG SAMBA_VERSION_SUFFIX=""
 ARG SAMBA_SPECIFICS=
+ARG INSTALL_CUSTOM_REPO=
 
 MAINTAINER John Mulligan <jmulligan@redhat.com>
 
 COPY install-packages.sh /usr/local/bin/install-packages.sh
 RUN /usr/local/bin/install-packages.sh \
     "${INSTALL_PACKAGES_FROM}" \
-    "${SAMBA_VERSION_SUFFIX}"
+    "${SAMBA_VERSION_SUFFIX}" \
+    "${INSTALL_CUSTOM_REPO}"
 
 COPY --from=builder \
     /srv/dist/latest \
