@@ -8,6 +8,9 @@ on:
   schedule:
     - cron: '0 2 * * *'
 
+env:
+  CONTAINER_CMD: docker
+
 jobs:
 
   check:
@@ -39,6 +42,11 @@ jobs:
     - uses: actions/checkout@v2
     - name: Build the server image
       run: make build-server
+    - name: Upload server image
+      uses: ishworkh/docker-image-artifact-upload@v1
+      with:
+        image: "samba-container:latest"
+        retention_days: 1
 
   build-ad-server:
     runs-on: ubuntu-latest
@@ -48,6 +56,11 @@ jobs:
     - uses: actions/checkout@v2
     - name: Build the ad server image
       run: make build-ad-server
+    - name: Upload ad server image
+      uses: ishworkh/docker-image-artifact-upload@v1
+      with:
+        image: "samba-ad-container:latest"
+        retention_days: 1
 
   build-client:
     runs-on: ubuntu-latest
@@ -59,12 +72,16 @@ jobs:
       run: make build-client
 
   test-server:
-    #needs: build-server
+    needs: build-server
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - name: Download server image
+      uses: ishworkh/docker-image-artifact-download@v1
+      with:
+        image: "samba-container:latest"
     - name: Test the server image
-      run: make test-server
+      run: tests/test-samba-container.sh
 
   # Reminder: the nightly-server images consume nightly samba rpm builds
   # it is not *just* an image that gets built nightly
@@ -76,6 +93,11 @@ jobs:
     - uses: actions/checkout@v2
     - name: Build the nightly server image
       run: make build-nightly-server
+    - name: Upload nightly server image
+      uses: ishworkh/docker-image-artifact-upload@v1
+      with:
+        image: "samba-container:nightly"
+        retention_days: 1
 
   build-nightly-ad-server:
     runs-on: ubuntu-latest
@@ -85,16 +107,28 @@ jobs:
     - uses: actions/checkout@v2
     - name: Build the nightly ad server image
       run: make build-nightly-ad-server
+    - name: Upload nightly ad server image
+      uses: ishworkh/docker-image-artifact-upload@v1
+      with:
+        image: "samba-ad-container:nightly"
+        retention_days: 1
 
   test-nightly-server:
-    #needs: build-nightly-server
+    needs: build-nightly-server
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - name: Download nightly server image
+      uses: ishworkh/docker-image-artifact-download@v1
+      with:
+        image: "samba-container:nightly"
     - name: Test the nightly server image
-      run: make test-nightly-server
+      run: LOCAL_TAG=samba-container:nightly tests/test-samba-container.sh
 
   test-ad-server-kubernetes:
+    needs:
+      - build-ad-server
+      - build-server
     #runs-on: ubuntu-latest
     # need to explicitly use 20.04 to avoid problems with jq...
     runs-on: ubuntu-20.04
@@ -103,18 +137,25 @@ jobs:
     - uses: nolar/setup-k3d-k3s@v1
     - name: get nodes
       run: kubectl get nodes
-    - name: build ad container
-      run: make CONTAINER_CMD=docker build-ad-server
+    - name: Download ad server image
+      uses: ishworkh/docker-image-artifact-download@v1
+      with:
+        image: "samba-ad-container:latest"
     - name: import ad server image
       run: k3d image import samba-ad-container:latest
-    - name: build file server container
-      run: make CONTAINER_CMD=docker build-server
+    - name: Download file server image
+      uses: ishworkh/docker-image-artifact-download@v1
+      with:
+        image: "samba-container:latest"
     - name: import file server image
       run: k3d image import samba-container:latest
     - name: run the ad-dc deployment test
       run: ./tests/test-samba-ad-server-kubernetes.sh
 
   test-nightly-ad-server-kubernetes:
+      needs:
+        - build-nightly-ad-server
+        - build-nightly-server
       #runs-on: ubuntu-latest
       # need to explicitly use 20.04 to avoid problems with jq...
       runs-on: ubuntu-20.04
@@ -125,12 +166,16 @@ jobs:
       - uses: nolar/setup-k3d-k3s@v1
       - name: get nodes
         run: kubectl get nodes
-      - name: build nighlty ad container
-        run: make CONTAINER_CMD=docker build-nightly-ad-server
-      - name: import nighlty ad server image
+      - name: Download nightly ad server image
+        uses: ishworkh/docker-image-artifact-download@v1
+        with:
+          image: "samba-ad-container:nightly"
+      - name: import nightly ad server image
         run: k3d image import samba-ad-container:nightly
-      - name: build nightly file server container
-        run: make CONTAINER_CMD=docker build-nightly-server
+      - name: Download nightly file server image
+        uses: ishworkh/docker-image-artifact-download@v1
+        with:
+          image: "samba-container:nightly"
       - name: import nightly file server image
         run: k3d image import samba-container:nightly
       - name: run the ad-dc deployment test
@@ -139,19 +184,17 @@ jobs:
   push:
     # verify it passes the test jobs first
     needs:
+      - build-client
       - test-server
       - test-nightly-server
       - test-ad-server-kubernetes
       - test-nightly-ad-server-kubernetes
     runs-on: ubuntu-latest
     if: (github.event_name == 'push' || github.event_name == 'schedule') && github.repository == 'samba-in-kubernetes/samba-container'
-    env:
-      # note: forcing use of podman as we will log in using podman explicilty
-      CONTAINER_CMD: podman
     steps:
       - uses: actions/checkout@v2
       - name: log in to quay.io
-        run: podman login -u "${{ secrets.QUAY_USER }}" -p "${{ secrets.QUAY_PASS }}" quay.io
+        run: docker login -u "${{ secrets.QUAY_USER }}" -p "${{ secrets.QUAY_PASS }}" quay.io
       - name: push server image
         run: make push-server
       - name: push ad-server image
