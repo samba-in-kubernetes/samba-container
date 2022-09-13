@@ -24,7 +24,7 @@ SERVER_DIR:=images/server
 AD_SERVER_DIR:=images/ad-server
 CLIENT_DIR:=images/client
 TOOLBOX_DIR:=images/toolbox
-SERVER_SRC_FILE:=$(SERVER_DIR)/Containerfile.fedora
+SERVER_SRC_FILE:=$(SERVER_DIR)/Containerfile.centos
 SERVER_SOURCES:=\
 	$(SERVER_DIR)/smb.conf \
 	$(SERVER_DIR)/install-packages.sh \
@@ -39,7 +39,7 @@ TOOLBOX_SRC_FILE:=$(TOOLBOX_DIR)/Containerfile.fedora
 TAG?=latest
 NIGHTLY_TAG?=nightly
 
-OS_NAME?= fedora
+OS_NAME?=centos
 
 
 _REPO_BASE?=quay.io//samba.org/
