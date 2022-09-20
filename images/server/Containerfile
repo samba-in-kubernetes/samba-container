@@ -12,7 +12,7 @@ RUN SAMBACC_DISTNAME=latest \
 FROM registry.fedoraproject.org/fedora:36
 ARG INSTALL_PACKAGES_FROM=default
 ARG SAMBA_VERSION_SUFFIX=""
-ARG SAMBA_SPECIFICS=daemon_cli_debug_output
+ARG SAMBA_SPECIFICS=daemon_cli_debug_output,ctdb_leader_admin_command
 ARG INSTALL_CUSTOM_REPO=
 
 MAINTAINER John Mulligan <jmulligan@redhat.com>
