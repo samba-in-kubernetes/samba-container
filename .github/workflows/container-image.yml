@@ -16,7 +16,7 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     # We need a newer version of shellcheck to avoid problems with the
     # relative imports. Our scripts work on v0.7.2 and up but not the
     # v0.7.0 preinstalled in the ubutnu image
@@ -39,7 +39,7 @@ jobs:
     env:
       BUILDAH_FORMAT: oci
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Build the server image
       run: make build-server
     - name: Upload server image
@@ -53,7 +53,7 @@ jobs:
     env:
       BUILDAH_FORMAT: oci
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Build the ad server image
       run: make build-ad-server
     - name: Upload ad server image
@@ -67,7 +67,7 @@ jobs:
     env:
       BUILDAH_FORMAT: oci
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Build the client image
       run: make build-client
 
@@ -75,7 +75,7 @@ jobs:
     needs: build-server
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Download server image
       uses: ishworkh/docker-image-artifact-download@v1
       with:
@@ -90,7 +90,7 @@ jobs:
     env:
       BUILDAH_FORMAT: oci
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Build the nightly server image
       run: make build-nightly-server
     - name: Upload nightly server image
@@ -104,7 +104,7 @@ jobs:
     env:
       BUILDAH_FORMAT: oci
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Build the nightly ad server image
       run: make build-nightly-ad-server
     - name: Upload nightly ad server image
@@ -117,7 +117,7 @@ jobs:
     needs: build-nightly-server
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Download nightly server image
       uses: ishworkh/docker-image-artifact-download@v1
       with:
@@ -133,7 +133,7 @@ jobs:
     # need to explicitly use 20.04 to avoid problems with jq...
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - uses: nolar/setup-k3d-k3s@v1
     - name: get nodes
       run: kubectl get nodes
@@ -162,7 +162,7 @@ jobs:
       env:
         IMG_TAG: nightly
       steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: nolar/setup-k3d-k3s@v1
       - name: get nodes
         run: kubectl get nodes
@@ -192,7 +192,7 @@ jobs:
     runs-on: ubuntu-latest
     if: (github.event_name == 'push' || github.event_name == 'schedule') && github.repository == 'samba-in-kubernetes/samba-container'
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: log in to quay.io
         run: docker login -u "${{ secrets.QUAY_USER }}" -p "${{ secrets.QUAY_PASS }}" quay.io
       - name: push server image
