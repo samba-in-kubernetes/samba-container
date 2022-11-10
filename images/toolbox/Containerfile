@@ -1,0 +1,3 @@
+FROM quay.io/samba.org/samba-client:latest
+MAINTAINER Shachar Sharon <ssharon@redhat.com>
+RUN dnf -y install samba-test

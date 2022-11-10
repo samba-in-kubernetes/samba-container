@@ -23,6 +23,7 @@ SHELLCHECK:=shellcheck
 SERVER_DIR:=images/server
 AD_SERVER_DIR:=images/ad-server
 CLIENT_DIR:=images/client
+TOOLBOX_DIR:=images/toolbox
 SERVER_SRC_FILE:=$(SERVER_DIR)/Containerfile
 SERVER_SOURCES:=\
 	$(SERVER_DIR)/smb.conf \
@@ -33,6 +34,7 @@ AD_SERVER_SOURCES:=\
 	$(AD_SERVER_DIR)/install-packages.sh \
 	$(AD_SERVER_DIR)/install-sambacc.sh
 CLIENT_SRC_FILE:=$(CLIENT_DIR)/Containerfile
+TOOLBOX_SRC_FILE:=$(TOOLBOX_DIR)/Containerfile
 
 TAG?=latest
 SERVER_NAME:=samba-container:$(TAG)
@@ -40,18 +42,21 @@ NIGHTLY_SERVER_NAME:=samba-container:nightly
 AD_SERVER_NAME:=samba-ad-container:$(TAG)
 NIGHTLY_AD_SERVER_NAME:=samba-ad-container:nightly
 CLIENT_NAME:=samba-client-container:$(TAG)
+TOOLBOX_NAME:=samba-toolbox-container:$(TAG)
 
 SERVER_REPO_NAME:=quay.io/samba.org/samba-server:$(TAG)
 NIGHTLY_SERVER_REPO_NAME:=quay.io/samba.org/samba-server:nightly
 AD_SERVER_REPO_NAME:=quay.io/samba.org/samba-ad-server:$(TAG)
 NIGHTLY_AD_SERVER_REPO_NAME:=quay.io/samba.org/samba-ad-server:nightly
 CLIENT_REPO_NAME:=quay.io/samba.org/samba-client:$(TAG)
+TOOLBOX_REPO_NAME:=quay.io/samba.org/samba-toolbox:$(TAG)
 
 BUILDFILE_SERVER:=.build.server
 BUILDFILE_NIGHTLY_SERVER:=.build.nightly-server
 BUILDFILE_AD_SERVER:=.build.ad-server
 BUILDFILE_NIGHTLY_AD_SERVER:=.build.nightly-ad-server
 BUILDFILE_CLIENT:=.build.client
+BUILDFILE_TOOLBOX:=.build.toolbox
 
 build: build-server build-nightly-server build-ad-server build-client
 .PHONY: build
@@ -124,6 +129,17 @@ test-server: build-server
 test-nightly-server: build-nightly-server
 	CONTAINER_CMD=$(CONTAINER_CMD) LOCAL_TAG=$(NIGHTLY_SERVER_NAME) tests/test-samba-container.sh
 .PHONY: test-nightly-server
+
+
+build-toolbox: $(BUILDFILE_TOOLBOX)
+.PHONY: build-toolbox
+$(BUILDFILE_TOOLBOX): Makefile $(TOOLBOX_SRC_FILE)
+	$(BUILD_CMD) --tag $(TOOLBOX_NAME) --tag $(TOOLBOX_REPO_NAME) -f $(TOOLBOX_SRC_FILE) $(TOOLBOX_DIR)
+	$(CONTAINER_CMD) inspect -f '{{.Id}}' $(TOOLBOX_NAME) > $(BUILDFILE_TOOLBOX)
+
+push-toolbox: build-toolbox
+	$(PUSH_CMD) $(TOOLBOX_REPO_NAME)
+.PHONY: push-toolbox
 
 
 check: check-shell-scripts
