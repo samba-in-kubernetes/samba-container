@@ -4,4 +4,4 @@ FROM quay.io/centos/centos:stream8
 
 MAINTAINER Michael Adam <obnox@samba.org>
 
-RUN dnf -y install samba-client
+RUN dnf -y install samba-client samba-test
