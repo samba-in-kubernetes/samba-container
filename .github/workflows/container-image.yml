@@ -71,6 +71,15 @@ jobs:
     - name: Build the client image
       run: make build-client
 
+  build-toolbox:
+    runs-on: ubuntu-latest
+    env:
+      BUILDAH_FORMAT: oci
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build the client image
+      run: make build-toolbox
+
   test-server:
     needs: build-server
     runs-on: ubuntu-latest
@@ -185,6 +194,7 @@ jobs:
     # verify it passes the test jobs first
     needs:
       - build-client
+      - build-toolbox
       - test-server
       - test-nightly-server
       - test-ad-server-kubernetes
@@ -201,6 +211,8 @@ jobs:
         run: make push-ad-server
       - name: push client image
         run: make push-client
+      - name: push toolbox image
+        run: make push-toolbox
       - name: push nightly server image
         run: make push-nightly-server
       - name: push nightly ad server image
