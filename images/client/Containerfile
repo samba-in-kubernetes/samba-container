@@ -1,6 +1,6 @@
 # Copyright 2020 Michael Adam
 
-FROM quay.io/centos/centos:stream8
+FROM registry.fedoraproject.org/fedora:36
 
 MAINTAINER Michael Adam <obnox@samba.org>
 
