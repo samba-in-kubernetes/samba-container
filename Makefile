@@ -58,7 +58,8 @@ BUILDFILE_NIGHTLY_AD_SERVER:=.build.nightly-ad-server
 BUILDFILE_CLIENT:=.build.client
 BUILDFILE_TOOLBOX:=.build.toolbox
 
-build: build-server build-nightly-server build-ad-server build-client
+build: build-server build-nightly-server build-ad-server build-client \
+	build-toolbox
 .PHONY: build
 
 build-server: $(BUILDFILE_SERVER)
