@@ -31,10 +31,10 @@ esac
 
 dnf_cmd=(dnf)
 if [[ "${OS_BASE}" = centos ]]; then
-  dnf_cmd+=(--enablerepo=crb --enablerepo=resilientstorage)
+    dnf_cmd+=(--enablerepo=crb --enablerepo=resilientstorage)
 fi
-"${dnf_cmd[@]}" \
-    install --setopt=install_weak_deps=False -y \
+
+packages=(\
     findutils \
     python-pip \
     python3-samba \
@@ -43,8 +43,18 @@ fi
     "samba-client${samba_version_suffix}" \
     "samba-winbind${samba_version_suffix}" \
     "samba-winbind-clients${samba_version_suffix}" \
+    "samba-vfs-iouring${samba_version_suffix}" \
     tdb-tools \
-    "ctdb${samba_version_suffix}"
+    "ctdb${samba_version_suffix}")
+if [[ "${OS_BASE}" = fedora ]]; then
+    packages+=(\
+        "samba-vfs-cephfs${samba_version_suffix}" \
+        "samba-vfs-glusterfs${samba_version_suffix}" \
+    )
+fi
+"${dnf_cmd[@]}" \
+    install --setopt=install_weak_deps=False -y \
+    "${packages[@]}"
 dnf clean all
 
 cp --preserve=all /etc/ctdb/functions /usr/share/ctdb/functions
