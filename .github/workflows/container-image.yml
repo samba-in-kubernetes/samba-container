@@ -77,7 +77,7 @@ jobs:
       BUILDAH_FORMAT: oci
     steps:
     - uses: actions/checkout@v3
-    - name: Build the client image
+    - name: Build the toolbox image
       run: make build-toolbox
 
   test-server:
