@@ -1,0 +1,21 @@
+ARG BASE_IMAGE=registry.fedoraproject.org/fedora:37
+FROM $BASE_IMAGE
+
+COPY samba.pamd \
+    README.downgrade  \
+    samba-master.spec \
+    smb.conf.example \
+    pam_winbind.conf \
+    samba.logrotate  \
+    smb.conf.vendor \
+    /usr/local/lib/sources
+COPY samba-from-source.py /usr/local/bin/samba-from-source.py
+RUN mkdir -p -m 0777 /srv/build /usr/local/lib/sources
+ARG EXTRA_OPTS=""
+RUN /usr/local/bin/samba-from-source.py \
+    --bootstrap \
+    --skip-build \
+    --with-ceph \
+    --install-deps-from=/usr/local/lib/sources/samba-master.spec \
+    $EXTRA_OPTS
+ENTRYPOINT ["/usr/local/bin/samba-from-source.py"]
