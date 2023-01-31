@@ -1,15 +1,5 @@
-FROM quay.io/samba.org/sambacc:latest AS builder
-ARG SAMBACC_VER=master
-ARG SAMBACC_REPO=https://github.com/samba-in-kubernetes/sambacc
-
-# The SAMBACC_VER value controls what version of sambacc we'll be building.
-# This can be a branch name, a tag, or a version hash.  When building tagged
-# versions of samba-containers we should use a sambacc tag.
-# SAMBACC_DISTNAME controls where the script will output a built wheel.
-RUN SAMBACC_DISTNAME=latest \
-    /usr/local/bin/build.sh ${SAMBACC_VER} ${SAMBACC_REPO}
-
-FROM registry.fedoraproject.org/fedora:36
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
 ARG INSTALL_PACKAGES_FROM=default
 ARG SAMBA_VERSION_SUFFIX=""
 ARG SAMBA_SPECIFICS=
@@ -17,19 +7,46 @@ ARG INSTALL_CUSTOM_REPO=
 
 MAINTAINER John Mulligan <jmulligan@redhat.com>
 
-COPY install-packages.sh /usr/local/bin/install-packages.sh
-RUN /usr/local/bin/install-packages.sh \
-    "${INSTALL_PACKAGES_FROM}" \
-    "${SAMBA_VERSION_SUFFIX}" \
-    "${INSTALL_CUSTOM_REPO}"
+# openSUSE Build Service specific build tags and labels:
+# Defines the tag for OBS and build script builds:
+#!BuildTag: opensuse/samba-ad-server:latest
+#!BuildTag: opensuse/samba-ad-server:%%MINOR%%
+#!BuildTag: opensuse/samba-ad-server:%%PKG_VERSION%%
+#!BuildTag: opensuse/samba-ad-server:%%PKG_VERSION%%-%RELEASE%
+# labelprefix=org.opensuse.samba-ad-server
+LABEL org.opencontainers.image.title="Samba ADDC container"
+LABEL org.opencontainers.image.description="Samba ADDC container"
+LABEL org.opencontainers.image.created="%BUILDTIME%"
+LABEL org.opencontainers.image.version="%%PKG_VERSION%%-%RELEASE%"
+LABEL org.opencontainers.image.vendor="SINK Project"
+LABEL org.openbuildservice.disturl="%DISTURL%"
+LABEL org.opensuse.reference="registry.opensuse.org/opensuse/samba-ad-server:%%PKG_VERSION%%-%RELEASE%"
+# endlabelprefix
 
-COPY --from=builder \
-    /srv/dist/latest \
-    /tmp/sambacc-dist-latest
-COPY install-sambacc.sh /usr/local/bin/install-sambacc.sh
-RUN /usr/local/bin/install-sambacc.sh \
-    "/tmp/sambacc-dist-latest" \
-    && rm -rf /tmp/sambacc-dist-latest
+COPY install-packages.sh /usr/local/bin/install-packages.sh
+RUN if [[ $(cat /etc/os-release) == *openSUSE* ]]; then \
+    zypper --non-interactive install --no-recommends \
+        findutils \
+        python3-pip \
+        python3-jsonschema \
+        samba-python3 \
+        python3-pyxattr \
+        samba-ad-dc \
+        procps \
+        samba-client \
+        samba-winbind \
+        python3-dnspython \
+        krb5-server \
+        sambacc; \
+        zypper clean; \
+else \
+    /usr/local/bin/install-packages.sh \
+        "${INSTALL_PACKAGES_FROM}" \
+        "${SAMBA_VERSION_SUFFIX}" \
+        "${INSTALL_CUSTOM_REPO}"; \
+fi
+RUN ln -sf /usr/share/sambacc/examples/addc.json /etc/samba/container.json
+RUN rm -rf /etc/samba/smb.conf
 
 
 ENV SAMBACC_CONFIG="/etc/samba/container.json:/etc/samba/users.json"
