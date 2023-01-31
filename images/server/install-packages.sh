@@ -35,7 +35,8 @@ dnf install --setopt=install_weak_deps=False -y \
     "samba-winbind${samba_version_suffix}" \
     "samba-winbind-clients${samba_version_suffix}" \
     tdb-tools \
-    "ctdb${samba_version_suffix}"
+    "ctdb${samba_version_suffix}" \
+    sambacc
 dnf clean all
 
 cp --preserve=all /etc/ctdb/functions /usr/share/ctdb/functions

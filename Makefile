@@ -16,6 +16,7 @@ $(warning podman detected but 'podman version' failed. \
 endif
 endif
 
+BUILD_OPTS:=--build-arg BASE_IMAGE=registry.fedoraproject.org/fedora:36
 BUILD_CMD:=$(CONTAINER_CMD) build $(BUILD_OPTS)
 PUSH_CMD:=$(CONTAINER_CMD) push $(PUSH_OPTS)
 SHELLCHECK:=shellcheck
@@ -27,8 +28,7 @@ TOOLBOX_DIR:=images/toolbox
 SERVER_SRC_FILE:=$(SERVER_DIR)/Containerfile
 SERVER_SOURCES:=\
 	$(SERVER_DIR)/smb.conf \
-	$(SERVER_DIR)/install-packages.sh \
-	$(SERVER_DIR)/install-sambacc.sh
+	$(SERVER_DIR)/install-packages.sh
 AD_SERVER_SRC_FILE:=$(AD_SERVER_DIR)/Containerfile
 AD_SERVER_SOURCES:=\
 	$(AD_SERVER_DIR)/install-packages.sh \
