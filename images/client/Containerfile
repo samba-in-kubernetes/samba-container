@@ -1,7 +1,27 @@
 # Copyright 2020 Michael Adam
 
-FROM registry.fedoraproject.org/fedora:36
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
 
 MAINTAINER Michael Adam <obnox@samba.org>
 
-RUN dnf -y install samba-client
+# openSUSE Build Service specific build tags and labels:
+#!BuildTag: opensuse/samba-client:latest
+#!BuildTag: opensuse/samba-client:%%MINOR%%
+#!BuildTag: opensuse/samba-client:%%PKG_VERSION%%
+#!BuildTag: opensuse/samba-client:%%PKG_VERSION%%-%RELEASE%
+# labelprefix=org.opensuse.samba-client
+LABEL org.opencontainers.image.title="Samba Client container"
+LABEL org.opencontainers.image.description="Samba Client container"
+LABEL org.opencontainers.image.created="%BUILDTIME%"
+LABEL org.opencontainers.image.version="%%PKG_VERSION%%-%RELEASE%"
+LABEL org.opencontainers.image.vendor="SINK Project"
+LABEL org.openbuildservice.disturl="%DISTURL%"
+LABEL org.opensuse.reference="registry.opensuse.org/opensuse/samba-client:%%PKG_VERSION%%-%RELEASE%"
+# endlabelprefix
+
+RUN if [[ $(cat /etc/os-release) == *openSUSE* ]]; then \
+    zypper --non-interactive install --no-recommends samba-client; \
+else \
+    dnf -y install samba-client; \
+fi
