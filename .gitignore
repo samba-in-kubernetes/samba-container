@@ -4,6 +4,7 @@
 .build.ad-server
 .build.opensuse-ad-server
 .build.client
+.build.opensuse-client
 .build.toolbox
 .build.nightly.server
 .build.nightly.ad-server
