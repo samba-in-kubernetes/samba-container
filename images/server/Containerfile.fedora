@@ -17,6 +17,10 @@ ARG INSTALL_CUSTOM_REPO=
 
 MAINTAINER John Mulligan <jmulligan@redhat.com>
 
+LABEL org.opencontainers.image.title="Samba container"
+LABEL org.opencontainers.image.description="Samba container"
+LABEL org.opencontainers.image.vendor="Samba in Kubernetes"
+
 COPY smb.conf /etc/samba/smb.conf
 COPY install-packages.sh /usr/local/bin/install-packages.sh
 RUN /usr/local/bin/install-packages.sh \

@@ -24,7 +24,7 @@ SERVER_DIR:=images/server
 AD_SERVER_DIR:=images/ad-server
 CLIENT_DIR:=images/client
 TOOLBOX_DIR:=images/toolbox
-SERVER_SRC_FILE:=$(SERVER_DIR)/Containerfile
+SERVER_SRC_FILE:=$(SERVER_DIR)/Containerfile.fedora
 SERVER_SOURCES:=\
 	$(SERVER_DIR)/smb.conf \
 	$(SERVER_DIR)/install-packages.sh \
