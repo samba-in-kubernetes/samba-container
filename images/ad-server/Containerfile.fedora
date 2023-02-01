@@ -17,6 +17,10 @@ ARG INSTALL_CUSTOM_REPO=
 
 MAINTAINER John Mulligan <jmulligan@redhat.com>
 
+LABEL org.opencontainers.image.title="Samba ADDC container"
+LABEL org.opencontainers.image.description="Samba ADDC container"
+LABEL org.opencontainers.image.vendor="Samba in Kubernetes"
+
 COPY install-packages.sh /usr/local/bin/install-packages.sh
 RUN /usr/local/bin/install-packages.sh \
     "${INSTALL_PACKAGES_FROM}" \
