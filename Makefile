@@ -29,7 +29,7 @@ SERVER_SOURCES:=\
 	$(SERVER_DIR)/smb.conf \
 	$(SERVER_DIR)/install-packages.sh \
 	$(SERVER_DIR)/install-sambacc.sh
-AD_SERVER_SRC_FILE:=$(AD_SERVER_DIR)/Containerfile
+AD_SERVER_SRC_FILE:=$(AD_SERVER_DIR)/Containerfile.fedora
 AD_SERVER_SOURCES:=\
 	$(AD_SERVER_DIR)/install-packages.sh \
 	$(AD_SERVER_DIR)/install-sambacc.sh
