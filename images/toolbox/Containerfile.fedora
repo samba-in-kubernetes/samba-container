@@ -1,0 +1,9 @@
+FROM quay.io/samba.org/samba-client:latest
+MAINTAINER Shachar Sharon <ssharon@redhat.com>
+
+LABEL org.opencontainers.image.title="Samba Toolbox container"
+LABEL org.opencontainers.image.description="Samba Toolbox container"
+LABEL org.opencontainers.image.vendor="Samba in Kubernetes"
+
+RUN dnf -y install samba-test \
+    && dnf clean all

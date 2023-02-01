@@ -34,7 +34,7 @@ AD_SERVER_SOURCES:=\
 	$(AD_SERVER_DIR)/install-packages.sh \
 	$(AD_SERVER_DIR)/install-sambacc.sh
 CLIENT_SRC_FILE:=$(CLIENT_DIR)/Containerfile.fedora
-TOOLBOX_SRC_FILE:=$(TOOLBOX_DIR)/Containerfile
+TOOLBOX_SRC_FILE:=$(TOOLBOX_DIR)/Containerfile.fedora
 
 TAG?=latest
 SERVER_NAME:=samba-container:$(TAG)
