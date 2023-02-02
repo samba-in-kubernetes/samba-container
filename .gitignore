@@ -1,4 +1,5 @@
 *~
+.*.swp
 .build.server
 .build.opensuse-server
 .build.ad-server
