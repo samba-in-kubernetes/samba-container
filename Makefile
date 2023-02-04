@@ -65,19 +65,26 @@ build: build-server build-nightly-server build-ad-server build-client \
 build-server: $(BUILDFILE_SERVER)
 .PHONY: build-server
 $(BUILDFILE_SERVER): Makefile $(SERVER_SRC_FILE) $(SERVER_SOURCES)
-	$(BUILD_CMD) \
-		--tag $(SERVER_NAME) --tag $(SERVER_REPO_NAME) \
-		-f $(SERVER_SRC_FILE) $(SERVER_DIR)
-	$(CONTAINER_CMD) inspect -f '{{.Id}}' $(SERVER_NAME) > $(BUILDFILE_SERVER)
+	$(MAKE) _img_build \
+		BUILD_ARGS=""  \
+		EXTRA_BUILD_ARGS="$(EXTRA_BUILD_ARGS)" \
+		SHORT_NAME=$(SERVER_NAME) \
+		REPO_NAME=$(SERVER_REPO_NAME) \
+		SRC_FILE=$(SERVER_SRC_FILE) \
+		DIR=$(SERVER_DIR) \
+		BUILDFILE=$(BUILDFILE_SERVER)
 
 build-nightly-server: $(BUILDFILE_NIGHTLY_SERVER)
 .PHONY: build-nightly-server
 $(BUILDFILE_NIGHTLY_SERVER): Makefile $(SERVER_SRC_FILE) $(SERVER_SOURCES)
-	$(BUILD_CMD) \
-		--build-arg=INSTALL_PACKAGES_FROM="samba-nightly" \
-		--tag $(NIGHTLY_SERVER_NAME) --tag $(NIGHTLY_SERVER_REPO_NAME) \
-		-f $(SERVER_SRC_FILE) $(SERVER_DIR)
-	$(CONTAINER_CMD) inspect -f '{{.Id}}' $(NIGHTLY_SERVER_NAME) > $(BUILDFILE_NIGHTLY_SERVER)
+	$(MAKE) _img_build \
+		BUILD_ARGS="--build-arg=INSTALL_PACKAGES_FROM='samba-nightly'"  \
+		EXTRA_BUILD_ARGS="$(EXTRA_BUILD_ARGS)" \
+		SHORT_NAME=$(NIGHTLY_SERVER_NAME) \
+		REPO_NAME=$(NIGHTLY_SERVER_REPO_NAME) \
+		SRC_FILE=$(SERVER_SRC_FILE) \
+		DIR=$(SERVER_DIR) \
+		BUILDFILE=$(BUILDFILE_NIGHTLY_SERVER)
 
 push-server: build-server
 	$(PUSH_CMD) $(SERVER_REPO_NAME)
@@ -90,17 +97,26 @@ push-nightly-server: build-nightly-server
 build-ad-server: $(BUILDFILE_AD_SERVER)
 .PHONY: build-ad-server
 $(BUILDFILE_AD_SERVER): Makefile $(AD_SERVER_SRC_FILE) $(AD_SERVER_SOURCES)
-	$(BUILD_CMD) --tag $(AD_SERVER_NAME) --tag $(AD_SERVER_REPO_NAME) -f $(AD_SERVER_SRC_FILE) $(AD_SERVER_DIR)
-	$(CONTAINER_CMD) inspect -f '{{.Id}}' $(AD_SERVER_NAME) > $(BUILDFILE_AD_SERVER)
+	$(MAKE) _img_build \
+		BUILD_ARGS="" \
+		EXTRA_BUILD_ARGS="$(EXTRA_BUILD_ARGS)" \
+		SHORT_NAME=$(AD_SERVER_NAME) \
+		REPO_NAME=$(AD_SERVER_REPO_NAME) \
+		SRC_FILE=$(AD_SERVER_SRC_FILE) \
+		DIR=$(AD_SERVER_DIR) \
+		BUILDFILE=$(BUILDFILE_AD_SERVER)
 
 build-nightly-ad-server: $(BUILDFILE_NIGHTLY_AD_SERVER)
 .PHONY: build-nightly-ad-server
 $(BUILDFILE_NIGHTLY_AD_SERVER): Makefile $(AD_SERVER_SRC_FILE) $(AD_SERVER_SOURCES)
-	$(BUILD_CMD) \
-		--build-arg=INSTALL_PACKAGES_FROM="samba-nightly" \
-		--tag $(NIGHTLY_AD_SERVER_NAME) --tag $(NIGHTLY_AD_SERVER_REPO_NAME) \
-		-f $(AD_SERVER_SRC_FILE) $(AD_SERVER_DIR)
-	$(CONTAINER_CMD) inspect -f '{{.Id}}' $(NIGHTLY_AD_SERVER_NAME) > $(BUILDFILE_NIGHTLY_AD_SERVER)
+	$(MAKE) _img_build \
+		BUILD_ARGS="--build-arg=INSTALL_PACKAGES_FROM='samba-nightly'" \
+		EXTRA_BUILD_ARGS="$(EXTRA_BUILD_ARGS)" \
+		SHORT_NAME=$(NIGHTLY_AD_SERVER_NAME) \
+		REPO_NAME=$(NIGHTLY_AD_SERVER_REPO_NAME) \
+		SRC_FILE=$(AD_SERVER_SRC_FILE) \
+		DIR=$(AD_SERVER_DIR) \
+		BUILDFILE=$(BUILDFILE_NIGHTLY_AD_SERVER)
 
 push-ad-server: build-ad-server
 	$(PUSH_CMD) $(AD_SERVER_REPO_NAME)
@@ -113,8 +129,14 @@ push-nightly-ad-server: build-nightly-ad-server
 build-client: $(BUILDFILE_CLIENT)
 .PHONY: build-client
 $(BUILDFILE_CLIENT): Makefile $(CLIENT_SRC_FILE)
-	$(BUILD_CMD) --tag $(CLIENT_NAME) --tag $(CLIENT_REPO_NAME) -f $(CLIENT_SRC_FILE) $(CLIENT_DIR)
-	$(CONTAINER_CMD) inspect -f '{{.Id}}' $(CLIENT_NAME) > $(BUILDFILE_CLIENT)
+	$(MAKE) _img_build \
+		BUILD_ARGS="" \
+		EXTRA_BUILD_ARGS="$(EXTRA_BUILD_ARGS)" \
+		SHORT_NAME=$(CLIENT_NAME) \
+		REPO_NAME=$(CLIENT_REPO_NAME) \
+		SRC_FILE=$(CLIENT_SRC_FILE) \
+		DIR=$(CLIENT_DIR) \
+		BUILDFILE=$(BUILDFILE_CLIENT)
 
 push-client: build-client
 	$(PUSH_CMD) $(CLIENT_REPO_NAME)
@@ -135,8 +157,14 @@ test-nightly-server: build-nightly-server
 build-toolbox: $(BUILDFILE_TOOLBOX)
 .PHONY: build-toolbox
 $(BUILDFILE_TOOLBOX): Makefile $(TOOLBOX_SRC_FILE)
-	$(BUILD_CMD) --tag $(TOOLBOX_NAME) --tag $(TOOLBOX_REPO_NAME) -f $(TOOLBOX_SRC_FILE) $(TOOLBOX_DIR)
-	$(CONTAINER_CMD) inspect -f '{{.Id}}' $(TOOLBOX_NAME) > $(BUILDFILE_TOOLBOX)
+	$(MAKE) _img_build \
+		BUILD_ARGS="" \
+		EXTRA_BUILD_ARGS="$(EXTRA_BUILD_ARGS)" \
+		SHORT_NAME=$(TOOLBOX_NAME) \
+		REPO_NAME=$(TOOLBOX_REPO_NAME) \
+		SRC_FILE=$(TOOLBOX_SRC_FILE) \
+		DIR=$(TOOLBOX_DIR) \
+		BUILDFILE=$(BUILDFILE_TOOLBOX)
 
 push-toolbox: build-toolbox
 	$(PUSH_CMD) $(TOOLBOX_REPO_NAME)
@@ -154,3 +182,26 @@ check-shell-scripts:
 clean:
 	$(RM) $(BUILDFILE_SERVER) $(BUILDFILE_NIGHTLY_SERVER) $(BUILDFILE_AD_SERVER) $(BUILDFILE_NIGHTLY_AD_SERVER) $(BUILDFILE_CLIENT) $(BUILDFILE_TOOLBOX)
 .PHONY: clean
+
+# _img_build is an "internal" rule to make the building of samba-container
+# images regular and more "self documenting". A makefile.foo that includes
+# this Makefile can add build rules using _img_build as a building block.
+#
+# The following arguments are expected to be supplied when "calling" this rule:
+# BUILD_ARGS: the default build arguments
+# EXTRA_BUILD_ARGS: build args supplied by the user at "runtime"
+# SHORT_NAME: a local name for the image
+# REPO_NAME: a global name for the image
+# SRC_FILE: path to the Containerfile (Dockerfile)
+# DIR: path to the directory holding image contents
+# BUILDFILE: path to a temporary file tracking build state
+_img_build:
+	$(BUILD_CMD) \
+		$(BUILD_ARGS) \
+		$(EXTRA_BUILD_ARGS) \
+		--tag $(SHORT_NAME) \
+		--tag $(REPO_NAME) \
+		-f $(SRC_FILE) \
+		$(DIR)
+	$(CONTAINER_CMD) inspect -f '{{.Id}}' $(SHORT_NAME) > $(BUILDFILE)
+.PHONY: _img_build
