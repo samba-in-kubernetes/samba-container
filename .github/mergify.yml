@@ -18,7 +18,7 @@ queue_rules:
       - check-success=build-server
       - check-success=build-ad-server
       - check-success=build-nightly-server
-      - check-success=build-nightly-adserver
+      - check-success=build-nightly-ad-server
       - check-success=build-client
       - check-success=build-toolbox
       - check-success=test-ad-server-kubernetes
@@ -42,7 +42,7 @@ pull_request_rules:
       - check-success=build-server
       - check-success=build-ad-server
       - check-success=build-nightly-server
-      - check-success=build-nightly-adserver
+      - check-success=build-nightly-ad-server
       - check-success=build-client
       - check-success=build-toolbox
       - check-success=test-ad-server-kubernetes
