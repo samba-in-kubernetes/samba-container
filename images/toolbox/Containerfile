@@ -1,3 +1,4 @@
-FROM registry.fedoraproject.org/fedora:36
+FROM quay.io/samba.org/samba-client:latest
 MAINTAINER Shachar Sharon <ssharon@redhat.com>
-RUN dnf -y install samba-client samba-test
+RUN dnf -y install samba-test \
+    && dnf clean all

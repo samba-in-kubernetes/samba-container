@@ -70,13 +70,27 @@ jobs:
     - uses: actions/checkout@v3
     - name: Build the client image
       run: make build-client
+    # Here we upload samba-client image to artifacts locally for consumption
+    # during samba-toolbox build process.
+    - name: Upload client image
+      uses: ishworkh/docker-image-artifact-upload@v1
+      with:
+        image: "quay.io/samba.org/samba-client:latest"
+        retention_days: 1
 
   build-toolbox:
+    needs: build-client
     runs-on: ubuntu-latest
     env:
       BUILDAH_FORMAT: oci
     steps:
     - uses: actions/checkout@v3
+    # Download locally stored samba-client image to be used as base for building
+    # samba-toolbox.
+    - name: Download client image
+      uses: ishworkh/docker-image-artifact-download@v1
+      with:
+        image: "quay.io/samba.org/samba-client:latest"
     - name: Build the toolbox image
       run: make build-toolbox
 
