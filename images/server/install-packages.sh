@@ -6,7 +6,6 @@ get_custom_repo() {
     url="$1"
     fname="$(basename "$url")"
     dest="/etc/yum.repos.d/${fname}"
-    dnf install --setopt=install_weak_deps=False -y curl
     curl -L "$url" -o "$dest"
 }
 
@@ -17,14 +16,15 @@ case "${install_packages_from}" in
     samba-nightly)
         # unset version suffix for nightly builds
         samba_version_suffix=""
-        get_custom_repo "https://artifacts.ci.centos.org/samba/pkgs/master/fedora/samba-nightly-master.repo"
+        get_custom_repo "https://artifacts.ci.centos.org/samba/pkgs/master/centos/samba-nightly-master.repo"
     ;;
     custom-repo)
         get_custom_repo "${install_custom_repo}"
     ;;
 esac
 
-dnf install --setopt=install_weak_deps=False -y \
+dnf --enablerepo=crb --enablerepo=resilientstorage \
+    install --setopt=install_weak_deps=False -y \
     findutils \
     python-pip \
     python3-jsonschema \

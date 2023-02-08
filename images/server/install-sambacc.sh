@@ -34,7 +34,7 @@ case $action in
         container_json_file="/usr/local/share/sambacc/examples/minimal.json"
     ;;
     install-rpm)
-        dnf install -y "${rpmfiles[0]}"
+        dnf install --skip-broken --nobes -y "${rpmfiles[0]}"
         dnf clean all
         container_json_file="/usr/share/sambacc/examples/minimal.json"
     ;;
