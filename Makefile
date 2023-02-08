@@ -33,7 +33,7 @@ SRC_OS_NAME=$(if $(OS_NAME),$(OS_NAME),fedora)
 SERVER_SRC_FILE=$(SERVER_DIR)/Containerfile.$(SRC_OS_NAME)
 SERVER_SOURCES=\
 	$(SERVER_DIR)/smb.conf \
- 	$(SERVER_DIR)/install-packages.sh \
+	$(SERVER_DIR)/install-packages.sh \
 	$(SERVER_DIR)/install-sambacc.sh
 AD_SERVER_SRC_FILE=$(AD_SERVER_DIR)/Containerfile.$(SRC_OS_NAME)
 AD_SERVER_SOURCES=\
@@ -54,7 +54,7 @@ BUILDFILE_CLIENT:=$(BUILDFILE_PREFIX).client
 BUILDFILE_TOOLBOX:=$(BUILDFILE_PREFIX).toolbox
 OS_PREFIX=$(addsuffix -,$(OS_NAME))
 TAG=$(OS_PREFIX)latest
-NIGHTLY_TAG=$(OS_PREFIX)nightly 
+NIGHTLY_TAG=$(OS_PREFIX)nightly
 
 
 SERVER_NAME=samba-server:$(TAG)
