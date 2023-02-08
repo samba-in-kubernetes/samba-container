@@ -1,0 +1,20 @@
+include Makefile
+
+OS_NAME?=fedora
+SERVER_SRC_FILE:=$(SERVER_DIR)/Containerfile.fedora
+AD_SERVER_SRC_FILE:=$(AD_SERVER_DIR)/Containerfile.fedora
+CLIENT_SRC_FILE:=$(CLIENT_DIR)/Containerfile.fedora
+TOOLBOX_SRC_FILE:=$(TOOLBOX_DIR)/Containerfile.fedora
+SERVER_SOURCES:=$(SERVER_DIR)/smb.conf
+SERVER_NAME:=samba-server-fedora-container:$(TAG)
+AD_SERVER_NAME:=samba-ad-server-fedora-container:$(TAG)
+CLIENT_NAME:=samba-client-fedora-container:$(TAG)
+TOOLBOX_NAME:=samba-toolbox-fedora-container:$(TAG)
+SERVER_REPO_NAME:=quay.io/samba.org//samba-fedora-server:$(TAG)
+AD_SERVER_REPO_NAME:=quay.io/samba.org/samba-fedora-ad-server:$(TAG)
+CLIENT_REPO_NAME:=quay.io/samba.org/samba-fedoraclient:$(TAG)
+TOOLBOX_REPO_NAME:=quay.io/samba..org//samba-fedoratoolbox:$(TAG)
+BUILDFILE_SERVER:=.build.fedora-server
+BUILDFILE_AD_SERVER:=.build.fedora-ad-server
+BUILDFILE_CLIENT:=.build.fedora-client
+BUILDFILE_TOOLBOX:=.build.fedora-toolbox
