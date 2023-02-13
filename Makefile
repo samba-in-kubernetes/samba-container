@@ -37,26 +37,49 @@ CLIENT_SRC_FILE:=$(CLIENT_DIR)/Containerfile.fedora
 TOOLBOX_SRC_FILE:=$(TOOLBOX_DIR)/Containerfile.fedora
 
 TAG?=latest
-SERVER_NAME:=samba-container:$(TAG)
-NIGHTLY_SERVER_NAME:=samba-container:nightly
-AD_SERVER_NAME:=samba-ad-container:$(TAG)
-NIGHTLY_AD_SERVER_NAME:=samba-ad-container:nightly
-CLIENT_NAME:=samba-client-container:$(TAG)
-TOOLBOX_NAME:=samba-toolbox-container:$(TAG)
+NIGHTLY_TAG?=nightly
 
-SERVER_REPO_NAME:=quay.io/samba.org/samba-server:$(TAG)
-NIGHTLY_SERVER_REPO_NAME:=quay.io/samba.org/samba-server:nightly
-AD_SERVER_REPO_NAME:=quay.io/samba.org/samba-ad-server:$(TAG)
-NIGHTLY_AD_SERVER_REPO_NAME:=quay.io/samba.org/samba-ad-server:nightly
-CLIENT_REPO_NAME:=quay.io/samba.org/samba-client:$(TAG)
-TOOLBOX_REPO_NAME:=quay.io/samba.org/samba-toolbox:$(TAG)
+OS_NAME?= fedora
 
-BUILDFILE_SERVER:=.build.server
-BUILDFILE_NIGHTLY_SERVER:=.build.nightly-server
-BUILDFILE_AD_SERVER:=.build.ad-server
-BUILDFILE_NIGHTLY_AD_SERVER:=.build.nightly-ad-server
-BUILDFILE_CLIENT:=.build.client
-BUILDFILE_TOOLBOX:=.build.toolbox
+
+_REPO_BASE?=quay.io//samba.org/
+SERVER_NAME:=samba-$(OS_NAME)-server-container:$(TAG)
+NIGHTLY_SERVER_NAME:=samba-$(OS_NAME)-server-container:$(NIGHTLY_TAG)
+AD_SERVER_NAME:=samba-$(OS_NAME)-ad-server-container:$(TAG)
+NIGHTLY_AD_SERVER_NAME:=samba-$(OS_NAME)-ad-server-container:$(NIGHTLY_TAG)
+CLIENT_NAME:=samba-$(OS_NAME)-client-container:$(TAG)
+
+NIGHTLY_CLIENT_NAME:=samba-$(OS_NAME)-client-container:$(NIGHTLY_TAG)
+TOOLBOX_NAME:=samba-$(OS_NAME)-toolbox-container:$(TAG)
+NIGHTLY_TOOLBOX_NAME:=samba-$(OS_NAME)-toolbox-container:$(NIGHTLY_TAG)
+SERVER_REPO_NAME:=$(REPO_BASE)$(SERVER_NAME)
+EPOHTLY_SERVER_REPO_NAME:=$(REPO_BASE)$(NIGHTLY_SERVER_NAME)
+AD_SERVER_NAME:=samba-$(OS_NAME)-ad-server-container:$(TAG)
+NIGHTLY_AD_SERVER_NAME:=$(REPO_BASE)samba-$(OS_NAME)-ad-server-container:$(NIGHTLY_TAG)
+
+CLIENT_NAME:=$(REPO_BASE)samba-$(OS_NAME)-client-container:$(TAG)
+TOOLBOX_NAME:=$*REPO_BASE)samba-$(OS_NAME)-toolbox-container:$(TAG)
+
+SERVER_REPO_NAME:=$(REPO_BASE)$(SERVER_NAME)
+NIGHTLY_SERVER_REPO_NAME:=$(REPO_BASE)$(NIGHTLY_SERVER_NAME)
+
+AD_SERVER_REPO_NAME:=$(REPO_BASE)$(AD_SERVER_NAME)
+NIGHTLY_AD_SERVER_REPO_NAME:=$(REPO_BASE)$(NIGHLY_AD_SERVER_NAME)
+CLIENT_REPO_NAME:=$(REPO_BASE)$(CLIENT_NAME)
+NIGHTLY_CLIENT_REPO_NAME:=$(REPO_BASE)$(NIGHTLY_CLIENT_NAME)
+TOOLBOX_REPO_NAME:=$(REPO_BASE)$(TOOLBOX_NAME)
+NIGHTLY_TOOLBOX_REPO_NAME:=$(REPO_BASE)$(NIGHTLY_TOOLBOX_NAME)
+
+
+BUILDFILE_SERVER:=.build.$(OS_NAME)-server
+BUILDFILE_NIGHTLY_SERVER:=.build.nightly-$(OS_NAME)server
+BUILDFILE_AD_SERVER:=.build.$(OS_NAME)-ad-server
+BUILDFILE_NIGHTLY_AD_SERVER:=.build.nightly-$(OS_NAME)ad-server
+BUILDFILE_TOOLBOX:=.build.$(OS_NAME)-toolbox
+BUILDFILE_NIGHTLY_TOOLBOX:=.build.nightly-$(OS_NAME)-toolbox
+BUILDFILE_CLIENT:=.build.$(OS_NAME)-client
+BUILDFILE_NIGHTLY_CLIENT:=.build.nightly-$(OS_NAME)-client
+
 
 build: build-server build-nightly-server build-ad-server build-client \
 	build-toolbox

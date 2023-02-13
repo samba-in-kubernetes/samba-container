@@ -1,19 +1,9 @@
 include Makefile
 
+OS_NAME:=opensuse
+REPO_BASE:=registry.opensuse.org/opensuse/
 SERVER_SRC_FILE:=$(SERVER_DIR)/Containerfile.opensuse
 AD_SERVER_SRC_FILE:=$(AD_SERVER_DIR)/Containerfile.opensuse
 CLIENT_SRC_FILE:=$(CLIENT_DIR)/Containerfile.opensuse
 TOOLBOX_SRC_FILE:=$(TOOLBOX_DIR)/Containerfile.opensuse
 SERVER_SOURCES:=$(SERVER_DIR)/smb.conf
-SERVER_NAME:=samba-opensuse-container:$(TAG)
-AD_SERVER_NAME:=samba-ad-opensuse-container:$(TAG)
-CLIENT_NAME:=samba-client-opensuse-container:$(TAG)
-TOOLBOX_NAME:=samba-toolbox-opensuse-container:$(TAG)
-SERVER_REPO_NAME:=registry.opensuse.org/opensuse/samba-server:$(TAG)
-AD_SERVER_REPO_NAME:=registry.opensuse.org/opensuse/samba-ad-server:$(TAG)
-CLIENT_REPO_NAME:=registry.opensuse.org/opensuse/samba-client:$(TAG)
-TOOLBOX_REPO_NAME:=registry.opensuse.org/opensuse/samba-toolbox:$(TAG)
-BUILDFILE_SERVER:=.build.opensuse-server
-BUILDFILE_AD_SERVER:=.build.opensuse-ad-server
-BUILDFILE_CLIENT:=.build.opensuse-client
-BUILDFILE_TOOLBOX:=.build.opensuse-toolbox
