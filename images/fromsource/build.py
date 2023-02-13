@@ -101,11 +101,13 @@ class Configurator:
         return self._cli
 
 
+# _unset serves as a sentinel when we want to take None values.
+_unset = object()
+
+
 class Wrapper:
     """Combines the cli/config from build.py with the CLI arguments from
     samba-from-source.py."""
-
-    _unset = object()
 
     def __init__(self, cli):
         self._cli = cli
@@ -143,7 +145,7 @@ class Wrapper:
                     if self.wrapper.fetch(name):
                         self.out.append(opt)
                     return
-                val = self.fetch(name)
+                val = self.wrapper.fetch(name)
                 if val:
                     self.out.append(opt)
                     self.out.append(val)
