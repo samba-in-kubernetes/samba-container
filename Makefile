@@ -27,32 +27,23 @@ SERVER_DIR:=images/server
 AD_SERVER_DIR:=images/ad-server
 CLIENT_DIR:=images/client
 TOOLBOX_DIR:=images/toolbox
-SERVER_SRC_FILE:=$(SERVER_DIR)/Containerfile.fedora
-SERVER_SOURCES:=\
+
+SRC_OS_NAME=$(if $(OS_NAME),$(OS_NAME),fedora)
+
+SERVER_SRC_FILE=$(SERVER_DIR)/Containerfile.$(SRC_OS_NAME)
+SERVER_SOURCES=\
 	$(SERVER_DIR)/smb.conf \
-	$(SERVER_DIR)/install-packages.sh \
+ 	$(SERVER_DIR)/install-packages.sh \
 	$(SERVER_DIR)/install-sambacc.sh
-AD_SERVER_SRC_FILE:=$(AD_SERVER_DIR)/Containerfile.fedora
-AD_SERVER_SOURCES:=\
+AD_SERVER_SRC_FILE=$(AD_SERVER_DIR)/Containerfile.$(SRC_OS_NAME)
+AD_SERVER_SOURCES=\
 	$(AD_SERVER_DIR)/install-packages.sh \
 	$(AD_SERVER_DIR)/install-sambacc.sh
-CLIENT_SRC_FILE:=$(CLIENT_DIR)/Containerfile.fedora
-TOOLBOX_SRC_FILE:=$(TOOLBOX_DIR)/Containerfile.fedora
+CLIENT_SRC_FILE=$(CLIENT_DIR)/Containerfile.$(SRC_OS_NAME)
+TOOLBOX_SRC_FILE=$(TOOLBOX_DIR)/Containerfile.$(SRC_OS_NAME)
 
-TAG?=latest
-SERVER_NAME:=samba-server:$(TAG)
-NIGHTLY_SERVER_NAME:=samba-server:nightly
-AD_SERVER_NAME:=samba-ad-server:$(TAG)
-NIGHTLY_AD_SERVER_NAME:=samba-ad-server:nightly
-CLIENT_NAME:=samba-client:$(TAG)
-TOOLBOX_NAME:=samba-toolbox:$(TAG)
+OS_NAME=
 
-SERVER_REPO_NAME:=quay.io/samba.org/samba-server:$(TAG)
-NIGHTLY_SERVER_REPO_NAME:=quay.io/samba.org/samba-server:nightly
-AD_SERVER_REPO_NAME:=quay.io/samba.org/samba-ad-server:$(TAG)
-NIGHTLY_AD_SERVER_REPO_NAME:=quay.io/samba.org/samba-ad-server:nightly
-CLIENT_REPO_NAME:=quay.io/samba.org/samba-client:$(TAG)
-TOOLBOX_REPO_NAME:=quay.io/samba.org/samba-toolbox:$(TAG)
 
 BUILDFILE_PREFIX=.build
 BUILDFILE_SERVER:=$(BUILDFILE_PREFIX).server
@@ -61,10 +52,46 @@ BUILDFILE_AD_SERVER:=$(BUILDFILE_PREFIX).ad-server
 BUILDFILE_NIGHTLY_AD_SERVER:=$(BUILDFILE_PREFIX).nightly-ad-server
 BUILDFILE_CLIENT:=$(BUILDFILE_PREFIX).client
 BUILDFILE_TOOLBOX:=$(BUILDFILE_PREFIX).toolbox
+OS_PREFIX=$(addsuffix -,$(OS_NAME))
+TAG=$(OS_PREFIX)latest
+NIGHTLY_TAG=$(OS_PREFIX)nightly 
+
+
+SERVER_NAME=samba-server:$(TAG)
+NIGHTLY_SERVER_NAME=samba-server:$(NIGHTLY_TAG)
+AD_SERVER_NAME= samba-ad-server:$(TAG)
+NIGHTLY_AD_SERVER_NAME=samba-ad-server:$(NIGHTLY_TAG)
+CLIENT_NAME=samba-client:$(TAG)
+NIGHTLY_CLIENT_NAME=samba-client:$(NIGHTLY_TAG)
+TOOLBOX_NAME=samba-toolbox:$(TAG)
+NIGHTLY_TOOLBOX_NAME=samba-toolbox:$(NIGHTLY_TAG)
+
+REPO_BASE=quay.io/samba.org/
+SERVER_REPO_NAME=$(REPO_BASE)$(SERVER_NAME)
+NIGHTLY_SERVER_REPO_NAME=$(REPO_BASE)$(NIGHTLY_SERVER_NAME)
+AD_SERVER_REPO_NAME=$(REPO_BASE)$(AD_SERVER_NAME)
+NIGHTLY_AD_SERVER_REPO_NAME=$(REPO_BASE)$(NIGHTLY_AD_SERVER_NAME)
+CLIENT_REPO_NAME=$(REPO_BASE)$(CLIENT_NAME)
+NIGHTLY_CLIENT_REPO_NAME=$(REPO_BASE)$(NIGHTLY_CLIENT_NAME)
+TOOLBOX_REPO_NAME=$(REPO_BASE)$(TOOLBOX_NAME)
+NIGHTLY_TOOLBOX_REPO_NAME=$(REPO_BASE)$(NIGHTLY_TOOLBOX_NAME)
+
+BUILDFILE_PREFIX=.build
+BUILDFILE_SERVER=$(BUILDFILE_PREFIX).$(OS_PREFIX)server
+BUILDFILE_NIGHTLY_SERVER=$(BUILDFILE_PREFIX).$(OS_PREFIX)nightly-server
+BUILDFILE_AD_SERVER=$(BUILDFILE_PREFIX).$(OS_PREFIX)ad-server
+BUILDFILE_NIGHTLY_AD_SERVER=$(BUILDFILE_PREFIX).$(OS_PREFIX)nightly-ad-server
+BUILDFILE_CLIENT=$(BUILDFILE_PREFIX).$(OS_PREFIX)client
+BUILDFILE_NIGHTLY_CLIENT=$(BUILDFILE_PREFIX).$(OS_PREFIX)nightly-client
+BUILDFILE_TOOLBOX=$(BUILDFILE_PREFIX).$(OS_PREFIX)toolbox
+BUILDFILE_NIGHTLY_TOOLBOX=$(BUILDFILE_PREFIX).$(OS_PREFIX)nightly-toolbox
 
 build: build-server build-nightly-server build-ad-server build-client \
 	build-toolbox
 .PHONY: build
+
+
+
 
 
 ### Image Build and Push Rules ###
