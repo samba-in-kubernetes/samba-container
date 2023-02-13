@@ -62,6 +62,9 @@ build: build-server build-nightly-server build-ad-server build-client \
 	build-toolbox
 .PHONY: build
 
+
+### Image Build and Push Rules ###
+
 build-server: $(BUILDFILE_SERVER)
 .PHONY: build-server
 $(BUILDFILE_SERVER): Makefile $(SERVER_SRC_FILE) $(SERVER_SOURCES)
@@ -74,6 +77,10 @@ $(BUILDFILE_SERVER): Makefile $(SERVER_SRC_FILE) $(SERVER_SOURCES)
 		DIR=$(SERVER_DIR) \
 		BUILDFILE=$(BUILDFILE_SERVER)
 
+push-server: build-server
+	$(PUSH_CMD) $(SERVER_REPO_NAME)
+.PHONY: push-server
+
 build-nightly-server: $(BUILDFILE_NIGHTLY_SERVER)
 .PHONY: build-nightly-server
 $(BUILDFILE_NIGHTLY_SERVER): Makefile $(SERVER_SRC_FILE) $(SERVER_SOURCES)
@@ -85,10 +92,6 @@ $(BUILDFILE_NIGHTLY_SERVER): Makefile $(SERVER_SRC_FILE) $(SERVER_SOURCES)
 		SRC_FILE=$(SERVER_SRC_FILE) \
 		DIR=$(SERVER_DIR) \
 		BUILDFILE=$(BUILDFILE_NIGHTLY_SERVER)
-
-push-server: build-server
-	$(PUSH_CMD) $(SERVER_REPO_NAME)
-.PHONY: push-server
 
 push-nightly-server: build-nightly-server
 	$(PUSH_CMD) $(NIGHTLY_SERVER_REPO_NAME)
@@ -106,6 +109,10 @@ $(BUILDFILE_AD_SERVER): Makefile $(AD_SERVER_SRC_FILE) $(AD_SERVER_SOURCES)
 		DIR=$(AD_SERVER_DIR) \
 		BUILDFILE=$(BUILDFILE_AD_SERVER)
 
+push-ad-server: build-ad-server
+	$(PUSH_CMD) $(AD_SERVER_REPO_NAME)
+.PHONY: push-ad-server
+
 build-nightly-ad-server: $(BUILDFILE_NIGHTLY_AD_SERVER)
 .PHONY: build-nightly-ad-server
 $(BUILDFILE_NIGHTLY_AD_SERVER): Makefile $(AD_SERVER_SRC_FILE) $(AD_SERVER_SOURCES)
@@ -117,10 +124,6 @@ $(BUILDFILE_NIGHTLY_AD_SERVER): Makefile $(AD_SERVER_SRC_FILE) $(AD_SERVER_SOURC
 		SRC_FILE=$(AD_SERVER_SRC_FILE) \
 		DIR=$(AD_SERVER_DIR) \
 		BUILDFILE=$(BUILDFILE_NIGHTLY_AD_SERVER)
-
-push-ad-server: build-ad-server
-	$(PUSH_CMD) $(AD_SERVER_REPO_NAME)
-.PHONY: push-ad-server
 
 push-nightly-ad-server: build-nightly-ad-server
 	$(PUSH_CMD) $(NIGHTLY_AD_SERVER_REPO_NAME)
@@ -142,18 +145,6 @@ push-client: build-client
 	$(PUSH_CMD) $(CLIENT_REPO_NAME)
 .PHONY: push-client
 
-test: test-server test-nightly-server
-.PHONY: test
-
-test-server: build-server
-	CONTAINER_CMD=$(CONTAINER_CMD) LOCAL_TAG=$(SERVER_NAME) tests/test-samba-container.sh
-.PHONY: test-server
-
-test-nightly-server: build-nightly-server
-	CONTAINER_CMD=$(CONTAINER_CMD) LOCAL_TAG=$(NIGHTLY_SERVER_NAME) tests/test-samba-container.sh
-.PHONY: test-nightly-server
-
-
 build-toolbox: $(BUILDFILE_TOOLBOX)
 .PHONY: build-toolbox
 $(BUILDFILE_TOOLBOX): Makefile $(TOOLBOX_SRC_FILE)
@@ -171,6 +162,22 @@ push-toolbox: build-toolbox
 .PHONY: push-toolbox
 
 
+### Test Rules: executes test scripts ###
+
+test: test-server test-nightly-server
+.PHONY: test
+
+test-server: build-server
+	CONTAINER_CMD=$(CONTAINER_CMD) LOCAL_TAG=$(SERVER_NAME) tests/test-samba-container.sh
+.PHONY: test-server
+
+test-nightly-server: build-nightly-server
+	CONTAINER_CMD=$(CONTAINER_CMD) LOCAL_TAG=$(NIGHTLY_SERVER_NAME) tests/test-samba-container.sh
+.PHONY: test-nightly-server
+
+
+### Check Rules: static checks, quality tools ###
+
 check: check-shell-scripts
 .PHONY: check
 
@@ -178,6 +185,9 @@ check: check-shell-scripts
 check-shell-scripts:
 	$(SHELLCHECK) -P tests/ -eSC2181 -fgcc $$(find  -name '*.sh')
 .PHONY: check-shell-scripts
+
+
+### Mics. Rules ###
 
 clean:
 	$(RM) $(BUILDFILE_SERVER) $(BUILDFILE_NIGHTLY_SERVER) $(BUILDFILE_AD_SERVER) $(BUILDFILE_NIGHTLY_AD_SERVER) $(BUILDFILE_CLIENT) $(BUILDFILE_TOOLBOX)
