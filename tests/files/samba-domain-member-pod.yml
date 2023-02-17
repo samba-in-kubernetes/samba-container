@@ -74,7 +74,7 @@ metadata:
 spec:
   shareProcessNamespace: true
   containers:
-    - image: samba-container:$IMG_TAG
+    - image: samba-server:$IMG_TAG
       # Need imagePullPolicy Never for working with local images.
       # Otherwise we get "ErrImagePull".
       imagePullPolicy: Never
