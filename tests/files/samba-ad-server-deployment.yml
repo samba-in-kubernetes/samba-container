@@ -18,7 +18,7 @@ spec:
       - name: samba
         # Pointing to locally built image,
         # change here to use a registry.
-        image: samba-ad-container:$IMG_TAG
+        image: samba-ad-server:$IMG_TAG
         # Need imagePullPolicy Never for working with local images.
         # Otherwise we get "ErrImagePull".
         imagePullPolicy: Never

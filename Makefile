@@ -37,12 +37,12 @@ CLIENT_SRC_FILE:=$(CLIENT_DIR)/Containerfile.fedora
 TOOLBOX_SRC_FILE:=$(TOOLBOX_DIR)/Containerfile.fedora
 
 TAG?=latest
-SERVER_NAME:=samba-container:$(TAG)
-NIGHTLY_SERVER_NAME:=samba-container:nightly
-AD_SERVER_NAME:=samba-ad-container:$(TAG)
-NIGHTLY_AD_SERVER_NAME:=samba-ad-container:nightly
-CLIENT_NAME:=samba-client-container:$(TAG)
-TOOLBOX_NAME:=samba-toolbox-container:$(TAG)
+SERVER_NAME:=samba-server:$(TAG)
+NIGHTLY_SERVER_NAME:=samba-server:nightly
+AD_SERVER_NAME:=samba-ad-server:$(TAG)
+NIGHTLY_AD_SERVER_NAME:=samba-ad-server:nightly
+CLIENT_NAME:=samba-client:$(TAG)
+TOOLBOX_NAME:=samba-toolbox:$(TAG)
 
 SERVER_REPO_NAME:=quay.io/samba.org/samba-server:$(TAG)
 NIGHTLY_SERVER_REPO_NAME:=quay.io/samba.org/samba-server:nightly

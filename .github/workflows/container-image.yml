@@ -45,7 +45,7 @@ jobs:
     - name: Upload server image
       uses: ishworkh/docker-image-artifact-upload@v1
       with:
-        image: "samba-container:latest"
+        image: "samba-server:latest"
         retention_days: 1
 
   build-ad-server:
@@ -59,7 +59,7 @@ jobs:
     - name: Upload ad server image
       uses: ishworkh/docker-image-artifact-upload@v1
       with:
-        image: "samba-ad-container:latest"
+        image: "samba-ad-server:latest"
         retention_days: 1
 
   build-client:
@@ -102,7 +102,7 @@ jobs:
     - name: Download server image
       uses: ishworkh/docker-image-artifact-download@v1
       with:
-        image: "samba-container:latest"
+        image: "samba-server:latest"
     - name: Test the server image
       run: tests/test-samba-container.sh
 
@@ -119,7 +119,7 @@ jobs:
     - name: Upload nightly server image
       uses: ishworkh/docker-image-artifact-upload@v1
       with:
-        image: "samba-container:nightly"
+        image: "samba-server:nightly"
         retention_days: 1
 
   build-nightly-ad-server:
@@ -133,7 +133,7 @@ jobs:
     - name: Upload nightly ad server image
       uses: ishworkh/docker-image-artifact-upload@v1
       with:
-        image: "samba-ad-container:nightly"
+        image: "samba-ad-server:nightly"
         retention_days: 1
 
   test-nightly-server:
@@ -144,9 +144,9 @@ jobs:
     - name: Download nightly server image
       uses: ishworkh/docker-image-artifact-download@v1
       with:
-        image: "samba-container:nightly"
+        image: "samba-server:nightly"
     - name: Test the nightly server image
-      run: LOCAL_TAG=samba-container:nightly tests/test-samba-container.sh
+      run: LOCAL_TAG=samba-server:nightly tests/test-samba-container.sh
 
   test-ad-server-kubernetes:
     needs:
@@ -163,15 +163,15 @@ jobs:
     - name: Download ad server image
       uses: ishworkh/docker-image-artifact-download@v1
       with:
-        image: "samba-ad-container:latest"
+        image: "samba-ad-server:latest"
     - name: import ad server image
-      run: k3d image import samba-ad-container:latest
+      run: k3d image import samba-ad-server:latest
     - name: Download file server image
       uses: ishworkh/docker-image-artifact-download@v1
       with:
-        image: "samba-container:latest"
+        image: "samba-server:latest"
     - name: import file server image
-      run: k3d image import samba-container:latest
+      run: k3d image import samba-server:latest
     - name: run the ad-dc deployment test
       run: ./tests/test-samba-ad-server-kubernetes.sh
 
@@ -192,15 +192,15 @@ jobs:
       - name: Download nightly ad server image
         uses: ishworkh/docker-image-artifact-download@v1
         with:
-          image: "samba-ad-container:nightly"
+          image: "samba-ad-server:nightly"
       - name: import nightly ad server image
-        run: k3d image import samba-ad-container:nightly
+        run: k3d image import samba-ad-server:nightly
       - name: Download nightly file server image
         uses: ishworkh/docker-image-artifact-download@v1
         with:
-          image: "samba-container:nightly"
+          image: "samba-server:nightly"
       - name: import nightly file server image
-        run: k3d image import samba-container:nightly
+        run: k3d image import samba-server:nightly
       - name: run the ad-dc deployment test
         run: ./tests/test-samba-ad-server-kubernetes.sh
 
