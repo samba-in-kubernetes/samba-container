@@ -1,3 +1,6 @@
+SELF = $(lastword $(MAKEFILE_LIST))
+ROOT_DIR = $(realpath $(dir $(SELF)))
+
 CONTAINER_CMD ?=
 ifeq ($(CONTAINER_CMD),)
 	CONTAINER_CMD:=$(shell podman version >/dev/null 2>&1 && echo podman)
@@ -183,7 +186,7 @@ check: check-shell-scripts
 
 # rule requires shellcheck and find to run
 check-shell-scripts:
-	$(SHELLCHECK) -P tests/ -eSC2181 -fgcc $$(find  -name '*.sh')
+	$(SHELLCHECK) -P tests/ -eSC2181 -fgcc $$(find $(ROOT_DIR) -name "*.sh")
 .PHONY: check-shell-scripts
 
 
