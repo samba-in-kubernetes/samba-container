@@ -28,7 +28,7 @@ echo "Samba ad pod is $podname"
 echo "waiting for pod to be in Running state"
 tries=0
 podstatus="none"
-until [ $tries -ge 120 ] || echo $podstatus | grep -q 'Running'; do
+until [ $tries -ge 120 ] || echo "$podstatus" | grep -q 'Running'; do
 	sleep 1
 	echo -n "."
 	tries=$(( tries + 1 ))
