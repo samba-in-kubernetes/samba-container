@@ -29,6 +29,7 @@ dnf install --setopt=install_weak_deps=False -y \
     python-pip \
     python3-samba \
     python3-pyxattr \
+    tdb-tools \
     "samba-dc${samba_version_suffix}" \
     procps-ng \
     /usr/bin/smbclient
