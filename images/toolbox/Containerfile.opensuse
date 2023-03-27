@@ -18,4 +18,4 @@ LABEL org.openbuildservice.disturl="%DISTURL%"
 LABEL org.opensuse.reference="registry.opensuse.org/opensuse/samba-toolbox:%%PKG_VERSION%%-%RELEASE%"
 # endlabelprefix
 
-RUN zypper --non-interactive install --no-recommends samba-client samba-test && zypper clean
+RUN zypper --non-interactive install --no-recommends samba-client samba-test tdb-tools && zypper clean
