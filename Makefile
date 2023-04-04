@@ -54,12 +54,13 @@ NIGHTLY_AD_SERVER_REPO_NAME:=quay.io/samba.org/samba-ad-server:nightly
 CLIENT_REPO_NAME:=quay.io/samba.org/samba-client:$(TAG)
 TOOLBOX_REPO_NAME:=quay.io/samba.org/samba-toolbox:$(TAG)
 
-BUILDFILE_SERVER:=.build.server
-BUILDFILE_NIGHTLY_SERVER:=.build.nightly-server
-BUILDFILE_AD_SERVER:=.build.ad-server
-BUILDFILE_NIGHTLY_AD_SERVER:=.build.nightly-ad-server
-BUILDFILE_CLIENT:=.build.client
-BUILDFILE_TOOLBOX:=.build.toolbox
+BUILDFILE_PREFIX=.build
+BUILDFILE_SERVER:=$(BUILDFILE_PREFIX).server
+BUILDFILE_NIGHTLY_SERVER:=$(BUILDFILE_PREFIX).nightly-server
+BUILDFILE_AD_SERVER:=$(BUILDFILE_PREFIX).ad-server
+BUILDFILE_NIGHTLY_AD_SERVER:=$(BUILDFILE_PREFIX).nightly-ad-server
+BUILDFILE_CLIENT:=$(BUILDFILE_PREFIX).client
+BUILDFILE_TOOLBOX:=$(BUILDFILE_PREFIX).toolbox
 
 build: build-server build-nightly-server build-ad-server build-client \
 	build-toolbox
@@ -193,7 +194,7 @@ check-shell-scripts:
 ### Mics. Rules ###
 
 clean:
-	$(RM) $(BUILDFILE_SERVER) $(BUILDFILE_NIGHTLY_SERVER) $(BUILDFILE_AD_SERVER) $(BUILDFILE_NIGHTLY_AD_SERVER) $(BUILDFILE_CLIENT) $(BUILDFILE_TOOLBOX)
+	$(RM) $(BUILDFILE_PREFIX)*
 .PHONY: clean
 
 # _img_build is an "internal" rule to make the building of samba-container
