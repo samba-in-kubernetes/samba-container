@@ -27,7 +27,6 @@ esac
 dnf install --setopt=install_weak_deps=False -y \
     findutils \
     python-pip \
-    python3-jsonschema \
     python3-samba \
     python3-pyxattr \
     "samba-dc${samba_version_suffix}" \
