@@ -26,6 +26,7 @@ RUN zypper --non-interactive install --no-recommends \
   python3-jsonschema \
   samba-python3 \
   python3-pyxattr \
+  tdb-tools \
   samba-ad-dc \
   procps \
   samba-client \
