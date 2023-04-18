@@ -26,6 +26,7 @@ ALT_BIN=$(CURDIR)/.bin
 SHELLCHECK=$(shell command -v shellcheck || echo $(ALT_BIN)/shellcheck)
 GITLINT=$(shell command -v gitlint || echo $(ALT_BIN)/gitlint)
 
+COMMON_DIR:=images/common
 SERVER_DIR:=images/server
 AD_SERVER_DIR:=images/ad-server
 CLIENT_DIR:=images/client
@@ -278,7 +279,7 @@ clean:
 # SRC_FILE: path to the Containerfile (Dockerfile)
 # DIR: path to the directory holding image contents
 # BUILDFILE: path to a temporary file tracking build state
-_img_build:
+_img_build: $(DIR)/.common
 	$(BUILD_CMD) \
 		$(BUILD_ARGS) \
 		$(EXTRA_BUILD_ARGS) \
@@ -289,6 +290,9 @@ _img_build:
 	$(CONTAINER_CMD) inspect -f '{{.Id}}' $(SHORT_NAME) > $(BUILDFILE)
 .PHONY: _img_build
 
+$(DIR)/.common: $(COMMON_DIR)
+	$(RM) -r $(DIR)/.common
+	cp -r $(COMMON_DIR) $(DIR)/.common
 
 $(ALT_BIN)/%:
 	$(CURDIR)/hack/install-tools.sh --$* $(ALT_BIN)
