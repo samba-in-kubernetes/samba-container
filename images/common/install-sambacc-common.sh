@@ -1,16 +1,16 @@
 #!/bin/bash
 
 install_sambacc() {
-    wheeldir="$1"
-    if ! [ -d "${wheeldir}" ]; then
-        echo "no directory: ${wheeldir}"
+    local distdir="$1"
+    if ! [ -d "${distdir}" ]; then
+        echo "no directory: ${distdir}"
         exit 2
     fi
 
     mapfile -d '' wheels < \
-        <(find "${wheeldir}" -type f -name 'sambacc-*.whl' -print0)
+        <(find "${distdir}" -type f -name 'sambacc-*.whl' -print0)
     mapfile -d '' rpmfiles < \
-        <(find "${wheeldir}" -type f -name '*sambacc-*.noarch.rpm' -print0)
+        <(find "${distdir}" -type f -name '*sambacc-*.noarch.rpm' -print0)
 
 
     if [ "${#wheels[@]}" -gt 1 ]; then
