@@ -32,6 +32,7 @@ RUN /usr/local/bin/install-packages.sh \
 COPY --from=builder \
     /srv/dist/latest \
     /tmp/sambacc-dist-latest
+COPY .common/install-sambacc-common.sh /usr/local/bin/install-sambacc-common.sh
 COPY install-sambacc.sh /usr/local/bin/install-sambacc.sh
 RUN /usr/local/bin/install-sambacc.sh \
     "/tmp/sambacc-dist-latest" \
