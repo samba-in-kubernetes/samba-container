@@ -11,12 +11,16 @@ install_sambacc() {
 
     local wheels=()
     local rpmfiles=()
+    local repofiles=()
     for artifact in "${artifacts[@]}" ; do
         if [[ ${artifact} =~ sambacc.*\.whl$ ]]; then
             wheels+=("${artifact}")
         fi
         if [[ ${artifact} =~ python.?-sambacc-.*\.noarch\.rpm$ ]]; then
             rpmfiles+=("${artifact}")
+        fi
+        if [[ ${artifact} =~ sambacc.*\.repo$ ]]; then
+            repofiles+=("${artifact}")
         fi
     done
 
@@ -36,6 +40,13 @@ install_sambacc() {
         action=install-rpm
     fi
 
+    if [ "${#repofiles[@]}" -gt 1 ]; then
+        echo "more than one repo file found"
+        exit 1
+    elif [ "${#repofiles[@]}" -eq 1 ]; then
+        action=install-from-repo
+    fi
+
     if [ -z "${DEFAULT_JSON_FILE}" ]; then
         echo "DEFAULT_JSON_FILE value unset"
         exit 1
@@ -48,6 +59,13 @@ install_sambacc() {
         ;;
         install-rpm)
             dnf install -y "${rpmfiles[0]}"
+            dnf clean all
+            container_json_file="/usr/share/sambacc/examples/${DEFAULT_JSON_FILE}"
+        ;;
+        install-from-repo)
+            local tgt="${repofiles[0]}"
+            cp "${tgt}" /etc/yum.repos.d/"$(basename "${tgt}")"
+            dnf install -y python3-sambacc
             dnf clean all
             container_json_file="/usr/share/sambacc/examples/${DEFAULT_JSON_FILE}"
         ;;
