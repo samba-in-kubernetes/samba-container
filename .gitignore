@@ -9,3 +9,4 @@
 .build.opensuse-toolbox
 .build.nightly.server
 .build.nightly.ad-server
+.common
