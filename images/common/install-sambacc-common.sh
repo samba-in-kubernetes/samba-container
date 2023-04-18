@@ -3,12 +3,11 @@
 install_sambacc() {
     local distdir="$1"
     if ! [ -d "${distdir}" ]; then
-        echo "no directory: ${distdir}"
-        exit 2
+        echo "warning: no directory: ${distdir}" >&2
+    else
+        mapfile -d '' artifacts < \
+            <(find "${distdir}" -type f -print0)
     fi
-
-    mapfile -d '' artifacts < \
-        <(find "${distdir}" -type f -print0)
 
     local wheels=()
     local rpmfiles=()
@@ -22,6 +21,7 @@ install_sambacc() {
     done
 
 
+    local action=install-from-copr-repo
     if [ "${#wheels[@]}" -gt 1 ]; then
         echo "more than one wheel file found"
         exit 1
@@ -48,6 +48,13 @@ install_sambacc() {
         ;;
         install-rpm)
             dnf install -y "${rpmfiles[0]}"
+            dnf clean all
+            container_json_file="/usr/share/sambacc/examples/${DEFAULT_JSON_FILE}"
+        ;;
+        install-from-copr-repo)
+            dnf install -y 'dnf-command(copr)'
+            dnf copr enable -y phlogistonjohn/sambacc
+            dnf install -y python3-sambacc
             dnf clean all
             container_json_file="/usr/share/sambacc/examples/${DEFAULT_JSON_FILE}"
         ;;
