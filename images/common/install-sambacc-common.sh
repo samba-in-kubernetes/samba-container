@@ -7,10 +7,19 @@ install_sambacc() {
         exit 2
     fi
 
-    mapfile -d '' wheels < \
-        <(find "${distdir}" -type f -name 'sambacc-*.whl' -print0)
-    mapfile -d '' rpmfiles < \
-        <(find "${distdir}" -type f -name '*sambacc-*.noarch.rpm' -print0)
+    mapfile -d '' artifacts < \
+        <(find "${distdir}" -type f -print0)
+
+    local wheels=()
+    local rpmfiles=()
+    for artifact in "${artifacts[@]}" ; do
+        if [[ ${artifact} =~ sambacc.*\.whl$ ]]; then
+            wheels+=("${artifact}")
+        fi
+        if [[ ${artifact} =~ python.?-sambacc-.*\.noarch\.rpm$ ]]; then
+            rpmfiles+=("${artifact}")
+        fi
+    done
 
 
     if [ "${#wheels[@]}" -gt 1 ]; then
@@ -21,7 +30,7 @@ install_sambacc() {
     fi
 
     if [ "${#rpmfiles[@]}" -gt 1 ]; then
-        echo "more than one rpm file found"
+        echo "more than one sambacc rpm file found"
         exit 1
     elif [ "${#rpmfiles[@]}" -eq 1 ]; then
         action=install-rpm
