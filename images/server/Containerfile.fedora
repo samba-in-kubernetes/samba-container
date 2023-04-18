@@ -20,6 +20,7 @@ MAINTAINER John Mulligan <jmulligan@redhat.com>
 LABEL org.opencontainers.image.title="Samba container"
 LABEL org.opencontainers.image.description="Samba container"
 LABEL org.opencontainers.image.vendor="Samba in Kubernetes"
+LABEL org.opencontainers.image.url="https://github.com/samba-in-kubernetes/samba-container"
 
 COPY smb.conf /etc/samba/smb.conf
 COPY install-packages.sh /usr/local/bin/install-packages.sh

@@ -4,6 +4,8 @@ MAINTAINER Shachar Sharon <ssharon@redhat.com>
 LABEL org.opencontainers.image.title="Samba Toolbox container"
 LABEL org.opencontainers.image.description="Samba Toolbox container"
 LABEL org.opencontainers.image.vendor="Samba in Kubernetes"
+LABEL org.opencontainers.image.url="https://github.com/samba-in-kubernetes/samba-container"
+
 
 RUN dnf -y install samba-test \
     tdb-tools \
