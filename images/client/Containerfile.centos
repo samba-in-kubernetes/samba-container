@@ -7,7 +7,7 @@ MAINTAINER Michael Adam <obnox@samba.org>
 LABEL org.opencontainers.image.title="Samba Client container"
 LABEL org.opencontainers.image.description="Samba Client container"
 LABEL org.opencontainers.image.vendor="Samba in Kubernetes"
-LABEL org.opencontainers.image.url="https://github.com/samba-in-kubernetes/samba-container
+LABEL org.opencontainers.image.url="https://github.com/samba-in-kubernetes/samba-container"
 
 
 # https://github.com/samba-in-kubernetes/samba-container/issues/96#issuecomment-1387467396
