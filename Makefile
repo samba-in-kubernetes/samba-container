@@ -21,8 +21,10 @@ endif
 
 BUILD_CMD:=$(CONTAINER_CMD) build $(BUILD_OPTS)
 PUSH_CMD:=$(CONTAINER_CMD) push $(PUSH_OPTS)
-SHELLCHECK:=shellcheck
-GITLINT:=gitlint
+
+ALT_BIN=$(CURDIR)/.bin
+SHELLCHECK=$(shell command -v shellcheck || echo $(ALT_BIN)/shellcheck)
+GITLINT=$(shell command -v gitlint || echo $(ALT_BIN)/gitlint)
 
 SERVER_DIR:=images/server
 AD_SERVER_DIR:=images/ad-server
@@ -249,12 +251,12 @@ check: check-shell-scripts
 .PHONY: check
 
 # rule requires shellcheck and find to run
-check-shell-scripts:
+check-shell-scripts: $(filter $(ALT_BIN)%,$(SHELLCHECK))
 	$(SHELLCHECK) -P tests/ -eSC2181 -fgcc $$(find $(ROOT_DIR) -name "*.sh")
 .PHONY: check-shell-scripts
 
 # not included in check to not disrupt wip branches
-check-gitlint:
+check-gitlint: $(filter $(ALT_BIN)%,$(GITLINT))
 	$(GITLINT) -C .gitlint --commits origin/master.. lint
 .PHONY: check-gitlint
 
@@ -286,3 +288,11 @@ _img_build:
 		$(DIR)
 	$(CONTAINER_CMD) inspect -f '{{.Id}}' $(SHORT_NAME) > $(BUILDFILE)
 .PHONY: _img_build
+
+
+$(ALT_BIN)/%:
+	$(CURDIR)/hack/install-tools.sh --$* $(ALT_BIN)
+
+clean-altbin:
+	$(RM) -r $(ALT_BIN)
+.PHONY: clean-altbin
