@@ -50,6 +50,29 @@ jobs:
       with:
         image: "samba-server:latest"
         retention_days: 1
+  build-server-centos:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build the CentOS based server image
+      run: make OS_NAME=centos build-server
+    - name: Upload server image
+      uses: ishworkh/docker-image-artifact-upload@v1
+      with:
+        image: "samba-server:centos-latest"
+        retention_days: 1
+
+  test-server-centos:
+    needs: build-server-centos
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Download server image
+      uses: ishworkh/docker-image-artifact-download@v1
+      with:
+        image: "samba-server:centos-latest"
+    - name: Test the server image
+      run: LOCAL_TAG=samba-server:centos-latest tests/test-samba-container.sh
 
   build-ad-server:
     runs-on: ubuntu-latest
@@ -64,6 +87,34 @@ jobs:
       with:
         image: "samba-ad-server:latest"
         retention_days: 1
+  build-client-centos:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build the centos client image
+      run: make OS_NAME=centos build-client
+    # Here we upload samba-client image to artifacts locally for consumption
+    # during samba-toolbox build process.
+    - name: Upload client image
+      uses: ishworkh/docker-image-artifact-upload@v1
+      with:
+        image: "quay.io/samba.org/samba-client:centos-latest"
+        retention_days: 1
+
+  build-toolbox-centos:
+    needs: build-client-centos
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    # Download locally stored samba-client image to be used as base for building
+    # samba-toolbox.
+    - name: Download client image
+      uses: ishworkh/docker-image-artifact-download@v1
+      with:
+        image: "quay.io/samba.org/samba-client:centos-latest"
+    - name: Build the toolbox image
+      run: make OS_NAME=centos build-toolbox
+
 
   build-client:
     runs-on: ubuntu-latest
