@@ -22,6 +22,7 @@ endif
 BUILD_CMD:=$(CONTAINER_CMD) build $(BUILD_OPTS)
 PUSH_CMD:=$(CONTAINER_CMD) push $(PUSH_OPTS)
 SHELLCHECK:=shellcheck
+GITLINT:=gitlint
 
 SERVER_DIR:=images/server
 AD_SERVER_DIR:=images/ad-server
@@ -252,6 +253,10 @@ check-shell-scripts:
 	$(SHELLCHECK) -P tests/ -eSC2181 -fgcc $$(find $(ROOT_DIR) -name "*.sh")
 .PHONY: check-shell-scripts
 
+# not included in check to not disrupt wip branches
+check-gitlint:
+	$(GITLINT) -C .gitlint --commits origin/master.. lint
+.PHONY: check-gitlint
 
 ### Mics. Rules ###
 
