@@ -52,8 +52,18 @@ install_sambacc() {
             container_json_file="/usr/share/sambacc/examples/${DEFAULT_JSON_FILE}"
         ;;
         install-from-copr-repo)
+            # shellcheck disable=SC1091
+            OS_BASE="$(. /etc/os-release && echo "${ID}")"
             dnf install -y 'dnf-command(copr)'
-            dnf copr enable -y phlogistonjohn/sambacc
+
+            copr_args=("phlogistonjohn/sambacc")
+            if [ "$OS_BASE" = centos ]; then
+                # centos needs a little help determining what repository
+                # within the copr to use. By default it only wants
+                # to add `epel-9-$arch`.
+                copr_args+=("centos-stream+epel-next-9-$(uname -p)")
+            fi
+            dnf copr enable -y "${copr_args[@]}"
             dnf install -y python3-sambacc
             dnf clean all
             container_json_file="/usr/share/sambacc/examples/${DEFAULT_JSON_FILE}"
