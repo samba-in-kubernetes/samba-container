@@ -1,14 +1,3 @@
-FROM quay.io/samba.org/sambacc:latest AS builder
-ARG SAMBACC_VER=master
-ARG SAMBACC_REPO=https://github.com/samba-in-kubernetes/sambacc
-
-# The SAMBACC_VER value controls what version of sambacc we'll be building.
-# This can be a branch name, a tag, or a version hash.  When building tagged
-# versions of samba-containers we should use a sambacc tag.
-# SAMBACC_DISTNAME controls where the script will output a built wheel.
-RUN SAMBACC_DISTNAME=latest \
-    /usr/local/bin/build.sh ${SAMBACC_VER} ${SAMBACC_REPO}
-
 FROM registry.fedoraproject.org/fedora:36
 ARG INSTALL_PACKAGES_FROM=default
 ARG SAMBA_VERSION_SUFFIX=""
@@ -27,14 +16,16 @@ RUN /usr/local/bin/install-packages.sh \
     "${SAMBA_VERSION_SUFFIX}" \
     "${INSTALL_CUSTOM_REPO}"
 
-COPY --from=builder \
-    /srv/dist/latest \
-    /tmp/sambacc-dist-latest
+# If you want to install a custom version of sambacc into this image mount
+# a directory containing a sambacc RPM, or a sambacc wheel, or a .repo
+# file at /tmp/sambacc-dist-latest
+# If the directory is empty the script automatically falls back to using
+# the latest continuously built RPM from our sambacc COPR:
+# https://copr.fedorainfracloud.org/coprs/phlogistonjohn/sambacc
 COPY .common/install-sambacc-common.sh /usr/local/bin/install-sambacc-common.sh
 COPY install-sambacc.sh /usr/local/bin/install-sambacc.sh
 RUN /usr/local/bin/install-sambacc.sh \
-    "/tmp/sambacc-dist-latest" \
-    && rm -rf /tmp/sambacc-dist-latest
+    "/tmp/sambacc-dist-latest"
 
 
 ENV SAMBACC_CONFIG="/etc/samba/container.json:/etc/samba/users.json"
