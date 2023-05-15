@@ -32,6 +32,7 @@ AD_SERVER_DIR:=images/ad-server
 CLIENT_DIR:=images/client
 TOOLBOX_DIR:=images/toolbox
 
+OS_NAME=
 SRC_OS_NAME=$(if $(OS_NAME),$(OS_NAME),fedora)
 
 SERVER_SRC_FILE=$(SERVER_DIR)/Containerfile.$(SRC_OS_NAME)
@@ -45,8 +46,6 @@ AD_SERVER_SOURCES=\
 	$(AD_SERVER_DIR)/install-sambacc.sh
 CLIENT_SRC_FILE=$(CLIENT_DIR)/Containerfile.$(SRC_OS_NAME)
 TOOLBOX_SRC_FILE=$(TOOLBOX_DIR)/Containerfile.$(SRC_OS_NAME)
-
-OS_NAME=
 
 
 BUILDFILE_PREFIX=.build
