@@ -286,7 +286,7 @@ check-gitlint: $(filter $(ALT_BIN)%,$(GITLINT))
 	$(GITLINT) -C .gitlint --commits origin/master.. lint
 .PHONY: check-gitlint
 
-### Mics. Rules ###
+### Misc. Rules ###
 
 clean:
 	$(RM) $(BUILDFILE_PREFIX)*
