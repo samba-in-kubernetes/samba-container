@@ -307,10 +307,11 @@ clean:
 _img_build: $(DIR)/.common
 	$(BUILD_CMD) \
 		$(BUILD_ARGS) \
+		$(if $(filter-out $(HOST_ARCH),$(BUILD_ARCH)),--arch $(BUILD_ARCH)) \
 		$(EXTRA_BUILD_ARGS) \
 		--tag $(SHORT_NAME) \
 		--tag $(REPO_NAME) \
-		--tag $(call build_fqin,$(call get_imagename,$(SHORT_NAME)),$(call get_pkgsource,$(SHORT_NAME)),$(SRC_OS_NAME),$(HOST_ARCH),$(EXTRA_TAG)) \
+		--tag $(call build_fqin,$(call get_imagename,$(SHORT_NAME)),$(call get_pkgsource,$(SHORT_NAME)),$(SRC_OS_NAME),$(if $(BUILD_ARCH),$(BUILD_ARCH),$(HOST_ARCH)),$(EXTRA_TAG)) \
 		-f $(SRC_FILE) \
 		$(DIR)
 	$(CONTAINER_CMD) inspect -f '{{.Id}}' $(SHORT_NAME) > $(BUILDFILE)
