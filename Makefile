@@ -89,6 +89,32 @@ BUILDFILE_NIGHTLY_CLIENT=$(BUILDFILE_PREFIX).$(OS_PREFIX)nightly-client
 BUILDFILE_TOOLBOX=$(BUILDFILE_PREFIX).$(OS_PREFIX)toolbox
 BUILDFILE_NIGHTLY_TOOLBOX=$(BUILDFILE_PREFIX).$(OS_PREFIX)nightly-toolbox
 
+HOST_ARCH:=$(shell arch)
+HOST_ARCH:=$(subst x86_64,amd64,$(HOST_ARCH))
+HOST_ARCH:=$(subst aarch64,arm64,$(HOST_ARCH))
+
+# build_fqin is a function macro for building a "Fully Qualified Image Name".
+# Usage: $(call build_fqin,<base-name>,<pkg-source>,<os-name>,<arch>,[<extra>])
+#   base-name: the last part of the repo name eg. 'samba-server'
+#   pkg-source: source for samba packages (default or nightly)
+#   os-name: base os name
+#   arch: architecture of image (amd64, arm64, etc.)
+#   extra: (optional) an additional unique suffix for the tag
+#          typically meant for use by devs building custom images
+build_fqin=$(REPO_BASE)$(1):$(2)-$(3)-$(4)$(if $(5),-$(5))
+
+# get_imagename is a function macro for getting only the base image name
+# without the tag part.
+# Usage: $(call get_imagename,<image-name>)
+get_imagename=$(firstword $(subst :, ,$1))
+
+# get_pkgsource is a function macro that, given an images name returns
+# the name of the package source. Currently only understands the
+# difference between default (os packages) and nightly (SIT packages).
+# Usage: $(call, get_pkgsource,<image-name>)
+get_pkgsource=$(if $(findstring nightly,$1),nightly,default)
+
+
 build: build-server build-nightly-server build-ad-server build-client \
 	build-toolbox
 .PHONY: build
@@ -284,6 +310,7 @@ _img_build: $(DIR)/.common
 		$(EXTRA_BUILD_ARGS) \
 		--tag $(SHORT_NAME) \
 		--tag $(REPO_NAME) \
+		--tag $(call build_fqin,$(call get_imagename,$(SHORT_NAME)),$(call get_pkgsource,$(SHORT_NAME)),$(SRC_OS_NAME),$(HOST_ARCH),$(EXTRA_TAG)) \
 		-f $(SRC_FILE) \
 		$(DIR)
 	$(CONTAINER_CMD) inspect -f '{{.Id}}' $(SHORT_NAME) > $(BUILDFILE)
