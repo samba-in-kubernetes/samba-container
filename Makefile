@@ -125,6 +125,8 @@ get_tag_os_name=$(word 2,$(subst -, ,$1))
 get_tag_arch=$(word 3,$(subst -, ,$1))
 get_tag_extra=$(subst $2 ,-,$(wordlist 4,$(words $(subst -, ,$1)),$(subst -, ,$1)))
 
+dest_fqin=$(BUILDFILE_PREFIX).$1.$2-$(SRC_OS_NAME)-$(if $(BUILD_ARCH),$(BUILD_ARCH),$(HOST_ARCH))$(if $(EXTRA_TAG),-$(EXTRA_TAG))
+
 
 build: build-server build-nightly-server build-ad-server build-client \
 	build-toolbox
@@ -185,6 +187,7 @@ $(BUILDFILE_PREFIX).samba-server.%: Makefile $(SERVER_SOURCES) $(SERVER_CONTAINE
 		BUILD_ARCH="$(call get_tag_arch,$*)" \
 		EXTRA_TAG="$(call get_tag_extra,$*)"  \
 		EXTRA_BUILD_ARGS="$(EXTRA_BUILD_ARGS)" \
+		REPO_BASE=$(REPO_BASE) \
 		BUILDFILE=$@
 .PRECIOUS: $(BUILDFILE_PREFIX).samba-server.%
 
@@ -198,32 +201,35 @@ $(BUILDFILE_PREFIX).samba-ad-server.%: Makefile $(AD_SERVER_SOURCES) $(AD_SERVER
 		BUILD_ARCH="$(call get_tag_arch,$*)" \
 		EXTRA_TAG="$(call get_tag_extra,$*)"  \
 		EXTRA_BUILD_ARGS="$(EXTRA_BUILD_ARGS)" \
+		REPO_BASE=$(REPO_BASE) \
 		BUILDFILE=$@
 .PRECIOUS: $(BUILDFILE_PREFIX).samba-ad-server.%
 
 $(BUILDFILE_PREFIX).samba-client.%: Makefile $(CLIENT_SOURCES) $(CLIENT_CONTAINERFILES)
 	$(MAKE) _image_build \
-		SRC_FILE=$(AD_SERVER_DIR)/Containerfile.$(call get_tag_os_name,$*) \
-		DIR=$(AD_SERVER_DIR) \
+		SRC_FILE=$(CLIENT_DIR)/Containerfile.$(call get_tag_os_name,$*) \
+		DIR=$(CLIENT_DIR) \
 		BASE_NAME=samba-client \
 		PKG_SOURCE="$(call get_tag_pkg_source,$*)" \
 		OS_NAME="$(call get_tag_os_name,$*)" \
 		BUILD_ARCH="$(call get_tag_arch,$*)" \
 		EXTRA_TAG="$(call get_tag_extra,$*)"  \
 		EXTRA_BUILD_ARGS="$(EXTRA_BUILD_ARGS)" \
+		REPO_BASE=$(REPO_BASE) \
 		BUILDFILE=$@
 .PRECIOUS: $(BUILDFILE_PREFIX).samba-client.%
 
 $(BUILDFILE_PREFIX).samba-toolbox.%: Makefile $(TOOLBOX_SOURCES) $(TOOLBOX_CONTAINERFILES)
 	$(MAKE) _image_build \
-		SRC_FILE=$(AD_SERVER_DIR)/Containerfile.$(call get_tag_os_name,$*) \
-		DIR=$(AD_SERVER_DIR) \
+		SRC_FILE=$(TOOLBOX_DIR)/Containerfile.$(call get_tag_os_name,$*) \
+		DIR=$(TOOLBOX_DIR) \
 		BASE_NAME=samba-toolbox \
 		PKG_SOURCE="$(call get_tag_pkg_source,$*)" \
 		OS_NAME="$(call get_tag_os_name,$*)" \
 		BUILD_ARCH="$(call get_tag_arch,$*)" \
 		EXTRA_TAG="$(call get_tag_extra,$*)"  \
 		EXTRA_BUILD_ARGS="$(EXTRA_BUILD_ARGS)" \
+		REPO_BASE=$(REPO_BASE) \
 		BUILDFILE=$@
 .PRECIOUS: $(BUILDFILE_PREFIX).samba-toolbox.%
 
@@ -240,19 +246,20 @@ push-image@%: $(BUILDFILE_PREFIX).%
 	$(PUSH_CMD) $(REPO_BASE)$(firstword $(subst ., ,$*)):$(word 2,$(subst ., ,$*))
 .PHONY: push-image@%
 
+#
+# Compatibility rules:
+# The following rules exist to provide continuity
 
 build-server: $(BUILDFILE_SERVER)
 .PHONY: build-server
 
-$(BUILDFILE_SERVER): Makefile $(SERVER_SRC_FILE) $(SERVER_SOURCES)
-	$(MAKE) _img_build \
-		BUILD_ARGS=""  \
-		EXTRA_BUILD_ARGS="$(EXTRA_BUILD_ARGS)" \
+$(BUILDFILE_SERVER):
+	$(MAKE) REPO_BASE=$(REPO_BASE) $(call dest_fqin,samba-server,default)
+	$(MAKE) _add_tags \
+		SRC_FILE=$(call dest_fqin,samba-server,default) \
 		SHORT_NAME=$(SERVER_NAME) \
 		REPO_NAME=$(SERVER_REPO_NAME) \
-		SRC_FILE=$(SERVER_SRC_FILE) \
-		DIR=$(SERVER_DIR) \
-		BUILDFILE=$(BUILDFILE_SERVER)
+		BUILDFILE=$@
 
 push-server: build-server
 	$(PUSH_CMD) $(SERVER_REPO_NAME)
@@ -261,15 +268,13 @@ push-server: build-server
 build-nightly-server: $(BUILDFILE_NIGHTLY_SERVER)
 .PHONY: build-nightly-server
 
-$(BUILDFILE_NIGHTLY_SERVER): Makefile $(SERVER_SRC_FILE) $(SERVER_SOURCES)
-	$(MAKE) _img_build \
-		BUILD_ARGS="--build-arg=INSTALL_PACKAGES_FROM='samba-nightly'"  \
-		EXTRA_BUILD_ARGS="$(EXTRA_BUILD_ARGS)" \
+$(BUILDFILE_NIGHTLY_SERVER):
+	$(MAKE) REPO_BASE=$(REPO_BASE) $(call dest_fqin,samba-server,default)
+	$(MAKE) _add_tags \
+		SRC_FILE=$(call dest_fqin,samba-server,default) \
 		SHORT_NAME=$(NIGHTLY_SERVER_NAME) \
 		REPO_NAME=$(NIGHTLY_SERVER_REPO_NAME) \
-		SRC_FILE=$(SERVER_SRC_FILE) \
-		DIR=$(SERVER_DIR) \
-		BUILDFILE=$(BUILDFILE_NIGHTLY_SERVER)
+		BUILDFILE=$@
 
 push-nightly-server: build-nightly-server
 	$(PUSH_CMD) $(NIGHTLY_SERVER_REPO_NAME)
@@ -278,15 +283,13 @@ push-nightly-server: build-nightly-server
 build-ad-server: $(BUILDFILE_AD_SERVER)
 .PHONY: build-ad-server
 
-$(BUILDFILE_AD_SERVER): Makefile $(AD_SERVER_SRC_FILE) $(AD_SERVER_SOURCES)
-	$(MAKE) _img_build \
-		BUILD_ARGS="" \
-		EXTRA_BUILD_ARGS="$(EXTRA_BUILD_ARGS)" \
+$(BUILDFILE_AD_SERVER):
+	$(MAKE) REPO_BASE=$(REPO_BASE) $(call dest_fqin,samba-ad-server,default)
+	$(MAKE) _add_tags \
+		SRC_FILE=$(call dest_fqin,samba-ad-server,default) \
 		SHORT_NAME=$(AD_SERVER_NAME) \
 		REPO_NAME=$(AD_SERVER_REPO_NAME) \
-		SRC_FILE=$(AD_SERVER_SRC_FILE) \
-		DIR=$(AD_SERVER_DIR) \
-		BUILDFILE=$(BUILDFILE_AD_SERVER)
+		BUILDFILE=$@
 
 push-ad-server: build-ad-server
 	$(PUSH_CMD) $(AD_SERVER_REPO_NAME)
@@ -295,15 +298,13 @@ push-ad-server: build-ad-server
 build-nightly-ad-server: $(BUILDFILE_NIGHTLY_AD_SERVER)
 .PHONY: build-nightly-ad-server
 
-$(BUILDFILE_NIGHTLY_AD_SERVER): Makefile $(AD_SERVER_SRC_FILE) $(AD_SERVER_SOURCES)
-	$(MAKE) _img_build \
-		BUILD_ARGS="--build-arg=INSTALL_PACKAGES_FROM='samba-nightly'" \
-		EXTRA_BUILD_ARGS="$(EXTRA_BUILD_ARGS)" \
+$(BUILDFILE_NIGHTLY_AD_SERVER):
+	$(MAKE) REPO_BASE=$(REPO_BASE) $(call dest_fqin,samba-ad-server,nightly)
+	$(MAKE) _add_tags \
+		SRC_FILE=$(call dest_fqin,samba-ad-server,nightly) \
 		SHORT_NAME=$(NIGHTLY_AD_SERVER_NAME) \
 		REPO_NAME=$(NIGHTLY_AD_SERVER_REPO_NAME) \
-		SRC_FILE=$(AD_SERVER_SRC_FILE) \
-		DIR=$(AD_SERVER_DIR) \
-		BUILDFILE=$(BUILDFILE_NIGHTLY_AD_SERVER)
+		BUILDFILE=$@
 
 push-nightly-ad-server: build-nightly-ad-server
 	$(PUSH_CMD) $(NIGHTLY_AD_SERVER_REPO_NAME)
@@ -312,15 +313,13 @@ push-nightly-ad-server: build-nightly-ad-server
 build-client: $(BUILDFILE_CLIENT)
 .PHONY: build-client
 
-$(BUILDFILE_CLIENT): Makefile $(CLIENT_SRC_FILE)
-	$(MAKE) _img_build \
-		BUILD_ARGS="" \
-		EXTRA_BUILD_ARGS="$(EXTRA_BUILD_ARGS)" \
+$(BUILDFILE_CLIENT):
+	$(MAKE) REPO_BASE=$(REPO_BASE) $(call dest_fqin,samba-client,default)
+	$(MAKE) _add_tags \
+		SRC_FILE=$(call dest_fqin,samba-client,default) \
 		SHORT_NAME=$(CLIENT_NAME) \
 		REPO_NAME=$(CLIENT_REPO_NAME) \
-		SRC_FILE=$(CLIENT_SRC_FILE) \
-		DIR=$(CLIENT_DIR) \
-		BUILDFILE=$(BUILDFILE_CLIENT)
+		BUILDFILE=$@
 
 push-client: build-client
 	$(PUSH_CMD) $(CLIENT_REPO_NAME)
@@ -329,15 +328,13 @@ push-client: build-client
 build-toolbox: $(BUILDFILE_TOOLBOX)
 .PHONY: build-toolbox
 
-$(BUILDFILE_TOOLBOX): Makefile $(TOOLBOX_SRC_FILE)
-	$(MAKE) _img_build \
-		BUILD_ARGS="" \
-		EXTRA_BUILD_ARGS="$(EXTRA_BUILD_ARGS)" \
+$(BUILDFILE_TOOLBOX):
+	$(MAKE) REPO_BASE=$(REPO_BASE) $(call dest_fqin,samba-toolbox,default)
+	$(MAKE) _add_tags \
+		SRC_FILE=$(call dest_fqin,samba-toolbox,default) \
 		SHORT_NAME=$(TOOLBOX_NAME) \
 		REPO_NAME=$(TOOLBOX_REPO_NAME) \
-		SRC_FILE=$(TOOLBOX_SRC_FILE) \
-		DIR=$(TOOLBOX_DIR) \
-		BUILDFILE=$(BUILDFILE_TOOLBOX)
+		BUILDFILE=$@
 
 push-toolbox: build-toolbox
 	$(PUSH_CMD) $(TOOLBOX_REPO_NAME)
@@ -415,6 +412,12 @@ _image_build: $(DIR)/.common
 		$(DIR)
 	$(CONTAINER_CMD) inspect -f '{{.Id}}' "$(call build_fqin,$(BASE_NAME),$(PKG_SOURCE),$(OS_NAME),$(BUILD_ARCH),$(EXTRA_TAG))" > $(BUILDFILE)
 .PHONY: _image_build
+
+_add_tags:
+	cid=$$(cat $(SRC_FILE)) ; \
+		$(CONTAINER_CMD) tag $$cid $(SHORT_NAME) \
+		&& $(CONTAINER_CMD) tag $$cid $(REPO_NAME) \
+		&& $(CONTAINER_CMD) inspect -f '{{.Id}}' $$cid > $(BUILDFILE)
 
 $(DIR)/.common: $(COMMON_DIR)
 	$(RM) -r $(DIR)/.common
