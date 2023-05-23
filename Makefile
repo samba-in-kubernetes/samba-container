@@ -186,6 +186,7 @@ $(BUILDFILE_PREFIX).samba-server.%: Makefile $(SERVER_SOURCES) $(SERVER_CONTAINE
 		EXTRA_TAG="$(call get_tag_extra,$*)"  \
 		EXTRA_BUILD_ARGS="$(EXTRA_BUILD_ARGS)" \
 		BUILDFILE=$@
+.PRECIOUS: $(BUILDFILE_PREFIX).samba-server.%
 
 $(BUILDFILE_PREFIX).samba-ad-server.%: Makefile $(AD_SERVER_SOURCES) $(AD_SERVER_CONTAINERFILES)
 	$(MAKE) _image_build \
@@ -198,6 +199,7 @@ $(BUILDFILE_PREFIX).samba-ad-server.%: Makefile $(AD_SERVER_SOURCES) $(AD_SERVER
 		EXTRA_TAG="$(call get_tag_extra,$*)"  \
 		EXTRA_BUILD_ARGS="$(EXTRA_BUILD_ARGS)" \
 		BUILDFILE=$@
+.PRECIOUS: $(BUILDFILE_PREFIX).samba-ad-server.%
 
 $(BUILDFILE_PREFIX).samba-client.%: Makefile $(CLIENT_SOURCES) $(CLIENT_CONTAINERFILES)
 	$(MAKE) _image_build \
@@ -210,6 +212,7 @@ $(BUILDFILE_PREFIX).samba-client.%: Makefile $(CLIENT_SOURCES) $(CLIENT_CONTAINE
 		EXTRA_TAG="$(call get_tag_extra,$*)"  \
 		EXTRA_BUILD_ARGS="$(EXTRA_BUILD_ARGS)" \
 		BUILDFILE=$@
+.PRECIOUS: $(BUILDFILE_PREFIX).samba-client.%
 
 $(BUILDFILE_PREFIX).samba-toolbox.%: Makefile $(TOOLBOX_SOURCES) $(TOOLBOX_CONTAINERFILES)
 	$(MAKE) _image_build \
@@ -222,6 +225,20 @@ $(BUILDFILE_PREFIX).samba-toolbox.%: Makefile $(TOOLBOX_SOURCES) $(TOOLBOX_CONTA
 		EXTRA_TAG="$(call get_tag_extra,$*)"  \
 		EXTRA_BUILD_ARGS="$(EXTRA_BUILD_ARGS)" \
 		BUILDFILE=$@
+.PRECIOUS: $(BUILDFILE_PREFIX).samba-toolbox.%
+
+# Convenience alias
+# Example: make image@samba-server.default-fedora-amd64
+image@%: $(BUILDFILE_PREFIX).%
+	@echo Buildfile: $^
+	@echo Images:
+	@podman inspect $$(cat $<) -f '{{ range .RepoTags }}  {{ . }}{{ printf "\n"}}{{ end }}'
+.PHONY: image@%
+
+# Push a particular image
+push-image@%: $(BUILDFILE_PREFIX).%
+	$(PUSH_CMD) $(REPO_BASE)$(firstword $(subst ., ,$*)):$(word 2,$(subst ., ,$*))
+.PHONY: push-image@%
 
 
 build-server: $(BUILDFILE_SERVER)
