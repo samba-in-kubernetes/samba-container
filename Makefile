@@ -114,11 +114,21 @@ get_imagename=$(firstword $(subst :, ,$1))
 # Usage: $(call, get_pkgsource,<image-name>)
 get_pkgsource=$(if $(findstring nightly,$1),nightly,default)
 
+fqin_get_base_name=\
+	$(lastword $(subst /, ,$(firstword $(subst $(if $2,$2,.), ,$1))))
+
+fqin_get_tag=\
+	$(lastword $(subst $(if $2,$2,.), ,$1))
+
+get_tag_pkg_source=$(word 1,$(subst -, ,$1))
+get_tag_os_name=$(word 2,$(subst -, ,$1))
+get_tag_arch=$(word 3,$(subst -, ,$1))
+get_tag_extra=$(subst $2 ,-,$(wordlist 4,$(words $(subst -, ,$1)),$(subst -, ,$1)))
+
 
 build: build-server build-nightly-server build-ad-server build-client \
 	build-toolbox
 .PHONY: build
-
 
 .PHONY: debug-vars
 debug-vars:
@@ -159,6 +169,30 @@ debug-vars:
 
 
 ### Image Build and Push Rules ###
+ALL_OS_NAMES=fedora centos opensuse
+SERVER_CONTAINERFILES=$(patsubst %,$(SERVER_DIR)/Containerfile.%,$(ALL_OS_NAMES))
+AD_SERVER_CONTAINERFILES=$(patsubst %,$(AD_SERVER_DIR)/Containerfile.%,fedora opensuse)
+CLIENT_CONTAINERFILES=$(patsubst %,$(CLIENT_DIR)/Containerfile.%,$(VALID_OS_NAMES))
+TOOLBOX_CONTAINERFILES=$(patsubst %,$(TOOLBOX_DIR)/Containerfile.%,$(VALID_OS_NAMES))
+
+$(BUILDFILE_PREFIX).samba-server.%: Makefile $(SERVER_SOURCES) $(SERVER_CONTAINERFILES)
+	@echo base name: samba-server
+	@echo pkg-source: $(call get_tag_pkg_source,$*)
+	@echo os-name: $(call get_tag_os_name,$*)
+	@echo arch: $(call get_tag_arch,$*)
+	@echo extra: $(call get_tag_extra,$*)
+	$(MAKE) _image_build \
+		SRC_FILE=$(SERVER_DIR)/Containerfile.$(call get_tag_os_name,$*) \
+		DIR=$(SERVER_DIR) \
+		BASE_NAME=samba-server \
+		PKG_SOURCE="$(call get_tag_pkg_source,$*)" \
+		OS_NAME="$(call get_tag_os_name,$*)" \
+		BUILD_ARCH="$(call get_tag_arch,$*)" \
+		EXTRA_TAG="$(call get_tag_extra,$*)"  \
+		EXTRA_BUILD_ARGS="$(EXTRA_BUILD_ARGS)" \
+		BUILDFILE=$@
+
+
 
 build-server: $(BUILDFILE_SERVER)
 .PHONY: build-server
@@ -309,13 +343,25 @@ _img_build: $(DIR)/.common
 		$(BUILD_ARGS) \
 		$(if $(filter-out $(HOST_ARCH),$(BUILD_ARCH)),--arch $(BUILD_ARCH)) \
 		$(EXTRA_BUILD_ARGS) \
-		--tag $(SHORT_NAME) \
-		--tag $(REPO_NAME) \
+		$(if $(SHORT_NAME),--tag $(SHORT_NAME)) \
+		$(if $(REPO_NAME),--tag $(REPO_NAME)) \
 		--tag $(call build_fqin,$(call get_imagename,$(SHORT_NAME)),$(call get_pkgsource,$(SHORT_NAME)),$(SRC_OS_NAME),$(if $(BUILD_ARCH),$(BUILD_ARCH),$(HOST_ARCH)),$(EXTRA_TAG)) \
 		-f $(SRC_FILE) \
 		$(DIR)
 	$(CONTAINER_CMD) inspect -f '{{.Id}}' $(SHORT_NAME) > $(BUILDFILE)
 .PHONY: _img_build
+
+_image_build: $(DIR)/.common
+	$(BUILD_CMD) \
+		$(BUILD_ARGS) \
+		$(if $(findstring nightly,$(PKG_SOURCE)),"--build-arg=INSTALL_PACKAGES_FROM='samba-nightly'") \
+		$(if $(filter-out $(HOST_ARCH),$(BUILD_ARCH)),--arch $(BUILD_ARCH)) \
+		$(EXTRA_BUILD_ARGS) \
+		--tag $(call build_fqin,$(BASE_NAME),$(PKG_SOURCE),$(OS_NAME),$(BUILD_ARCH),$(EXTRA_TAG)) \
+		-f $(SRC_FILE) \
+		$(DIR)
+	$(CONTAINER_CMD) inspect -f '{{.Id}}' "$(call build_fqin,$(BASE_NAME),$(PKG_SOURCE),$(OS_NAME),$(BUILD_ARCH),$(EXTRA_TAG))" > $(BUILDFILE)
+.PHONY: _image_build
 
 $(DIR)/.common: $(COMMON_DIR)
 	$(RM) -r $(DIR)/.common
@@ -327,3 +373,4 @@ $(ALT_BIN)/%:
 clean-altbin:
 	$(RM) -r $(ALT_BIN)
 .PHONY: clean-altbin
+
