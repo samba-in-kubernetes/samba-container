@@ -224,16 +224,27 @@ push-image@%: $(BUILDFILE_PREFIX).%
 # Compatibility rules:
 # The following rules exist to provide continuity
 
+define DEFAULT_image =
+$1:
+	$$(MAKE) REPO_BASE=$$(REPO_BASE) $$(call dest_fqin,$2,$3)
+	$(MAKE) _add_tags \
+		SRC_FILE=$$(call dest_fqin,$2,$3) \
+		SHORT_NAME=$4 \
+		REPO_NAME=$5 \
+		BUILDFILE=$$@
+.PRECIOUS: $$(BUILDFILE_PREFIX).samba-server.%
+endef
+
+$(eval $(call DEFAULT_image,$(BUILDFILE_SERVER),samba-server,default,$(SERVER_NAME),$(SERVER_REPO_NAME)))
+$(eval $(call DEFAULT_image,$(BUILDFILE_NIGHTLY_SERVER),samba-server,nightly,$(NIGHTLY_SERVER_NAME),$(NIGHTLY_SERVER_REPO_NAME)))
+$(eval $(call DEFAULT_image,$(BUILDFILE_AD_SERVER),samba-ad-server,default,$(AD_SERVER_NAME),$(AD_SERVER_REPO_NAME)))
+$(eval $(call DEFAULT_image,$(BUILDFILE_NIGHTLY_AD_SERVER),samba-ad-server,nightly,$(NIGHTLY_AD_SERVER_NAME),$(NIGHTLY_AD_SERVER_REPO_NAME)))
+$(eval $(call DEFAULT_image,$(BUILDFILE_CLIENT),samba-client,default,$(CLIENT_NAME),$(CLIENT_REPO_NAME)))
+$(eval $(call DEFAULT_image,$(BUILDFILE_TOOLBOX),samba-toolbox,default,$(TOOLBOX_NAME),$(TOOLBOX_REPO_NAME)))
+
+
 build-server: $(BUILDFILE_SERVER)
 .PHONY: build-server
-
-$(BUILDFILE_SERVER):
-	$(MAKE) REPO_BASE=$(REPO_BASE) $(call dest_fqin,samba-server,default)
-	$(MAKE) _add_tags \
-		SRC_FILE=$(call dest_fqin,samba-server,default) \
-		SHORT_NAME=$(SERVER_NAME) \
-		REPO_NAME=$(SERVER_REPO_NAME) \
-		BUILDFILE=$@
 
 push-server: build-server
 	$(PUSH_CMD) $(SERVER_REPO_NAME)
@@ -242,28 +253,12 @@ push-server: build-server
 build-nightly-server: $(BUILDFILE_NIGHTLY_SERVER)
 .PHONY: build-nightly-server
 
-$(BUILDFILE_NIGHTLY_SERVER):
-	$(MAKE) REPO_BASE=$(REPO_BASE) $(call dest_fqin,samba-server,default)
-	$(MAKE) _add_tags \
-		SRC_FILE=$(call dest_fqin,samba-server,default) \
-		SHORT_NAME=$(NIGHTLY_SERVER_NAME) \
-		REPO_NAME=$(NIGHTLY_SERVER_REPO_NAME) \
-		BUILDFILE=$@
-
 push-nightly-server: build-nightly-server
 	$(PUSH_CMD) $(NIGHTLY_SERVER_REPO_NAME)
 .PHONY: push-nightly-server
 
 build-ad-server: $(BUILDFILE_AD_SERVER)
 .PHONY: build-ad-server
-
-$(BUILDFILE_AD_SERVER):
-	$(MAKE) REPO_BASE=$(REPO_BASE) $(call dest_fqin,samba-ad-server,default)
-	$(MAKE) _add_tags \
-		SRC_FILE=$(call dest_fqin,samba-ad-server,default) \
-		SHORT_NAME=$(AD_SERVER_NAME) \
-		REPO_NAME=$(AD_SERVER_REPO_NAME) \
-		BUILDFILE=$@
 
 push-ad-server: build-ad-server
 	$(PUSH_CMD) $(AD_SERVER_REPO_NAME)
@@ -272,14 +267,6 @@ push-ad-server: build-ad-server
 build-nightly-ad-server: $(BUILDFILE_NIGHTLY_AD_SERVER)
 .PHONY: build-nightly-ad-server
 
-$(BUILDFILE_NIGHTLY_AD_SERVER):
-	$(MAKE) REPO_BASE=$(REPO_BASE) $(call dest_fqin,samba-ad-server,nightly)
-	$(MAKE) _add_tags \
-		SRC_FILE=$(call dest_fqin,samba-ad-server,nightly) \
-		SHORT_NAME=$(NIGHTLY_AD_SERVER_NAME) \
-		REPO_NAME=$(NIGHTLY_AD_SERVER_REPO_NAME) \
-		BUILDFILE=$@
-
 push-nightly-ad-server: build-nightly-ad-server
 	$(PUSH_CMD) $(NIGHTLY_AD_SERVER_REPO_NAME)
 .PHONY: push-nightly-ad-server
@@ -287,28 +274,12 @@ push-nightly-ad-server: build-nightly-ad-server
 build-client: $(BUILDFILE_CLIENT)
 .PHONY: build-client
 
-$(BUILDFILE_CLIENT):
-	$(MAKE) REPO_BASE=$(REPO_BASE) $(call dest_fqin,samba-client,default)
-	$(MAKE) _add_tags \
-		SRC_FILE=$(call dest_fqin,samba-client,default) \
-		SHORT_NAME=$(CLIENT_NAME) \
-		REPO_NAME=$(CLIENT_REPO_NAME) \
-		BUILDFILE=$@
-
 push-client: build-client
 	$(PUSH_CMD) $(CLIENT_REPO_NAME)
 .PHONY: push-client
 
 build-toolbox: $(BUILDFILE_TOOLBOX)
 .PHONY: build-toolbox
-
-$(BUILDFILE_TOOLBOX):
-	$(MAKE) REPO_BASE=$(REPO_BASE) $(call dest_fqin,samba-toolbox,default)
-	$(MAKE) _add_tags \
-		SRC_FILE=$(call dest_fqin,samba-toolbox,default) \
-		SHORT_NAME=$(TOOLBOX_NAME) \
-		REPO_NAME=$(TOOLBOX_REPO_NAME) \
-		BUILDFILE=$@
 
 push-toolbox: build-toolbox
 	$(PUSH_CMD) $(TOOLBOX_REPO_NAME)
