@@ -177,61 +177,35 @@ AD_SERVER_CONTAINERFILES=$(patsubst %,$(AD_SERVER_DIR)/Containerfile.%,fedora op
 CLIENT_CONTAINERFILES=$(patsubst %,$(CLIENT_DIR)/Containerfile.%,$(VALID_OS_NAMES))
 TOOLBOX_CONTAINERFILES=$(patsubst %,$(TOOLBOX_DIR)/Containerfile.%,$(VALID_OS_NAMES))
 
-$(BUILDFILE_PREFIX).samba-server.%: Makefile $(SERVER_SOURCES) $(SERVER_CONTAINERFILES)
-	$(MAKE) _image_build \
-		SRC_FILE=$(SERVER_DIR)/Containerfile.$(call get_tag_os_name,$*) \
-		DIR=$(SERVER_DIR) \
-		BASE_NAME=samba-server \
-		PKG_SOURCE="$(call get_tag_pkg_source,$*)" \
-		OS_NAME="$(call get_tag_os_name,$*)" \
-		BUILD_ARCH="$(call get_tag_arch,$*)" \
-		EXTRA_TAG="$(call get_tag_extra,$*)"  \
-		EXTRA_BUILD_ARGS="$(EXTRA_BUILD_ARGS)" \
-		REPO_BASE=$(REPO_BASE) \
-		BUILDFILE=$@
-.PRECIOUS: $(BUILDFILE_PREFIX).samba-server.%
 
-$(BUILDFILE_PREFIX).samba-ad-server.%: Makefile $(AD_SERVER_SOURCES) $(AD_SERVER_CONTAINERFILES)
-	$(MAKE) _image_build \
-		SRC_FILE=$(AD_SERVER_DIR)/Containerfile.$(call get_tag_os_name,$*) \
-		DIR=$(AD_SERVER_DIR) \
-		BASE_NAME=samba-ad-server \
-		PKG_SOURCE="$(call get_tag_pkg_source,$*)" \
-		OS_NAME="$(call get_tag_os_name,$*)" \
-		BUILD_ARCH="$(call get_tag_arch,$*)" \
-		EXTRA_TAG="$(call get_tag_extra,$*)"  \
-		EXTRA_BUILD_ARGS="$(EXTRA_BUILD_ARGS)" \
-		REPO_BASE=$(REPO_BASE) \
-		BUILDFILE=$@
-.PRECIOUS: $(BUILDFILE_PREFIX).samba-ad-server.%
+define BUILD_image =
+$$(BUILDFILE_PREFIX).$1.%: Makefile $3
+	$$(MAKE) _img_build \
+		SRC_FILE=$2/Containerfile.$$(call get_tag_os_name,$$*) \
+		DIR=$2 \
+		BASE_NAME=$1 \
+		PKG_SOURCE="$$(call get_tag_pkg_source,$$*)" \
+		OS_NAME="$$(call get_tag_os_name,$$*)" \
+		BUILD_ARCH="$$(call get_tag_arch,$$*)" \
+		EXTRA_TAG="$$(call get_tag_extra,$$*)"  \
+		EXTRA_BUILD_ARGS="$$(EXTRA_BUILD_ARGS)" \
+		REPO_BASE=$$(REPO_BASE) \
+		BUILDFILE=$$@
+.PRECIOUS: $$(BUILDFILE_PREFIX).samba-server.%
+endef
 
-$(BUILDFILE_PREFIX).samba-client.%: Makefile $(CLIENT_SOURCES) $(CLIENT_CONTAINERFILES)
-	$(MAKE) _image_build \
-		SRC_FILE=$(CLIENT_DIR)/Containerfile.$(call get_tag_os_name,$*) \
-		DIR=$(CLIENT_DIR) \
-		BASE_NAME=samba-client \
-		PKG_SOURCE="$(call get_tag_pkg_source,$*)" \
-		OS_NAME="$(call get_tag_os_name,$*)" \
-		BUILD_ARCH="$(call get_tag_arch,$*)" \
-		EXTRA_TAG="$(call get_tag_extra,$*)"  \
-		EXTRA_BUILD_ARGS="$(EXTRA_BUILD_ARGS)" \
-		REPO_BASE=$(REPO_BASE) \
-		BUILDFILE=$@
-.PRECIOUS: $(BUILDFILE_PREFIX).samba-client.%
+$(eval $(call BUILD_image,samba-server,$(SERVER_DIR),\
+	$(SERVER_SOURCES) $(SERVER_CONTAINERFILES)))
 
-$(BUILDFILE_PREFIX).samba-toolbox.%: Makefile $(TOOLBOX_SOURCES) $(TOOLBOX_CONTAINERFILES)
-	$(MAKE) _image_build \
-		SRC_FILE=$(TOOLBOX_DIR)/Containerfile.$(call get_tag_os_name,$*) \
-		DIR=$(TOOLBOX_DIR) \
-		BASE_NAME=samba-toolbox \
-		PKG_SOURCE="$(call get_tag_pkg_source,$*)" \
-		OS_NAME="$(call get_tag_os_name,$*)" \
-		BUILD_ARCH="$(call get_tag_arch,$*)" \
-		EXTRA_TAG="$(call get_tag_extra,$*)"  \
-		EXTRA_BUILD_ARGS="$(EXTRA_BUILD_ARGS)" \
-		REPO_BASE=$(REPO_BASE) \
-		BUILDFILE=$@
-.PRECIOUS: $(BUILDFILE_PREFIX).samba-toolbox.%
+$(eval $(call BUILD_image,samba-ad-server,$(AD_SERVER_DIR),\
+	$(AD_SERVER_SOURCES) $(AD_SERVER_CONTAINERFILES)))
+
+$(eval $(call BUILD_image,samba-client,$(CLIENT_DIR),\
+	$(CLIENT_SOURCES) $(CLIENT_CONTAINERFILES)))
+
+$(eval $(call BUILD_image,samba-toolbox,$(TOOLBOX_DIR),\
+	$(TOOLBOX_SOURCES) $(TOOLBOX_CONTAINERFILES)))
+
 
 # Convenience alias
 # Example: make image@samba-server.default-fedora-amd64
@@ -383,25 +357,17 @@ clean:
 # The following arguments are expected to be supplied when "calling" this rule:
 # BUILD_ARGS: the default build arguments
 # EXTRA_BUILD_ARGS: build args supplied by the user at "runtime"
-# SHORT_NAME: a local name for the image
-# REPO_NAME: a global name for the image
 # SRC_FILE: path to the Containerfile (Dockerfile)
 # DIR: path to the directory holding image contents
 # BUILDFILE: path to a temporary file tracking build state
+# BASE_NAME: the unqualified non-tag portion of the image name
+# PKG_SOURCE: source for packages (default or nightly)
+# OS_NAME: selected base os
+# BUILD_ARCH: selected build architecture (amd64, arm64, etc)
+# EXTRA_TAG: additional tag suffix
+# REPO_BASE: common image repository prefix
+#
 _img_build: $(DIR)/.common
-	$(BUILD_CMD) \
-		$(BUILD_ARGS) \
-		$(if $(filter-out $(HOST_ARCH),$(BUILD_ARCH)),--arch $(BUILD_ARCH)) \
-		$(EXTRA_BUILD_ARGS) \
-		$(if $(SHORT_NAME),--tag $(SHORT_NAME)) \
-		$(if $(REPO_NAME),--tag $(REPO_NAME)) \
-		--tag $(call build_fqin,$(call get_imagename,$(SHORT_NAME)),$(call get_pkgsource,$(SHORT_NAME)),$(SRC_OS_NAME),$(if $(BUILD_ARCH),$(BUILD_ARCH),$(HOST_ARCH)),$(EXTRA_TAG)) \
-		-f $(SRC_FILE) \
-		$(DIR)
-	$(CONTAINER_CMD) inspect -f '{{.Id}}' $(SHORT_NAME) > $(BUILDFILE)
-.PHONY: _img_build
-
-_image_build: $(DIR)/.common
 	$(BUILD_CMD) \
 		$(BUILD_ARGS) \
 		$(if $(findstring nightly,$(PKG_SOURCE)),"--build-arg=INSTALL_PACKAGES_FROM='samba-nightly'") \
@@ -413,6 +379,15 @@ _image_build: $(DIR)/.common
 	$(CONTAINER_CMD) inspect -f '{{.Id}}' "$(call build_fqin,$(BASE_NAME),$(PKG_SOURCE),$(OS_NAME),$(BUILD_ARCH),$(EXTRA_TAG))" > $(BUILDFILE)
 .PHONY: _image_build
 
+# _add_tags in an internal rule to apply additional tags to an image.
+# Typically this will be used to add common names (latest) to an
+# image that only has a fully qualified image name.
+#
+# SRC_FILE: file to read container id from
+# SHORT_NAME: a local name for the image
+# REPO_NAME: a global name for the image
+# BUILDFILE: path to a temporary file tracking build state
+#
 _add_tags:
 	cid=$$(cat $(SRC_FILE)) ; \
 		$(CONTAINER_CMD) tag $$cid $(SHORT_NAME) \
