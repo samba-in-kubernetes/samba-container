@@ -176,11 +176,6 @@ CLIENT_CONTAINERFILES=$(patsubst %,$(CLIENT_DIR)/Containerfile.%,$(VALID_OS_NAME
 TOOLBOX_CONTAINERFILES=$(patsubst %,$(TOOLBOX_DIR)/Containerfile.%,$(VALID_OS_NAMES))
 
 $(BUILDFILE_PREFIX).samba-server.%: Makefile $(SERVER_SOURCES) $(SERVER_CONTAINERFILES)
-	@echo base name: samba-server
-	@echo pkg-source: $(call get_tag_pkg_source,$*)
-	@echo os-name: $(call get_tag_os_name,$*)
-	@echo arch: $(call get_tag_arch,$*)
-	@echo extra: $(call get_tag_extra,$*)
 	$(MAKE) _image_build \
 		SRC_FILE=$(SERVER_DIR)/Containerfile.$(call get_tag_os_name,$*) \
 		DIR=$(SERVER_DIR) \
@@ -192,6 +187,41 @@ $(BUILDFILE_PREFIX).samba-server.%: Makefile $(SERVER_SOURCES) $(SERVER_CONTAINE
 		EXTRA_BUILD_ARGS="$(EXTRA_BUILD_ARGS)" \
 		BUILDFILE=$@
 
+$(BUILDFILE_PREFIX).samba-ad-server.%: Makefile $(AD_SERVER_SOURCES) $(AD_SERVER_CONTAINERFILES)
+	$(MAKE) _image_build \
+		SRC_FILE=$(AD_SERVER_DIR)/Containerfile.$(call get_tag_os_name,$*) \
+		DIR=$(AD_SERVER_DIR) \
+		BASE_NAME=samba-ad-server \
+		PKG_SOURCE="$(call get_tag_pkg_source,$*)" \
+		OS_NAME="$(call get_tag_os_name,$*)" \
+		BUILD_ARCH="$(call get_tag_arch,$*)" \
+		EXTRA_TAG="$(call get_tag_extra,$*)"  \
+		EXTRA_BUILD_ARGS="$(EXTRA_BUILD_ARGS)" \
+		BUILDFILE=$@
+
+$(BUILDFILE_PREFIX).samba-client.%: Makefile $(CLIENT_SOURCES) $(CLIENT_CONTAINERFILES)
+	$(MAKE) _image_build \
+		SRC_FILE=$(AD_SERVER_DIR)/Containerfile.$(call get_tag_os_name,$*) \
+		DIR=$(AD_SERVER_DIR) \
+		BASE_NAME=samba-client \
+		PKG_SOURCE="$(call get_tag_pkg_source,$*)" \
+		OS_NAME="$(call get_tag_os_name,$*)" \
+		BUILD_ARCH="$(call get_tag_arch,$*)" \
+		EXTRA_TAG="$(call get_tag_extra,$*)"  \
+		EXTRA_BUILD_ARGS="$(EXTRA_BUILD_ARGS)" \
+		BUILDFILE=$@
+
+$(BUILDFILE_PREFIX).samba-toolbox.%: Makefile $(TOOLBOX_SOURCES) $(TOOLBOX_CONTAINERFILES)
+	$(MAKE) _image_build \
+		SRC_FILE=$(AD_SERVER_DIR)/Containerfile.$(call get_tag_os_name,$*) \
+		DIR=$(AD_SERVER_DIR) \
+		BASE_NAME=samba-toolbox \
+		PKG_SOURCE="$(call get_tag_pkg_source,$*)" \
+		OS_NAME="$(call get_tag_os_name,$*)" \
+		BUILD_ARCH="$(call get_tag_arch,$*)" \
+		EXTRA_TAG="$(call get_tag_extra,$*)"  \
+		EXTRA_BUILD_ARGS="$(EXTRA_BUILD_ARGS)" \
+		BUILDFILE=$@
 
 
 build-server: $(BUILDFILE_SERVER)
