@@ -385,7 +385,7 @@ _image_build: $(DIR)/.common
 	$(BUILD_CMD) \
 		$(BUILD_ARGS) \
 		$(if $(findstring nightly,$(PKG_SOURCE)),"--build-arg=INSTALL_PACKAGES_FROM='samba-nightly'") \
-		$(if $(filter-out $(HOST_ARCH),$(BUILD_ARCH)),--arch $(BUILD_ARCH)) \
+		--arch $(BUILD_ARCH) \
 		$(EXTRA_BUILD_ARGS) \
 		--tag $(call build_fqin,$(BASE_NAME),$(PKG_SOURCE),$(OS_NAME),$(BUILD_ARCH),$(EXTRA_TAG)) \
 		-f $(SRC_FILE) \
