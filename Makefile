@@ -25,7 +25,7 @@ PUSH_CMD:=$(CONTAINER_CMD) push $(PUSH_OPTS)
 ALT_BIN=$(CURDIR)/.bin
 SHELLCHECK=$(shell command -v shellcheck || echo $(ALT_BIN)/shellcheck)
 GITLINT=$(shell command -v gitlint || echo $(ALT_BIN)/gitlint)
-
+YAMLLINT_CMD=$(shell command -v yamllint || echo $(ALT_BIN)/yamllint)
 COMMON_DIR:=images/common
 SERVER_DIR:=images/server
 AD_SERVER_DIR:=images/ad-server
@@ -273,13 +273,17 @@ test-nightly-server: build-nightly-server
 
 ### Check Rules: static checks, quality tools ###
 
-check: check-shell-scripts
+check: check-shell-scripts check-yaml
 .PHONY: check
-
 # rule requires shellcheck and find to run
 check-shell-scripts: $(filter $(ALT_BIN)%,$(SHELLCHECK))
 	$(SHELLCHECK) -P tests/ -eSC2181 -fgcc $$(find $(ROOT_DIR) -name "*.sh")
 .PHONY: check-shell-scripts
+
+
+check-yaml: $(filter $(ALT_BIN)%,$(YAMLLINT_CMD))
+	$(YAMLLINT_CMD) -c $(CURDIR)/.yamllint.yaml $(CURDIR)
+.PHONY: check-yaml
 
 # not included in check to not disrupt wip branches
 check-gitlint: $(filter $(ALT_BIN)%,$(GITLINT))
