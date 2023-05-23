@@ -176,6 +176,20 @@ jobs:
         image: "samba-server:nightly"
         retention_days: 1
 
+  build-nightly-server-centos:
+    runs-on: ubuntu-latest
+    env:
+      BUILDAH_FORMAT: oci
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build the nightly server image
+      run: make OS_NAME=centos build-nightly-server
+    - name: Upload nightly server image
+      uses: ishworkh/docker-image-artifact-upload@v1
+      with:
+        image: "samba-server:centos-nightly"
+        retention_days: 1
+
   build-nightly-ad-server:
     runs-on: ubuntu-latest
     env:
@@ -201,6 +215,18 @@ jobs:
         image: "samba-server:nightly"
     - name: Test the nightly server image
       run: LOCAL_TAG=samba-server:nightly tests/test-samba-container.sh
+
+  test-nightly-server-centos:
+    needs: build-nightly-server-centos
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Download nightly server image
+      uses: ishworkh/docker-image-artifact-download@v1
+      with:
+        image: "samba-server:centos-nightly"
+    - name: Test the nightly server image
+      run: LOCAL_TAG=samba-server:centos-nightly tests/test-samba-container.sh
 
   test-ad-server-kubernetes:
     needs:
