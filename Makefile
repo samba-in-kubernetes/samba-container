@@ -243,6 +243,7 @@ push-image@%: $(BUILDFILE_PREFIX).%
 
 build-server: $(BUILDFILE_SERVER)
 .PHONY: build-server
+
 $(BUILDFILE_SERVER): Makefile $(SERVER_SRC_FILE) $(SERVER_SOURCES)
 	$(MAKE) _img_build \
 		BUILD_ARGS=""  \
@@ -259,6 +260,7 @@ push-server: build-server
 
 build-nightly-server: $(BUILDFILE_NIGHTLY_SERVER)
 .PHONY: build-nightly-server
+
 $(BUILDFILE_NIGHTLY_SERVER): Makefile $(SERVER_SRC_FILE) $(SERVER_SOURCES)
 	$(MAKE) _img_build \
 		BUILD_ARGS="--build-arg=INSTALL_PACKAGES_FROM='samba-nightly'"  \
@@ -275,6 +277,7 @@ push-nightly-server: build-nightly-server
 
 build-ad-server: $(BUILDFILE_AD_SERVER)
 .PHONY: build-ad-server
+
 $(BUILDFILE_AD_SERVER): Makefile $(AD_SERVER_SRC_FILE) $(AD_SERVER_SOURCES)
 	$(MAKE) _img_build \
 		BUILD_ARGS="" \
@@ -291,6 +294,7 @@ push-ad-server: build-ad-server
 
 build-nightly-ad-server: $(BUILDFILE_NIGHTLY_AD_SERVER)
 .PHONY: build-nightly-ad-server
+
 $(BUILDFILE_NIGHTLY_AD_SERVER): Makefile $(AD_SERVER_SRC_FILE) $(AD_SERVER_SOURCES)
 	$(MAKE) _img_build \
 		BUILD_ARGS="--build-arg=INSTALL_PACKAGES_FROM='samba-nightly'" \
@@ -307,6 +311,7 @@ push-nightly-ad-server: build-nightly-ad-server
 
 build-client: $(BUILDFILE_CLIENT)
 .PHONY: build-client
+
 $(BUILDFILE_CLIENT): Makefile $(CLIENT_SRC_FILE)
 	$(MAKE) _img_build \
 		BUILD_ARGS="" \
@@ -323,6 +328,7 @@ push-client: build-client
 
 build-toolbox: $(BUILDFILE_TOOLBOX)
 .PHONY: build-toolbox
+
 $(BUILDFILE_TOOLBOX): Makefile $(TOOLBOX_SRC_FILE)
 	$(MAKE) _img_build \
 		BUILD_ARGS="" \
