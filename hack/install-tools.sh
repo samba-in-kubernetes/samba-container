@@ -52,7 +52,7 @@ if [ -z "$PY_CMD" ]; then
     fi
 fi
 
-ALT_BIN="$(realpath "${2:-.bin}")"
+ALT_BIN="${2:-.bin}"
 case "$1" in
     --gitlint)
         if command -v "${ALT_BIN}/gitlint" 2>/dev/null; then
