@@ -115,6 +115,11 @@ get_imagename=$(firstword $(subst :, ,$1))
 get_pkgsource=$(if $(findstring nightly,$1),nightly,default)
 
 
+arch_flag=$(strip $(if $(filter docker,$(CONTAINER_CMD)),\
+	$(if $(filter-out $(HOST_ARCH),$(BUILD_ARCH)),\
+		$(error Setting BUILD_ARCH != $(HOST_ARCH) not supported on docker)),\
+	$(if $(BUILD_ARCH),--arch $(BUILD_ARCH))))
+
 build: build-server build-nightly-server build-ad-server build-client \
 	build-toolbox
 .PHONY: build
@@ -305,7 +310,7 @@ check-gitlint: $(filter $(ALT_BIN)%,$(GITLINT))
 _img_build: $(DIR)/.common
 	$(BUILD_CMD) \
 		$(BUILD_ARGS) \
-		$(if $(filter-out $(HOST_ARCH),$(BUILD_ARCH)),--arch $(BUILD_ARCH)) \
+		$(call arch_flag) \
 		$(EXTRA_BUILD_ARGS) \
 		--tag $(SHORT_NAME) \
 		--tag $(REPO_NAME) \
