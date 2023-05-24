@@ -128,6 +128,11 @@ get_tag_extra=$(subst $2 ,-,$(wordlist 4,$(words $(subst -, ,$1)),$(subst -, ,$1
 dest_fqin=$(BUILDFILE_PREFIX).$1.$2-$(SRC_OS_NAME)-$(if $(BUILD_ARCH),$(BUILD_ARCH),$(HOST_ARCH))$(if $(EXTRA_TAG),-$(EXTRA_TAG))
 
 
+arch_flag=$(strip $(if $(filter docker,$(CONTAINER_CMD)),\
+	$(if $(filter-out $(HOST_ARCH),$(BUILD_ARCH)),\
+		$(error Setting BUILD_ARCH != $(HOST_ARCH) not supported on docker)),\
+	--arch $(BUILD_ARCH)))
+
 build: build-server build-nightly-server build-ad-server build-client \
 	build-toolbox
 .PHONY: build
@@ -342,7 +347,7 @@ _img_build: $(DIR)/.common
 	$(BUILD_CMD) \
 		$(BUILD_ARGS) \
 		$(if $(findstring nightly,$(PKG_SOURCE)),"--build-arg=INSTALL_PACKAGES_FROM='samba-nightly'") \
-		--arch $(BUILD_ARCH) \
+		$(call arch_flag) \
 		$(EXTRA_BUILD_ARGS) \
 		--tag $(call build_fqin,$(BASE_NAME),$(PKG_SOURCE),$(OS_NAME),$(BUILD_ARCH),$(EXTRA_TAG)) \
 		-f $(SRC_FILE) \
