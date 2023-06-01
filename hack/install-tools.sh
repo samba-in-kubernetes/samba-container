@@ -19,6 +19,15 @@ _require_py() {
     fi
 }
 
+_install_yamllint() {
+    _require_py
+    _ensure_alt_bin
+    "${PY_CMD}" -m venv "${ALT_BIN}/.py"
+    "${ALT_BIN}/.py/bin/pip" install "yamllint"
+    installed_to="${ALT_BIN}/yamllint"
+    ln -s "${ALT_BIN}/.py/bin/yamllint" "${installed_to}"
+}
+
 _install_gitlint() {
     _require_py
     _ensure_alt_bin
@@ -54,14 +63,21 @@ fi
 
 ALT_BIN="${2:-.bin}"
 case "$1" in
-    --gitlint)
+    "--yamllint")
+        if command -v "${ALT_BIN}/yamllint" 2>/dev/null; then
+            exit 0
+        fi
+        _install_yamllint 1>&2
+        echo "${installed_to}"
+    ;;
+    "--gitlint")
         if command -v "${ALT_BIN}/gitlint" 2>/dev/null; then
             exit 0
         fi
         _install_gitlint 1>&2
         echo "${installed_to}"
     ;;
-    --shellcheck)
+    "--shellcheck")
         if command -v "${ALT_BIN}/shellcheck" 2>/dev/null; then
             exit 0
         fi
@@ -73,6 +89,7 @@ case "$1" in
         echo ""
         echo "available tools:"
         echo "  --gitlint"
+	echo "  --yamllint"
         echo "  --shellcheck"
     ;;
 esac
