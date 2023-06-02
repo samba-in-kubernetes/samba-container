@@ -292,9 +292,10 @@ check-gitlint: $(filter $(ALT_BIN)%,$(GITLINT))
 
 ### Misc. Rules ###
 
-clean:
+clean: clean-buildfiles clean-altbin
+clean-buildfiles:
 	$(RM) $(BUILDFILE_PREFIX)*
-.PHONY: clean
+.PHONY: clean clean-buildfiles
 
 # _img_build is an "internal" rule to make the building of samba-container
 # images regular and more "self documenting". A makefile.foo that includes
