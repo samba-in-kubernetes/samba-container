@@ -290,13 +290,6 @@ check-gitlint: $(filter $(ALT_BIN)%,$(GITLINT))
 	$(GITLINT) -C .gitlint --commits origin/master.. lint
 .PHONY: check-gitlint
 
-### Misc. Rules ###
-
-clean: clean-buildfiles clean-altbin
-clean-buildfiles:
-	$(RM) $(BUILDFILE_PREFIX)*
-.PHONY: clean clean-buildfiles
-
 # _img_build is an "internal" rule to make the building of samba-container
 # images regular and more "self documenting". A makefile.foo that includes
 # this Makefile can add build rules using _img_build as a building block.
@@ -329,6 +322,16 @@ $(DIR)/.common: $(COMMON_DIR)
 $(ALT_BIN)/%:
 	$(CURDIR)/hack/install-tools.sh --$* $(ALT_BIN)
 
+
+
+### Misc. Rules ###
+
+clean: clean-buildfiles clean-altbin
+.PHONY: clean
+clean-buildfiles:
+	$(RM) $(BUILDFILE_PREFIX)*
+.PHONY:  clean-buildfiles
 clean-altbin:
 	$(RM) -r $(ALT_BIN)
 .PHONY: clean-altbin
+
