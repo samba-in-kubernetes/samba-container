@@ -1,0 +1,14 @@
+include Makefile
+
+OS_NAME=opensuse
+TAG=latest
+SERVER_SOURCES:=$(SERVER_DIR)/smb.conf
+SERVER_NAME=samba-server:$(TAG)
+AD_SERVER_NAME=samba-ad-server:$(TAG)
+CLIENT_NAME=samba-client:$(TAG)
+TOOLBOX_NAME=samba-toolbox:$(TAG)
+REPO_BASE=registry.opensuse.org/opensuse/
+SERVER_REPO_NAME=registry.opensuse.org/opensuse/samba-server:$(TAG)
+AD_SERVER_REPO_NAME=registry.opensuse.org/opensuse/samba-ad-server:$(TAG)
+CLIENT_REPO_NAME=registry.opensuse.org/opensuse/samba-client:$(TAG)
+TOOLBOX_REPO_NAME=registry.opensuse.org/opensuse/samba-toolbox:$(TAG)

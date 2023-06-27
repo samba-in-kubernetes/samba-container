@@ -1,0 +1,45 @@
+FROM registry.fedoraproject.org/fedora:37
+ARG INSTALL_PACKAGES_FROM=default
+ARG SAMBA_VERSION_SUFFIX=""
+ARG SAMBACC_VERSION_SUFFIX=""
+ARG SAMBA_SPECIFICS=daemon_cli_debug_output,ctdb_leader_admin_command
+ARG INSTALL_CUSTOM_REPO=
+
+MAINTAINER John Mulligan <jmulligan@redhat.com>
+
+LABEL org.opencontainers.image.title="Samba container"
+LABEL org.opencontainers.image.description="Samba container"
+LABEL org.opencontainers.image.vendor="Samba in Kubernetes"
+LABEL org.opencontainers.image.url="https://github.com/samba-in-kubernetes/samba-container"
+
+COPY smb.conf /etc/samba/smb.conf
+COPY install-packages.sh /usr/local/bin/install-packages.sh
+RUN /usr/local/bin/install-packages.sh \
+    "${INSTALL_PACKAGES_FROM}" \
+    "${SAMBA_VERSION_SUFFIX}" \
+    "${INSTALL_CUSTOM_REPO}"
+
+# If you want to install a custom version of sambacc into this image mount
+# a directory containing a sambacc RPM, or a sambacc wheel, or a .repo
+# file at /tmp/sambacc-dist-latest
+# If the directory is empty the script automatically falls back to using
+# the latest continuously built RPM from our sambacc COPR:
+# https://copr.fedorainfracloud.org/coprs/phlogistonjohn/sambacc
+COPY .common/install-sambacc-common.sh /usr/local/bin/install-sambacc-common.sh
+COPY install-sambacc.sh /usr/local/bin/install-sambacc.sh
+RUN /usr/local/bin/install-sambacc.sh \
+    "/tmp/sambacc-dist-latest" \
+    "${SAMBACC_VERSION_SUFFIX}"
+
+
+VOLUME ["/share"]
+
+EXPOSE 445
+
+ENV SAMBACC_CONFIG="/etc/samba/container.json:/etc/samba/users.json"
+ENV SAMBA_CONTAINER_ID="demo"
+ENV SAMBA_SPECIFICS="$SAMBA_SPECIFICS"
+ENTRYPOINT ["samba-container"]
+CMD ["run", "smbd"]
+
+# vim:set syntax=dockerfile:

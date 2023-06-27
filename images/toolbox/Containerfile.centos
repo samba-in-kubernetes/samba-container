@@ -1,0 +1,12 @@
+FROM quay.io/samba.org/samba-client:centos-latest
+MAINTAINER Shachar Sharon <ssharon@redhat.com>
+
+LABEL org.opencontainers.image.title="Samba Toolbox container"
+LABEL org.opencontainers.image.description="Samba Toolbox container"
+LABEL org.opencontainers.image.vendor="Samba in Kubernetes"
+LABEL org.opencontainers.image.url="https://github.com/samba-in-kubernetes/samba-container"
+
+RUN dnf install --enablerepo=crb -y \
+    samba-test \
+    tdb-tools \
+    && dnf clean all

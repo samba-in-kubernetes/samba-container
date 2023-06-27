@@ -1,0 +1,20 @@
+# Copyright 2020 Michael Adam
+
+FROM registry.fedoraproject.org/fedora:37
+
+MAINTAINER Michael Adam <obnox@samba.org>
+
+LABEL org.opencontainers.image.title="Samba Client container"
+LABEL org.opencontainers.image.description="Samba Client container"
+LABEL org.opencontainers.image.vendor="Samba in Kubernetes"
+LABEL org.opencontainers.image.url="https://github.com/samba-in-kubernetes/samba-container"
+
+
+# https://github.com/samba-in-kubernetes/samba-container/issues/96#issuecomment-1387467396
+#
+# samba-common, when pulled in as a dependency for samba-client, has a preferred
+# requirement on systemd-standalone-tmpfiles(rather than systemd) but is meant
+# to conflict with systemd itself of same version or higher. We can avoid the
+# conflict by choosing to install systemd over systemd-standalone-tmpfiles.
+RUN dnf -y install samba-client systemd \
+    && dnf clean all
