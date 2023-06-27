@@ -2,6 +2,7 @@
 
 install_sambacc() {
     local distdir="$1"
+    local sambacc_version_suffix="$2"
     if ! [ -d "${distdir}" ]; then
         echo "warning: no directory: ${distdir}" >&2
     else
@@ -65,7 +66,7 @@ install_sambacc() {
         install-from-repo)
             local tgt="${repofiles[0]}"
             cp "${tgt}" /etc/yum.repos.d/"$(basename "${tgt}")"
-            dnf install -y python3-sambacc
+            dnf install -y "python3-sambacc${sambacc_version_suffix}"
             dnf clean all
             container_json_file="/usr/share/sambacc/examples/${DEFAULT_JSON_FILE}"
         ;;
@@ -82,7 +83,7 @@ install_sambacc() {
                 copr_args+=("centos-stream+epel-next-9-$(uname -p)")
             fi
             dnf copr enable -y "${copr_args[@]}"
-            dnf install -y python3-sambacc
+            dnf install -y "python3-sambacc${sambacc_version_suffix}"
             dnf clean all
             container_json_file="/usr/share/sambacc/examples/${DEFAULT_JSON_FILE}"
         ;;
