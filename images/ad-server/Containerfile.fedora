@@ -1,6 +1,7 @@
 FROM registry.fedoraproject.org/fedora:37
 ARG INSTALL_PACKAGES_FROM=default
 ARG SAMBA_VERSION_SUFFIX=""
+ARG SAMBACC_VERSION_SUFFIX=""
 ARG SAMBA_SPECIFICS=
 ARG INSTALL_CUSTOM_REPO=
 
@@ -25,7 +26,8 @@ RUN /usr/local/bin/install-packages.sh \
 COPY .common/install-sambacc-common.sh /usr/local/bin/install-sambacc-common.sh
 COPY install-sambacc.sh /usr/local/bin/install-sambacc.sh
 RUN /usr/local/bin/install-sambacc.sh \
-    "/tmp/sambacc-dist-latest"
+    "/tmp/sambacc-dist-latest" \
+    "${SAMBACC_VERSION_SUFFIX}"
 
 
 ENV SAMBACC_CONFIG="/etc/samba/container.json:/etc/samba/users.json"
