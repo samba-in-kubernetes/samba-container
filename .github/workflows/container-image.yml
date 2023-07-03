@@ -48,9 +48,10 @@ jobs:
       - name: Build the server image
         run: make OS_NAME=${{ matrix.os}} BUILD_ARCH=${{ matrix.arch}} build-server
       - name: Upload server image
-        uses: ishworkh/docker-image-artifact-upload@v1
+        uses: ishworkh/container-image-artifact-upload@v1.0.0
         with:
           image: "samba-server:${{ matrix.os }}-latest"
+          container_engine: ${{ env.CONTAINER_CMD }}
           retention_days: 1
 
   build-ad-server:
@@ -68,9 +69,10 @@ jobs:
       - name: Build the ad server image
         run: make OS_NAME=${{matrix.os}} BUILD_ARCH=${{matrix.arch}} build-ad-server
       - name: Upload ad server image
-        uses: ishworkh/docker-image-artifact-upload@v1
+        uses: ishworkh/container-image-artifact-upload@v1.0.0
         with:
           image: "samba-ad-server:${{ matrix.os}}-latest"
+          container_engine: ${{ env.CONTAINER_CMD }}
           retention_days: 1
 
   build-client:
@@ -88,9 +90,10 @@ jobs:
       # Here we upload samba-client image to artifacts locally for consumption
       # during  the samba-toolbox build process.
       - name: Upload the client image
-        uses: ishworkh/docker-image-artifact-upload@v1
+        uses: ishworkh/container-image-artifact-upload@v1.0.0
         with:
           image: "quay.io/samba.org/samba-client:${{ matrix.os }}-latest"
+          container_engine: ${{ env.CONTAINER_CMD }}
           retention_days: 1
 
   build-toolbox:
@@ -107,9 +110,10 @@ jobs:
       # Download locally stored samba-client image to be used as base for building
       # samba-toolbox.
       - name: Download client image
-        uses: ishworkh/docker-image-artifact-download@v1
+        uses: ishworkh/container-image-artifact-download@v1.0.0
         with:
           image: "quay.io/samba.org/samba-client:${{ matrix.os }}-latest"
+          container_engine: ${{ env.CONTAINER_CMD }}
       - name: Build the toolbox image
         run: make OS_NAME=${{ matrix.os }}  BUILD_ARCH=${{ matrix.arch }} build-toolbox
 
@@ -123,9 +127,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Download server image
-        uses: ishworkh/docker-image-artifact-download@v1
+        uses: ishworkh/container-image-artifact-download@v1.0.0
         with:
           image: "samba-server:${{ matrix.os }}-latest"
+          container_engine: ${{ env.CONTAINER_CMD }}
       - name: Test the server image
         run: LOCAL_TAG="samba-server:${{ matrix.os}}-latest" tests/test-samba-container.sh
 
@@ -144,9 +149,10 @@ jobs:
       - name: Build the nightly server image
         run: make OS_NAME=${{ matrix.os }} BUILD_ARCH=${{ matrix.arch }} build-nightly-server
       - name: Upload nightly server image
-        uses: ishworkh/docker-image-artifact-upload@v1
+        uses: ishworkh/container-image-artifact-upload@v1.0.0
         with:
           image: "samba-server:${{ matrix.os }}-nightly"
+          container_engine: ${{ env.CONTAINER_CMD }}
           retention_days: 1
 
   build-nightly-ad-server:
@@ -164,9 +170,10 @@ jobs:
       - name: Build the nightly ad server image
         run: make OS_NAME=${{ matrix.os }} BUILD_ARCH=${{ matrix.arch }} build-nightly-ad-server
       - name: Upload nightly AD server image
-        uses: ishworkh/docker-image-artifact-upload@v1
+        uses: ishworkh/container-image-artifact-upload@v1.0.0
         with:
           image: "samba-ad-server:${{ matrix.os }}-nightly"
+          container_engine: ${{ env.CONTAINER_CMD }}
           retention_days: 1
 
   test-nightly-server:
@@ -179,9 +186,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Download nightly server image
-        uses: ishworkh/docker-image-artifact-download@v1
+        uses: ishworkh/container-image-artifact-download@v1.0.0
         with:
           image: "samba-server:${{ matrix.os }}-nightly"
+          container_engine: ${{ env.CONTAINER_CMD }}
       - name: Test the nightly server image
         run: LOCAL_TAG=samba-server:${{ matrix.os }}-nightly tests/test-samba-container.sh
 
@@ -205,15 +213,17 @@ jobs:
       - name: get nodes
         run: kubectl get nodes
       - name: Download ad server image
-        uses: ishworkh/docker-image-artifact-download@v1
+        uses: ishworkh/container-image-artifact-download@v1.0.0
         with:
           image: "samba-ad-server:${{ matrix.os }}-latest"
+          container_engine: ${{ env.CONTAINER_CMD }}
       - name: import ad server image
         run: k3d image import samba-ad-server:${{ matrix.os }}-latest
       - name: Download file server image
-        uses: ishworkh/docker-image-artifact-download@v1
+        uses: ishworkh/container-image-artifact-download@v1.0.0
         with:
           image: "samba-server:${{ matrix.os }}-latest"
+          container_engine: ${{ env.CONTAINER_CMD }}
       - name: import file server image
         run: k3d image import samba-server:${{ matrix.os }}-latest
       - name: run the ad-dc deployment test
@@ -239,15 +249,17 @@ jobs:
       - name: get nodes
         run: kubectl get nodes
       - name: Download nightly ad server image
-        uses: ishworkh/docker-image-artifact-download@v1
+        uses: ishworkh/container-image-artifact-download@v1.0.0
         with:
           image: "samba-ad-server:${{ matrix.os }}-nightly"
+          container_engine: ${{ env.CONTAINER_CMD }}
       - name: import nightly ad server image
         run: k3d image import samba-ad-server:${{ matrix.os }}-nightly
       - name: Download nightly file server image
-        uses: ishworkh/docker-image-artifact-download@v1
+        uses: ishworkh/container-image-artifact-download@v1.0.0
         with:
           image: "samba-server:${{ matrix.os }}-nightly"
+          container_engine: ${{ env.CONTAINER_CMD }}
       - name: import nightly file server image
         run: k3d image import samba-server:${{ matrix.os }}-nightly
       - name: run the ad-dc deployment test
