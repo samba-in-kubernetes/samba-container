@@ -37,6 +37,7 @@ RUN zypper --non-interactive install --no-recommends \
   zypper clean;
 RUN ln -sf /usr/share/sambacc/examples/addc.json /etc/samba/container.json
 RUN rm -rf /etc/samba/smb.conf
+RUN cp /usr/etc/nsswitch.conf  /etc/nsswitch.conf
 
 
 ENV SAMBACC_CONFIG="/etc/samba/container.json:/etc/samba/users.json"
