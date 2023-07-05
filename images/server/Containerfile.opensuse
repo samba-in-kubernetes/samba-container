@@ -35,6 +35,9 @@ RUN zypper --non-interactive install --no-recommends \
   sambacc && \
   zypper clean;
 RUN ln -sf /usr/share/sambacc/examples/minimal.json /etc/samba/container.json
+RUN cp /usr/etc/nsswitch.conf  /etc/nsswitch.conf
+
+
 
 
 VOLUME ["/share"]
