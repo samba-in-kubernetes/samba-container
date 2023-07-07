@@ -2,11 +2,13 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${0}")" && pwd)"
 IMG_TAG=${IMG_TAG:-"latest"}
+IMG_NAME="${SERVER_IMG:-samba-server}:${IMG_TAG}"
+IMG_PULL_POLICY="${IMG_PULL_POLICY:-Never}"
 
 source "${SCRIPT_DIR}/common.sh"
 
 echo "Creating ad member pod..."
-ERROR_MSG=$(IMG_TAG=${IMG_TAG} envsubst < "${MEMBER_POD_YAML}" | kubectl create -f - 2>&1 1>/dev/null)
+ERROR_MSG=$(IMG_NAME="${IMG_NAME}" IMG_PULL_POLICY="${IMG_PULL_POLICY}" envsubst < "${MEMBER_POD_YAML}" | kubectl create -f - 2>&1 1>/dev/null)
 if [ $? -ne 0 ] ; then
 	if [[ "${ERROR_MSG}" =~ "AlreadyExists" ]] ; then
 		echo "pod exists already. Continuing."
