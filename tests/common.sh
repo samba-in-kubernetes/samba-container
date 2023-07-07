@@ -15,3 +15,21 @@ _error() {
 	echo "$@"
 	exit 1
 }
+
+_errordbg() {
+	local errmsg="$1"
+	shift
+	echo ERROR: "$errmsg"
+	for resource in "$@"; do
+		echo "---------"
+		dcmd=(kubectl get -o yaml "${resource}")
+		echo ">" "${dcmd[@]}"
+		! "${dcmd[@]}"
+		echo "---------"
+		dcmd=(kubectl describe "${resource}")
+		echo ">" "${dcmd[@]}"
+		! "${dcmd[@]}"
+	done
+	echo "---------"
+	_error "$errmsg"
+}

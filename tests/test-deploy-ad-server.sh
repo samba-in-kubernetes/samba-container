@@ -37,7 +37,8 @@ done
 echo
 kubectl get pod
 echo
-echo "$podstatus" | grep -q 'Running' || _error "Pod did not reach Running state"
+echo "$podstatus" | grep -q 'Running' || \
+    _errordbg "Pod did not reach Running state" "deployment/${AD_DEPLOYMENT_NAME}" "pod/${podname}"
 
 echo "waiting for samba to become reachable"
 tries=0
