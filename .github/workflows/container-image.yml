@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [centos, fedora]
+        os: [centos, fedora, opensuse]
         arch: [amd64]
     env:
       BUILDAH_FORMAT: oci
@@ -56,7 +56,7 @@ jobs:
   build-ad-server:
     strategy:
       matrix:
-        os: [centos, fedora]
+        os: [centos, fedora, opensuse]
         arch: [amd64]
         exclude:
           - os: centos
@@ -76,7 +76,7 @@ jobs:
   build-client:
     strategy:
       matrix:
-        os: [centos, fedora]
+        os: [centos, fedora, opensuse]
         arch: [amd64]
     env:
       BUILDAH_FORMAT: oci
@@ -96,7 +96,7 @@ jobs:
   build-toolbox:
     strategy:
       matrix:
-        os: [centos, fedora]
+        os: [centos, fedora, opensuse]
         arch: [amd64]
     needs: build-client
     runs-on: ubuntu-latest
@@ -116,7 +116,7 @@ jobs:
   test-server:
     strategy:
       matrix:
-        os: [centos, fedora]
+        os: [centos, fedora, opensuse]
         arch: [amd64]
     needs: build-server
     runs-on: ubuntu-latest
@@ -188,7 +188,7 @@ jobs:
   test-ad-server-kubernetes:
     strategy:
       matrix:
-        os: [centos, fedora]
+        os: [centos, fedora, opensuse]
         arch: [amd64]
         exclude:
           - os: centos
