@@ -82,16 +82,16 @@ pull_request_rules:
       # any changes requested.
       - "#changes-requested-reviews-by=0"
       - or:
-        # Any contributor's PR can be automerged with 2 (or more) reviews.
-        - "#approved-reviews-by>=2"
-        # A maintainer's contribution that has already aged long enough to
-        # earn the "priority-review" label can be merged immediately.
-        # The label can also be applied manually in case of an important
-        # bugfix, etc.
-        - and:
-          - "label=priority-review"
-          - "author=@maintainers"
-          - "#approved-reviews-by>=1"
+          # Any contributor's PR can be automerged with 2 (or more) reviews.
+          - "#approved-reviews-by>=2"
+          # A maintainer's contribution that has already aged long enough to
+          # earn the "priority-review" label can be merged immediately.
+          # The label can also be applied manually in case of an important
+          # bugfix, etc.
+          - and:
+              - "label=priority-review"
+              - "author=@maintainers"
+              - "#approved-reviews-by>=1"
     actions:
       queue: {}
       dismiss_reviews: {}
