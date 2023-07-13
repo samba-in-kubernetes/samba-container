@@ -14,15 +14,25 @@ defaults:
 queue_rules:
   - name: default
     conditions:
-      - check-success=check
-      - check-success=build-server
-      - check-success=build-ad-server
-      - check-success=build-nightly-server
-      - check-success=build-nightly-ad-server
-      - check-success=build-client
-      - check-success=build-toolbox
-      - check-success=test-ad-server-kubernetes
-      - check-success=test-nightly-ad-server-kubernetes
+      - check-success=checks
+      - check-success=build-server (centos, amd64)
+      - check-success=build-server (fedora, amd64)
+      - check-success=build-server (opensuse, amd64)
+      - check-success=build-ad-server (fedora, amd64)
+      - check-success=build-ad-server (opensuse, amd64)
+      - check-success=build-nightly-server (centos, amd64)
+      - check-success=build-nightly-server (fedora, amd64)
+      - check-success=build-nightly-server (opensuse, amd64)
+      - check-success=build-nightly-ad-server (fedora, amd64)
+      - check-success=build-client (centos, amd64)
+      - check-success=build-client (fedora, amd64)
+      - check-success=build-client (opensuse, amd64)
+      - check-success=build-toolbox (centos, amd64)
+      - check-success=build-toolbox (fedora, amd64)
+      - check-success=build-toolbox (opensuse, amd64)
+      - check-success=test-ad-server-kubernetes (fedora, amd64)
+      - check-success=test-ad-server-kubernetes (opensuse, amd64)
+      - check-success=test-nightly-ad-server-kubernetes (fedora, amd64)
       - check-success=dpulls
 
 
@@ -38,15 +48,25 @@ pull_request_rules:
   # Perform automatic merge on conditions
   - name: Automatic merge on approval
     conditions:
-      - check-success=check
-      - check-success=build-server
-      - check-success=build-ad-server
-      - check-success=build-nightly-server
-      - check-success=build-nightly-ad-server
-      - check-success=build-client
-      - check-success=build-toolbox
-      - check-success=test-ad-server-kubernetes
-      - check-success=test-nightly-ad-server-kubernetes
+      - check-success=checks
+      - check-success=build-server (centos, amd64)
+      - check-success=build-server (fedora, amd64)
+      - check-success=build-server (opensuse, amd64)
+      - check-success=build-ad-server (fedora, amd64)
+      - check-success=build-ad-server (opensuse, amd64)
+      - check-success=build-nightly-server (centos, amd64)
+      - check-success=build-nightly-server (fedora, amd64)
+      - check-success=build-nightly-server (opensuse, amd64)
+      - check-success=build-nightly-ad-server (fedora, amd64)
+      - check-success=build-client (centos, amd64)
+      - check-success=build-client (fedora, amd64)
+      - check-success=build-client (opensuse, amd64)
+      - check-success=build-toolbox (centos, amd64)
+      - check-success=build-toolbox (fedora, amd64)
+      - check-success=build-toolbox (opensuse, amd64)
+      - check-success=test-ad-server-kubernetes (fedora, amd64)
+      - check-success=test-ad-server-kubernetes (opensuse, amd64)
+      - check-success=test-nightly-ad-server-kubernetes (fedora, amd64)
       - check-success=dpulls
       - "-draft"
       # Contributors should set the 'do-not-merge' label if they don't want
