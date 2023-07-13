@@ -14,13 +14,13 @@ jobs:
   checks:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    # We need a newer version of shellcheck to avoid problems with the
-    # relative imports. Our scripts work on v0.7.2 and up but not the
-    # v0.7.0 preinstalled in the ubutnu image. We can force a local
-    # install by expliclity setting SHELLCHECK to `$ALT_BIN/shellcheck`
-    - name: Run static check tools
-      run: make check SHELLCHECK=$PWD/.bin/shellcheck
+      - uses: actions/checkout@v3
+      # We need a newer version of shellcheck to avoid problems with the
+      # relative imports. Our scripts work on v0.7.2 and up but not the
+      # v0.7.0 preinstalled in the ubutnu image. We can force a local
+      # install by expliclity setting SHELLCHECK to `$ALT_BIN/shellcheck`
+      - name: Run static check tools
+        run: make check SHELLCHECK=$PWD/.bin/shellcheck
 
   check-commits:
     runs-on: ubuntu-latest
@@ -44,14 +44,14 @@ jobs:
     env:
       BUILDAH_FORMAT: oci
     steps:
-    - uses: actions/checkout@v3
-    - name: Build the server image
-      run: make OS_NAME=${{ matrix.os}} BUILD_ARCH=${{ matrix.arch}} build-server
-    - name: Upload server image
-      uses: ishworkh/docker-image-artifact-upload@v1
-      with:
-        image: "samba-server:${{ matrix.os }}-latest"
-        retention_days: 1
+      - uses: actions/checkout@v3
+      - name: Build the server image
+        run: make OS_NAME=${{ matrix.os}} BUILD_ARCH=${{ matrix.arch}} build-server
+      - name: Upload server image
+        uses: ishworkh/docker-image-artifact-upload@v1
+        with:
+          image: "samba-server:${{ matrix.os }}-latest"
+          retention_days: 1
 
   build-ad-server:
     strategy:
@@ -64,14 +64,14 @@ jobs:
     env:
       BUILDAH_FORMAT: oci
     steps:
-    - uses: actions/checkout@v3
-    - name: Build the ad server image
-      run: make OS_NAME=${{matrix.os}} BUILD_ARCH=${{matrix.arch}} build-ad-server
-    - name: Upload ad server image
-      uses: ishworkh/docker-image-artifact-upload@v1
-      with:
-        image: "samba-ad-server:${{ matrix.os}}-latest"
-        retention_days: 1
+      - uses: actions/checkout@v3
+      - name: Build the ad server image
+        run: make OS_NAME=${{matrix.os}} BUILD_ARCH=${{matrix.arch}} build-ad-server
+      - name: Upload ad server image
+        uses: ishworkh/docker-image-artifact-upload@v1
+        with:
+          image: "samba-ad-server:${{ matrix.os}}-latest"
+          retention_days: 1
 
   build-client:
     strategy:
@@ -82,16 +82,16 @@ jobs:
       BUILDAH_FORMAT: oci
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: build the client image
-      run: make OS_NAME=${{ matrix.os }} BUILD_ARCH=${{ matrix.arch }} build-client
-    # Here we upload samba-client image to artifacts locally for consumption
-    # during  the samba-toolbox build process.
-    - name: Upload the client image
-      uses: ishworkh/docker-image-artifact-upload@v1
-      with:
-        image: "quay.io/samba.org/samba-client:${{ matrix.os }}-latest"
-        retention_days: 1
+      - uses: actions/checkout@v3
+      - name: build the client image
+        run: make OS_NAME=${{ matrix.os }} BUILD_ARCH=${{ matrix.arch }} build-client
+      # Here we upload samba-client image to artifacts locally for consumption
+      # during  the samba-toolbox build process.
+      - name: Upload the client image
+        uses: ishworkh/docker-image-artifact-upload@v1
+        with:
+          image: "quay.io/samba.org/samba-client:${{ matrix.os }}-latest"
+          retention_days: 1
 
   build-toolbox:
     strategy:
@@ -103,15 +103,15 @@ jobs:
     env:
       BUILDAH_FORMAT: oci
     steps:
-    - uses: actions/checkout@v3
-    # Download locally stored samba-client image to be used as base for building
-    # samba-toolbox.
-    - name: Download client image
-      uses: ishworkh/docker-image-artifact-download@v1
-      with:
-        image: "quay.io/samba.org/samba-client:${{ matrix.os }}-latest"
-    - name: Build the toolbox image
-      run: make OS_NAME=${{ matrix.os }}  BUILD_ARCH=${{ matrix.arch }} build-toolbox
+      - uses: actions/checkout@v3
+      # Download locally stored samba-client image to be used as base for building
+      # samba-toolbox.
+      - name: Download client image
+        uses: ishworkh/docker-image-artifact-download@v1
+        with:
+          image: "quay.io/samba.org/samba-client:${{ matrix.os }}-latest"
+      - name: Build the toolbox image
+        run: make OS_NAME=${{ matrix.os }}  BUILD_ARCH=${{ matrix.arch }} build-toolbox
 
   test-server:
     strategy:
@@ -121,13 +121,13 @@ jobs:
     needs: build-server
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Download server image
-      uses: ishworkh/docker-image-artifact-download@v1
-      with:
-        image: "samba-server:${{ matrix.os }}-latest"
-    - name: Test the server image
-      run: LOCAL_TAG="samba-server:${{ matrix.os}}-latest" tests/test-samba-container.sh
+      - uses: actions/checkout@v3
+      - name: Download server image
+        uses: ishworkh/docker-image-artifact-download@v1
+        with:
+          image: "samba-server:${{ matrix.os }}-latest"
+      - name: Test the server image
+        run: LOCAL_TAG="samba-server:${{ matrix.os}}-latest" tests/test-samba-container.sh
 
   # Reminder: the nightly-server images consume nightly samba rpm builds
   # it is not *just* an image that gets built nightly
@@ -140,14 +140,14 @@ jobs:
     env:
       BUILDAH_FORMAT: oci
     steps:
-    - uses: actions/checkout@v3
-    - name: Build the nightly server image
-      run: make OS_NAME=${{ matrix.os }} BUILD_ARCH=${{ matrix.arch }} build-nightly-server
-    - name: Upload nightly server image
-      uses: ishworkh/docker-image-artifact-upload@v1
-      with:
-        image: "samba-server:${{ matrix.os }}-nightly"
-        retention_days: 1
+      - uses: actions/checkout@v3
+      - name: Build the nightly server image
+        run: make OS_NAME=${{ matrix.os }} BUILD_ARCH=${{ matrix.arch }} build-nightly-server
+      - name: Upload nightly server image
+        uses: ishworkh/docker-image-artifact-upload@v1
+        with:
+          image: "samba-server:${{ matrix.os }}-nightly"
+          retention_days: 1
 
   build-nightly-ad-server:
     runs-on: ubuntu-latest
@@ -160,14 +160,14 @@ jobs:
     env:
       BUILDAH_FORMAT: oci
     steps:
-    - uses: actions/checkout@v3
-    - name: Build the nightly ad server image
-      run: make OS_NAME=${{ matrix.os }} BUILD_ARCH=${{ matrix.arch }} build-nightly-ad-server
-    - name: Upload nightly AD server image
-      uses: ishworkh/docker-image-artifact-upload@v1
-      with:
-        image: "samba-ad-server:${{ matrix.os }}-nightly"
-        retention_days: 1
+      - uses: actions/checkout@v3
+      - name: Build the nightly ad server image
+        run: make OS_NAME=${{ matrix.os }} BUILD_ARCH=${{ matrix.arch }} build-nightly-ad-server
+      - name: Upload nightly AD server image
+        uses: ishworkh/docker-image-artifact-upload@v1
+        with:
+          image: "samba-ad-server:${{ matrix.os }}-nightly"
+          retention_days: 1
 
   test-nightly-server:
     strategy:
@@ -177,13 +177,13 @@ jobs:
     needs: build-nightly-server
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Download nightly server image
-      uses: ishworkh/docker-image-artifact-download@v1
-      with:
-        image: "samba-server:${{ matrix.os }}-nightly"
-    - name: Test the nightly server image
-      run: LOCAL_TAG=samba-server:${{ matrix.os }}-nightly tests/test-samba-container.sh
+      - uses: actions/checkout@v3
+      - name: Download nightly server image
+        uses: ishworkh/docker-image-artifact-download@v1
+        with:
+          image: "samba-server:${{ matrix.os }}-nightly"
+      - name: Test the nightly server image
+        run: LOCAL_TAG=samba-server:${{ matrix.os }}-nightly tests/test-samba-container.sh
 
   test-ad-server-kubernetes:
     strategy:
@@ -200,24 +200,24 @@ jobs:
     env:
       IMG_TAG: ${{ matrix.os }}-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: nolar/setup-k3d-k3s@v1
-    - name: get nodes
-      run: kubectl get nodes
-    - name: Download ad server image
-      uses: ishworkh/docker-image-artifact-download@v1
-      with:
-        image: "samba-ad-server:${{ matrix.os }}-latest"
-    - name: import ad server image
-      run: k3d image import samba-ad-server:${{ matrix.os }}-latest
-    - name: Download file server image
-      uses: ishworkh/docker-image-artifact-download@v1
-      with:
-        image: "samba-server:${{ matrix.os }}-latest"
-    - name: import file server image
-      run: k3d image import samba-server:${{ matrix.os }}-latest
-    - name: run the ad-dc deployment test
-      run: ./tests/test-samba-ad-server-kubernetes.sh
+      - uses: actions/checkout@v3
+      - uses: nolar/setup-k3d-k3s@v1
+      - name: get nodes
+        run: kubectl get nodes
+      - name: Download ad server image
+        uses: ishworkh/docker-image-artifact-download@v1
+        with:
+          image: "samba-ad-server:${{ matrix.os }}-latest"
+      - name: import ad server image
+        run: k3d image import samba-ad-server:${{ matrix.os }}-latest
+      - name: Download file server image
+        uses: ishworkh/docker-image-artifact-download@v1
+        with:
+          image: "samba-server:${{ matrix.os }}-latest"
+      - name: import file server image
+        run: k3d image import samba-server:${{ matrix.os }}-latest
+      - name: run the ad-dc deployment test
+        run: ./tests/test-samba-ad-server-kubernetes.sh
 
   test-nightly-ad-server-kubernetes:
     strategy:
