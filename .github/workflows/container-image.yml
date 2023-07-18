@@ -43,6 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       BUILDAH_FORMAT: oci
+      IMG_TAG: default-${{ matrix.os }}-${{ matrix.arch }}
     steps:
       - uses: actions/checkout@v3
       - name: Build the server image
@@ -50,7 +51,7 @@ jobs:
       - name: Upload server image
         uses: ishworkh/container-image-artifact-upload@v1.0.0
         with:
-          image: "samba-server:${{ matrix.os }}-latest"
+          image: "samba-server:${{ env.IMG_TAG }}"
           container_engine: ${{ env.CONTAINER_CMD }}
           retention_days: 1
 
@@ -64,6 +65,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       BUILDAH_FORMAT: oci
+      IMG_TAG: default-${{ matrix.os }}-${{ matrix.arch }}
     steps:
       - uses: actions/checkout@v3
       - name: Build the ad server image
@@ -71,7 +73,7 @@ jobs:
       - name: Upload ad server image
         uses: ishworkh/container-image-artifact-upload@v1.0.0
         with:
-          image: "samba-ad-server:${{ matrix.os}}-latest"
+          image: "samba-ad-server:${{ env.IMG_TAG }}"
           container_engine: ${{ env.CONTAINER_CMD }}
           retention_days: 1
 
@@ -83,6 +85,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       BUILDAH_FORMAT: oci
+      IMG_TAG: default-${{ matrix.os }}-${{ matrix.arch }}
     steps:
       - uses: actions/checkout@v3
       - name: build the client image
@@ -92,7 +95,7 @@ jobs:
       - name: Upload the client image
         uses: ishworkh/container-image-artifact-upload@v1.0.0
         with:
-          image: "quay.io/samba.org/samba-client:${{ matrix.os }}-latest"
+          image: "samba-client:${{ env.IMG_TAG }}"
           container_engine: ${{ env.CONTAINER_CMD }}
           retention_days: 1
 
@@ -105,6 +108,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       BUILDAH_FORMAT: oci
+      IMG_TAG: default-${{ matrix.os }}-${{ matrix.arch }}
     steps:
       - uses: actions/checkout@v3
       # Download locally stored samba-client image to be used as base for building
@@ -112,8 +116,14 @@ jobs:
       - name: Download client image
         uses: ishworkh/container-image-artifact-download@v1.0.0
         with:
-          image: "quay.io/samba.org/samba-client:${{ matrix.os }}-latest"
+          image: "samba-client:${{ env.IMG_TAG }}"
           container_engine: ${{ env.CONTAINER_CMD }}
+      # Workaround: retag the image so that the FQIN image matches the name in
+      # the toolbox containerfiles.
+      - name: Apply OS-latest tag to image (for centos)
+        run: ${{ env.CONTAINER_CMD }} tag samba-client:${{ env.IMG_TAG }} quay.io/samba.org/samba-client:${{ matrix.os }}-latest
+      - name: Apply latest tag to image (for fedora)
+        run: ${{ env.CONTAINER_CMD }} tag samba-client:${{ env.IMG_TAG }} quay.io/samba.org/samba-client:latest
       - name: Build the toolbox image
         run: make KIND=toolbox OS_NAME=${{ matrix.os }}  BUILD_ARCH=${{ matrix.arch }} build-image
 
@@ -124,15 +134,18 @@ jobs:
         arch: [amd64]
     needs: build-server
     runs-on: ubuntu-latest
+    env:
+      BUILDAH_FORMAT: oci
+      IMG_TAG: default-${{ matrix.os }}-${{ matrix.arch }}
     steps:
       - uses: actions/checkout@v3
       - name: Download server image
         uses: ishworkh/container-image-artifact-download@v1.0.0
         with:
-          image: "samba-server:${{ matrix.os }}-latest"
+          image: "samba-server:${{ env.IMG_TAG }}"
           container_engine: ${{ env.CONTAINER_CMD }}
       - name: Test the server image
-        run: LOCAL_TAG="samba-server:${{ matrix.os}}-latest" tests/test-samba-container.sh
+        run: LOCAL_TAG=samba-server:${{ env.IMG_TAG }} tests/test-samba-container.sh
 
   # Reminder: the nightly-server images consume nightly samba rpm builds
   # it is not *just* an image that gets built nightly
@@ -144,6 +157,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       BUILDAH_FORMAT: oci
+      IMG_TAG: nightly-${{ matrix.os }}-${{ matrix.arch }}
     steps:
       - uses: actions/checkout@v3
       - name: Build the nightly server image
@@ -151,7 +165,7 @@ jobs:
       - name: Upload nightly server image
         uses: ishworkh/container-image-artifact-upload@v1.0.0
         with:
-          image: "samba-server:${{ matrix.os }}-nightly"
+          image: "samba-server:${{ env.IMG_TAG }}"
           container_engine: ${{ env.CONTAINER_CMD }}
           retention_days: 1
 
@@ -163,6 +177,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       BUILDAH_FORMAT: oci
+      IMG_TAG: nightly-${{ matrix.os }}-${{ matrix.arch }}
     steps:
       - uses: actions/checkout@v3
       - name: Build the nightly ad server image
@@ -170,7 +185,7 @@ jobs:
       - name: Upload nightly AD server image
         uses: ishworkh/container-image-artifact-upload@v1.0.0
         with:
-          image: "samba-ad-server:${{ matrix.os }}-nightly"
+          image: "samba-ad-server:${{ env.IMG_TAG }}"
           container_engine: ${{ env.CONTAINER_CMD }}
           retention_days: 1
 
@@ -181,15 +196,18 @@ jobs:
         arch: [amd64]
     needs: build-nightly-server
     runs-on: ubuntu-latest
+    env:
+      BUILDAH_FORMAT: oci
+      IMG_TAG: nightly-${{ matrix.os }}-${{ matrix.arch }}
     steps:
       - uses: actions/checkout@v3
       - name: Download nightly server image
         uses: ishworkh/container-image-artifact-download@v1.0.0
         with:
-          image: "samba-server:${{ matrix.os }}-nightly"
+          image: "samba-server:${{ env.IMG_TAG }}"
           container_engine: ${{ env.CONTAINER_CMD }}
       - name: Test the nightly server image
-        run: LOCAL_TAG=samba-server:${{ matrix.os }}-nightly tests/test-samba-container.sh
+        run: LOCAL_TAG=samba-server:${{ env.IMG_TAG }} tests/test-samba-container.sh
 
   test-ad-server-kubernetes:
     strategy:
@@ -204,7 +222,8 @@ jobs:
     # need to explicitly use 20.04 to avoid problems with jq...
     runs-on: ubuntu-20.04
     env:
-      IMG_TAG: ${{ matrix.os }}-latest
+      BUILDAH_FORMAT: oci
+      IMG_TAG: default-${{ matrix.os }}-${{ matrix.arch }}
     steps:
       - uses: actions/checkout@v3
       - uses: nolar/setup-k3d-k3s@v1
@@ -213,17 +232,17 @@ jobs:
       - name: Download ad server image
         uses: ishworkh/container-image-artifact-download@v1.0.0
         with:
-          image: "samba-ad-server:${{ matrix.os }}-latest"
+          image: "samba-ad-server:${{ env.IMG_TAG }}"
           container_engine: ${{ env.CONTAINER_CMD }}
       - name: import ad server image
-        run: k3d image import samba-ad-server:${{ matrix.os }}-latest
+        run: k3d image import samba-ad-server:${{ env.IMG_TAG }}
       - name: Download file server image
         uses: ishworkh/container-image-artifact-download@v1.0.0
         with:
-          image: "samba-server:${{ matrix.os }}-latest"
+          image: "samba-server:${{ env.IMG_TAG }}"
           container_engine: ${{ env.CONTAINER_CMD }}
       - name: import file server image
-        run: k3d image import samba-server:${{ matrix.os }}-latest
+        run: k3d image import samba-server:${{ env.IMG_TAG }}
       - name: run the ad-dc deployment test
         run: ./tests/test-samba-ad-server-kubernetes.sh
 
@@ -238,7 +257,8 @@ jobs:
     # need to explicitly use 20.04 to avoid problems with jq...
     runs-on: ubuntu-20.04
     env:
-      IMG_TAG: ${{ matrix.os }}-nightly
+      BUILDAH_FORMAT: oci
+      IMG_TAG: nightly-${{ matrix.os }}-${{ matrix.arch }}
     steps:
       - uses: actions/checkout@v3
       - uses: nolar/setup-k3d-k3s@v1
@@ -247,17 +267,17 @@ jobs:
       - name: Download nightly ad server image
         uses: ishworkh/container-image-artifact-download@v1.0.0
         with:
-          image: "samba-ad-server:${{ matrix.os }}-nightly"
+          image: "samba-ad-server:${{ env.IMG_TAG }}"
           container_engine: ${{ env.CONTAINER_CMD }}
       - name: import nightly ad server image
-        run: k3d image import samba-ad-server:${{ matrix.os }}-nightly
+        run: k3d image import samba-ad-server:${{ env.IMG_TAG }}
       - name: Download nightly file server image
         uses: ishworkh/container-image-artifact-download@v1.0.0
         with:
-          image: "samba-server:${{ matrix.os }}-nightly"
+          image: "samba-server:${{ env.IMG_TAG }}"
           container_engine: ${{ env.CONTAINER_CMD }}
       - name: import nightly file server image
-        run: k3d image import samba-server:${{ matrix.os }}-nightly
+        run: k3d image import samba-server:${{ env.IMG_TAG }}
       - name: run the ad-dc deployment test
         run: ./tests/test-samba-ad-server-kubernetes.sh
 
