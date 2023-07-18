@@ -7,7 +7,7 @@ ALT_BIN=$(CURDIR)/.bin
 SHELLCHECK=$(shell command -v shellcheck || echo $(ALT_BIN)/shellcheck)
 GITLINT=$(shell command -v gitlint || echo $(ALT_BIN)/gitlint)
 YAMLLINT_CMD=$(shell command -v yamllint || echo $(ALT_BIN)/yamllint)
-BUILD_IMAGE=$(ROOT_DIR)/hack/build-image --debug --without-repo-bases
+BUILD_IMAGE=$(ROOT_DIR)/hack/build-image --without-repo-bases
 
 
 SERVER_DIR:=images/server
