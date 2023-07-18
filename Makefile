@@ -37,6 +37,7 @@ BUILDFILE_AD_SERVER=$(shell $(call _BUILD_KP,ad-server,default,--print-buildfile
 BUILDFILE_NIGHTLY_AD_SERVER=$(shell $(call _BUILD_KP,ad-server,nightly,--print-buildfile))
 BUILDFILE_CLIENT=$(shell $(call _BUILD_KP,client,default,--print-buildfile))
 BUILDFILE_TOOLBOX=$(shell $(call _BUILD_KP,toolbox,default,--print-buildfile))
+DYN_BUILDFILE=$(shell $(call _BUILD_KP,$(KIND),$(if $(PACKAGE_SOURCE),$(PACKAGE_SOURCE),default),--print-buildfile) 2>/dev/null || echo invalid)
 
 REPO_BASE=quay.io/samba.org/
 
@@ -76,6 +77,13 @@ debug-vars:
 
 
 ### Image Build and Push Rules ###
+
+build-image: $(DYN_BUILDFILE)
+.PHONY: build-image
+
+$(DYN_BUILDFILE):
+	@[ "$(KIND)" ] || (echo "KIND must be specfied"; exit 1)
+	$(call _BUILD_KP,$(KIND),$(if $(PACKAGE_SOURCE),$(PACKAGE_SOURCE),default)) $(EXTRA_BUILD_ARGS)
 
 build-server: $(BUILDFILE_SERVER)
 .PHONY: build-server
