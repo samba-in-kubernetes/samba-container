@@ -234,15 +234,13 @@ jobs:
         with:
           image: "samba-ad-server:${{ env.IMG_TAG }}"
           container_engine: ${{ env.CONTAINER_CMD }}
-      - name: import ad server image
-        run: k3d image import samba-ad-server:${{ env.IMG_TAG }}
       - name: Download file server image
         uses: ishworkh/container-image-artifact-download@v1.0.0
         with:
           image: "samba-server:${{ env.IMG_TAG }}"
           container_engine: ${{ env.CONTAINER_CMD }}
-      - name: import file server image
-        run: k3d image import samba-server:${{ env.IMG_TAG }}
+      - name: import images to k3d
+        run: k3d image import samba-server:${{ env.IMG_TAG }} samba-ad-server:${{ env.IMG_TAG }}
       - name: run the ad-dc deployment test
         run: ./tests/test-samba-ad-server-kubernetes.sh
 
@@ -269,15 +267,13 @@ jobs:
         with:
           image: "samba-ad-server:${{ env.IMG_TAG }}"
           container_engine: ${{ env.CONTAINER_CMD }}
-      - name: import nightly ad server image
-        run: k3d image import samba-ad-server:${{ env.IMG_TAG }}
       - name: Download nightly file server image
         uses: ishworkh/container-image-artifact-download@v1.0.0
         with:
           image: "samba-server:${{ env.IMG_TAG }}"
           container_engine: ${{ env.CONTAINER_CMD }}
-      - name: import nightly file server image
-        run: k3d image import samba-server:${{ env.IMG_TAG }}
+      - name: import images to k3d
+        run: k3d image import samba-server:${{ env.IMG_TAG }} samba-ad-server:${{ env.IMG_TAG }}
       - name: run the ad-dc deployment test
         run: ./tests/test-samba-ad-server-kubernetes.sh
 
