@@ -46,7 +46,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Build the server image
-        run: make OS_NAME=${{ matrix.os}} BUILD_ARCH=${{ matrix.arch}} build-server
+        run: make KIND=server OS_NAME=${{ matrix.os}} BUILD_ARCH=${{ matrix.arch}} build-image
       - name: Upload server image
         uses: ishworkh/container-image-artifact-upload@v1.0.0
         with:
@@ -67,7 +67,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Build the ad server image
-        run: make OS_NAME=${{matrix.os}} BUILD_ARCH=${{matrix.arch}} build-ad-server
+        run: make KIND=ad-server OS_NAME=${{matrix.os}} BUILD_ARCH=${{matrix.arch}} build-image
       - name: Upload ad server image
         uses: ishworkh/container-image-artifact-upload@v1.0.0
         with:
@@ -86,7 +86,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: build the client image
-        run: make OS_NAME=${{ matrix.os }} BUILD_ARCH=${{ matrix.arch }} build-client
+        run: make KIND=client OS_NAME=${{ matrix.os }} BUILD_ARCH=${{ matrix.arch }} build-image
       # Here we upload samba-client image to artifacts locally for consumption
       # during  the samba-toolbox build process.
       - name: Upload the client image
@@ -115,7 +115,7 @@ jobs:
           image: "quay.io/samba.org/samba-client:${{ matrix.os }}-latest"
           container_engine: ${{ env.CONTAINER_CMD }}
       - name: Build the toolbox image
-        run: make OS_NAME=${{ matrix.os }}  BUILD_ARCH=${{ matrix.arch }} build-toolbox
+        run: make KIND=toolbox OS_NAME=${{ matrix.os }}  BUILD_ARCH=${{ matrix.arch }} build-image
 
   test-server:
     strategy:
@@ -147,7 +147,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Build the nightly server image
-        run: make OS_NAME=${{ matrix.os }} BUILD_ARCH=${{ matrix.arch }} build-nightly-server
+        run: make KIND=server PACKAGE_SOURCE=nightly OS_NAME=${{ matrix.os }} BUILD_ARCH=${{ matrix.arch }} build-image
       - name: Upload nightly server image
         uses: ishworkh/container-image-artifact-upload@v1.0.0
         with:
@@ -166,7 +166,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Build the nightly ad server image
-        run: make OS_NAME=${{ matrix.os }} BUILD_ARCH=${{ matrix.arch }} build-nightly-ad-server
+        run: make KIND=ad-server PACKAGE_SOURCE=nightly OS_NAME=${{ matrix.os }} BUILD_ARCH=${{ matrix.arch }} build-image
       - name: Upload nightly AD server image
         uses: ishworkh/container-image-artifact-upload@v1.0.0
         with:
