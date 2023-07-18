@@ -36,11 +36,11 @@ jobs:
         run: make check-gitlint
 
   build-server:
-    runs-on: ubuntu-latest
     strategy:
       matrix:
         os: [centos, fedora, opensuse]
         arch: [amd64]
+    runs-on: ubuntu-latest
     env:
       BUILDAH_FORMAT: oci
     steps:
@@ -80,9 +80,9 @@ jobs:
       matrix:
         os: [centos, fedora, opensuse]
         arch: [amd64]
+    runs-on: ubuntu-latest
     env:
       BUILDAH_FORMAT: oci
-    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - name: build the client image
@@ -137,11 +137,11 @@ jobs:
   # Reminder: the nightly-server images consume nightly samba rpm builds
   # it is not *just* an image that gets built nightly
   build-nightly-server:
-    runs-on: ubuntu-latest
     strategy:
       matrix:
         os: [centos, fedora]
         arch: [amd64]
+    runs-on: ubuntu-latest
     env:
       BUILDAH_FORMAT: oci
     steps:
@@ -156,11 +156,11 @@ jobs:
           retention_days: 1
 
   build-nightly-ad-server:
-    runs-on: ubuntu-latest
     strategy:
       matrix:
         os: [centos, fedora]
         arch: [amd64]
+    runs-on: ubuntu-latest
     env:
       BUILDAH_FORMAT: oci
     steps:
