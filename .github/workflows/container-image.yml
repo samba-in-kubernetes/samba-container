@@ -36,18 +36,25 @@ jobs:
         run: make check-gitlint
 
   build-server:
+    # Reminder: the nightly-server images consume nightly samba rpm builds
+    # it is not *just* an image that gets built nightly
     strategy:
       matrix:
+        package_source: [default, nightly]
         os: [centos, fedora, opensuse]
         arch: [amd64]
+        exclude:
+          # there are no nightly packages for opensuse
+          - package_source: nightly
+            os: opensuse
     runs-on: ubuntu-latest
     env:
       BUILDAH_FORMAT: oci
-      IMG_TAG: default-${{ matrix.os }}-${{ matrix.arch }}
+      IMG_TAG: ${{ matrix.package_source }}-${{ matrix.os }}-${{ matrix.arch }}
     steps:
       - uses: actions/checkout@v3
       - name: Build the server image
-        run: make KIND=server OS_NAME=${{ matrix.os}} BUILD_ARCH=${{ matrix.arch}} build-image
+        run: make KIND=server PACKAGE_SOURCE=${{ matrix.package_source }} OS_NAME=${{ matrix.os}} BUILD_ARCH=${{ matrix.arch}} build-image
       - name: Upload server image
         uses: ishworkh/container-image-artifact-upload@v1.0.0
         with:
@@ -58,18 +65,24 @@ jobs:
   build-ad-server:
     strategy:
       matrix:
+        package_source: [default, nightly]
         os: [centos, fedora, opensuse]
         arch: [amd64]
         exclude:
-          - os: centos
+          # there are no nightly packages for opensuse
+          - package_source: nightly
+            os: opensuse
+          # the distro packages for centos do not include an ad-dc
+          - package_source: default
+            os: centos
     runs-on: ubuntu-latest
     env:
       BUILDAH_FORMAT: oci
-      IMG_TAG: default-${{ matrix.os }}-${{ matrix.arch }}
+      IMG_TAG: ${{ matrix.package_source }}-${{ matrix.os }}-${{ matrix.arch }}
     steps:
       - uses: actions/checkout@v3
       - name: Build the ad server image
-        run: make KIND=ad-server OS_NAME=${{matrix.os}} BUILD_ARCH=${{matrix.arch}} build-image
+        run: make KIND=ad-server PACKAGE_SOURCE=${{ matrix.package_source }} OS_NAME=${{ matrix.os }} BUILD_ARCH=${{ matrix.arch }} build-image
       - name: Upload ad server image
         uses: ishworkh/container-image-artifact-upload@v1.0.0
         with:
@@ -130,13 +143,18 @@ jobs:
   test-server:
     strategy:
       matrix:
+        package_source: [default, nightly]
         os: [centos, fedora, opensuse]
         arch: [amd64]
+        exclude:
+          # there are no nightly packages for opensuse
+          - package_source: nightly
+            os: opensuse
     needs: build-server
     runs-on: ubuntu-latest
     env:
       BUILDAH_FORMAT: oci
-      IMG_TAG: default-${{ matrix.os }}-${{ matrix.arch }}
+      IMG_TAG: ${{ matrix.package_source }}-${{ matrix.os }}-${{ matrix.arch }}
     steps:
       - uses: actions/checkout@v3
       - name: Download server image
@@ -147,75 +165,19 @@ jobs:
       - name: Test the server image
         run: LOCAL_TAG=samba-server:${{ env.IMG_TAG }} tests/test-samba-container.sh
 
-  # Reminder: the nightly-server images consume nightly samba rpm builds
-  # it is not *just* an image that gets built nightly
-  build-nightly-server:
-    strategy:
-      matrix:
-        os: [centos, fedora]
-        arch: [amd64]
-    runs-on: ubuntu-latest
-    env:
-      BUILDAH_FORMAT: oci
-      IMG_TAG: nightly-${{ matrix.os }}-${{ matrix.arch }}
-    steps:
-      - uses: actions/checkout@v3
-      - name: Build the nightly server image
-        run: make KIND=server PACKAGE_SOURCE=nightly OS_NAME=${{ matrix.os }} BUILD_ARCH=${{ matrix.arch }} build-image
-      - name: Upload nightly server image
-        uses: ishworkh/container-image-artifact-upload@v1.0.0
-        with:
-          image: "samba-server:${{ env.IMG_TAG }}"
-          container_engine: ${{ env.CONTAINER_CMD }}
-          retention_days: 1
-
-  build-nightly-ad-server:
-    strategy:
-      matrix:
-        os: [centos, fedora]
-        arch: [amd64]
-    runs-on: ubuntu-latest
-    env:
-      BUILDAH_FORMAT: oci
-      IMG_TAG: nightly-${{ matrix.os }}-${{ matrix.arch }}
-    steps:
-      - uses: actions/checkout@v3
-      - name: Build the nightly ad server image
-        run: make KIND=ad-server PACKAGE_SOURCE=nightly OS_NAME=${{ matrix.os }} BUILD_ARCH=${{ matrix.arch }} build-image
-      - name: Upload nightly AD server image
-        uses: ishworkh/container-image-artifact-upload@v1.0.0
-        with:
-          image: "samba-ad-server:${{ env.IMG_TAG }}"
-          container_engine: ${{ env.CONTAINER_CMD }}
-          retention_days: 1
-
-  test-nightly-server:
-    strategy:
-      matrix:
-        os: [centos, fedora]
-        arch: [amd64]
-    needs: build-nightly-server
-    runs-on: ubuntu-latest
-    env:
-      BUILDAH_FORMAT: oci
-      IMG_TAG: nightly-${{ matrix.os }}-${{ matrix.arch }}
-    steps:
-      - uses: actions/checkout@v3
-      - name: Download nightly server image
-        uses: ishworkh/container-image-artifact-download@v1.0.0
-        with:
-          image: "samba-server:${{ env.IMG_TAG }}"
-          container_engine: ${{ env.CONTAINER_CMD }}
-      - name: Test the nightly server image
-        run: LOCAL_TAG=samba-server:${{ env.IMG_TAG }} tests/test-samba-container.sh
-
   test-ad-server-kubernetes:
     strategy:
       matrix:
+        package_source: [default, nightly]
         os: [centos, fedora, opensuse]
         arch: [amd64]
         exclude:
-          - os: centos
+          # there are no nightly packages for opensuse
+          - package_source: nightly
+            os: opensuse
+          # the distro packages for centos do not include an ad-dc
+          - package_source: default
+            os: centos
     needs:
       - build-ad-server
       - build-server
@@ -223,7 +185,7 @@ jobs:
     runs-on: ubuntu-20.04
     env:
       BUILDAH_FORMAT: oci
-      IMG_TAG: default-${{ matrix.os }}-${{ matrix.arch }}
+      IMG_TAG: ${{ matrix.package_source }}-${{ matrix.os }}-${{ matrix.arch }}
     steps:
       - uses: actions/checkout@v3
       - uses: nolar/setup-k3d-k3s@v1
@@ -244,48 +206,13 @@ jobs:
       - name: run the ad-dc deployment test
         run: ./tests/test-samba-ad-server-kubernetes.sh
 
-  test-nightly-ad-server-kubernetes:
-    strategy:
-      matrix:
-        os: [centos, fedora]
-        arch: [amd64]
-    needs:
-      - build-nightly-server
-      - build-nightly-ad-server
-    # need to explicitly use 20.04 to avoid problems with jq...
-    runs-on: ubuntu-20.04
-    env:
-      BUILDAH_FORMAT: oci
-      IMG_TAG: nightly-${{ matrix.os }}-${{ matrix.arch }}
-    steps:
-      - uses: actions/checkout@v3
-      - uses: nolar/setup-k3d-k3s@v1
-      - name: get nodes
-        run: kubectl get nodes
-      - name: Download nightly ad server image
-        uses: ishworkh/container-image-artifact-download@v1.0.0
-        with:
-          image: "samba-ad-server:${{ env.IMG_TAG }}"
-          container_engine: ${{ env.CONTAINER_CMD }}
-      - name: Download nightly file server image
-        uses: ishworkh/container-image-artifact-download@v1.0.0
-        with:
-          image: "samba-server:${{ env.IMG_TAG }}"
-          container_engine: ${{ env.CONTAINER_CMD }}
-      - name: import images to k3d
-        run: k3d image import samba-server:${{ env.IMG_TAG }} samba-ad-server:${{ env.IMG_TAG }}
-      - name: run the ad-dc deployment test
-        run: ./tests/test-samba-ad-server-kubernetes.sh
-
   push:
     # verify it passes the test jobs first
     needs:
       - build-client
       - build-toolbox
       - test-server
-      - test-nightly-server
       - test-ad-server-kubernetes
-      - test-nightly-ad-server-kubernetes
     runs-on: ubuntu-latest
     if: (github.event_name == 'push' || github.event_name == 'schedule') && github.repository == 'samba-in-kubernetes/samba-container'
     steps:
