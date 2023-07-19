@@ -15,6 +15,7 @@ queue_rules:
   - name: default
     conditions:
       - check-success=checks
+      - check-success=check-commits
       - check-success=build-server (default, centos, amd64)
       - check-success=build-server (default, fedora, amd64)
       - check-success=build-server (default, opensuse, amd64)
@@ -55,6 +56,7 @@ pull_request_rules:
   - name: Automatic merge on approval
     conditions:
       - check-success=checks
+      - check-success=check-commits
       - check-success=build-server (default, centos, amd64)
       - check-success=build-server (default, fedora, amd64)
       - check-success=build-server (default, opensuse, amd64)
