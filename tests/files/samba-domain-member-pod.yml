@@ -80,128 +80,128 @@ spec:
       imagePullPolicy: $IMG_PULL_POLICY
       name: smb
       command:
-      - "samba-container"
-      - "--debug-delay=1"
-      - "run"
-      - "smbd"
+        - "samba-container"
+        - "--debug-delay=1"
+        - "run"
+        - "smbd"
       env:
-      - name: SAMBACC_CONFIG
-        value: /etc/samba-container/config.json
-      - name: SAMBA_CONTAINER_ID
-        value: sambadm1
-      - name: SAMBACC_VERSION
-        value: "0.1"
-      - name: HOSTNAME
-        value: sambadm1
+        - name: SAMBACC_CONFIG
+          value: /etc/samba-container/config.json
+        - name: SAMBA_CONTAINER_ID
+          value: sambadm1
+        - name: SAMBACC_VERSION
+          value: "0.1"
+        - name: HOSTNAME
+          value: sambadm1
       ports:
-      - containerPort: 445
-        hostPort: 455
-        protocol: TCP
-        name: "smb"
+        - containerPort: 445
+          hostPort: 455
+          protocol: TCP
+          name: "smb"
       securityContext:
         allowPrivilegeEscalation: true
       volumeMounts:
-      - mountPath: "/share"
-        name: samba-sharedir
-      - mountPath: "/etc/samba-container"
-        name: samba-container-config
-      - mountPath: "/var/lib/samba"
-        name: samba-state-dir
-      - mountPath: "/run/samba/winbindd"
-        name: samba-sockets-dir
+        - mountPath: "/share"
+          name: samba-sharedir
+        - mountPath: "/etc/samba-container"
+          name: samba-container-config
+        - mountPath: "/var/lib/samba"
+          name: samba-state-dir
+        - mountPath: "/run/samba/winbindd"
+          name: samba-sockets-dir
     - image: $IMG_NAME
       imagePullPolicy: $IMG_PULL_POLICY
       name: winbind
       command:
-      - "samba-container"
-      - "run"
-      - "winbindd"
+        - "samba-container"
+        - "run"
+        - "winbindd"
       env:
-      - name: SAMBACC_VERSION
-        value: "0.1"
-      - name: SAMBACC_CONFIG
-        value: /etc/samba-container/config.json
-      - name: SAMBA_CONTAINER_ID
-        value: sambadm1
-      - name: HOSTNAME
-        value: sambadm1
+        - name: SAMBACC_VERSION
+          value: "0.1"
+        - name: SAMBACC_CONFIG
+          value: /etc/samba-container/config.json
+        - name: SAMBA_CONTAINER_ID
+          value: sambadm1
+        - name: HOSTNAME
+          value: sambadm1
       securityContext:
         allowPrivilegeEscalation: true
       volumeMounts:
-      - mountPath: "/etc/samba-container"
-        name: samba-container-config
-      - mountPath: "/var/lib/samba"
-        name: samba-state-dir
-      - mountPath: "/run/samba/winbindd"
-        name: samba-sockets-dir
+        - mountPath: "/etc/samba-container"
+          name: samba-container-config
+        - mountPath: "/var/lib/samba"
+          name: samba-state-dir
+        - mountPath: "/run/samba/winbindd"
+          name: samba-sockets-dir
   initContainers:
     - image: $IMG_NAME
       imagePullPolicy: $IMG_PULL_POLICY
       name: init
       args:
-      - "init"
+        - "init"
       env:
-      - name: SAMBACC_VERSION
-        value: "0.1"
-      - name: SAMBACC_CONFIG
-        value: /etc/samba-container/config.json
-      - name: SAMBA_CONTAINER_ID
-        value: sambadm1
-      - name: HOSTNAME
-        value: sambadm1
+        - name: SAMBACC_VERSION
+          value: "0.1"
+        - name: SAMBACC_CONFIG
+          value: /etc/samba-container/config.json
+        - name: SAMBA_CONTAINER_ID
+          value: sambadm1
+        - name: HOSTNAME
+          value: sambadm1
       securityContext:
         allowPrivilegeEscalation: true
       volumeMounts:
-      - mountPath: "/etc/samba-container"
-        name: samba-container-config
-      - mountPath: "/var/lib/samba"
-        name: samba-state-dir
+        - mountPath: "/etc/samba-container"
+          name: samba-container-config
+        - mountPath: "/var/lib/samba"
+          name: samba-state-dir
     - image: $IMG_NAME
       imagePullPolicy: $IMG_PULL_POLICY
       name: must-join
       args:
-      - "must-join"
-      - "--files"
-      - "--join-file=/etc/join-data/join.json"
+        - "must-join"
+        - "--files"
+        - "--join-file=/etc/join-data/join.json"
       env:
-      - name: SAMBACC_VERSION
-        value: "0.1"
-      - name: SAMBACC_CONFIG
-        value: /etc/samba-container/config.json
-      - name: SAMBA_CONTAINER_ID
-        value: sambadm1
-      - name: HOSTNAME
-        value: sambadm1
+        - name: SAMBACC_VERSION
+          value: "0.1"
+        - name: SAMBACC_CONFIG
+          value: /etc/samba-container/config.json
+        - name: SAMBA_CONTAINER_ID
+          value: sambadm1
+        - name: HOSTNAME
+          value: sambadm1
       securityContext:
         allowPrivilegeEscalation: true
       volumeMounts:
-      - mountPath: "/etc/samba-container"
-        name: samba-container-config
-      - mountPath: "/var/lib/samba"
-        name: samba-state-dir
-      - mountPath: "/etc/join-data"
-        name: samba-join-data
-        readOnly: true
+        - mountPath: "/etc/samba-container"
+          name: samba-container-config
+        - mountPath: "/var/lib/samba"
+          name: samba-state-dir
+        - mountPath: "/etc/join-data"
+          name: samba-join-data
+          readOnly: true
   volumes:
-  - configMap:
+    - configMap:
+        name: samba-container-config
       name: samba-container-config
-    name: samba-container-config
-  - secret:
-      secretName: ad-join-secret
-      items:
-      - key: join.json
-        path: join.json
-    name: samba-join-data
-  - emptyDir:
-      medium: Memory
-    name: samba-sockets-dir
-  - emptyDir: {}
-    name: samba-state-dir
-# Comment out the section below to skip using a PVC for the share
-#  - persistentVolumeClaim:
-#      claimName: mypvc
-#    name: samba-sharedir
-# Uncomment the section below to use an empty dir for the share
-  - emptyDir:
-      medium: Memory
-    name: samba-sharedir
+    - secret:
+        secretName: ad-join-secret
+        items:
+          - key: join.json
+            path: join.json
+      name: samba-join-data
+    - emptyDir:
+        medium: Memory
+      name: samba-sockets-dir
+    - emptyDir: {}
+      name: samba-state-dir
+    # Comment out the section below to skip using a PVC for the share
+    #  - persistentVolumeClaim:
+    #      claimName: mypvc
+    #    name: samba-sharedir
+    # Uncomment the section below to use an empty dir for the share
+    - emptyDir:
+        medium: Memory
+      name: samba-sharedir
