@@ -15,14 +15,14 @@ spec:
         app: samba
     spec:
       volumes:
-      - name: myvol
-        persistentVolumeClaim:
-          claimName: mypvc
+        - name: myvol
+          persistentVolumeClaim:
+            claimName: mypvc
       containers:
-      - name: samba
-        image: quay.io/samba.org/samba-server:latest
-        ports:
-        - containerPort: 445
-        volumeMounts:
-        - mountPath: "/share"
-          name: myvol
+        - name: samba
+          image: quay.io/samba.org/samba-server:latest
+          ports:
+            - containerPort: 445
+          volumeMounts:
+            - mountPath: "/share"
+              name: myvol
