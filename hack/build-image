@@ -394,7 +394,7 @@ def push(cli, target):
             build(cli, target)
 
     push_name = target.image_name()
-    for tag in target.additional_tags:
+    for tag, _ in target.additional_tags:
         if tag in ("latest", "nightly"):
             push_name = target.image_name(tag=tag)
             break
