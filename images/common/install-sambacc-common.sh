@@ -12,6 +12,7 @@ install_sambacc() {
 
     local wheels=()
     local rpmfiles=()
+    local rpmextras=()
     local repofiles=()
     for artifact in "${artifacts[@]}" ; do
         if [[ ${artifact} =~ sambacc.*\.whl$ ]]; then
@@ -19,6 +20,9 @@ install_sambacc() {
         fi
         if [[ ${artifact} =~ python.?-sambacc-.*\.noarch\.rpm$ ]]; then
             rpmfiles+=("${artifact}")
+        fi
+        if [[ ${artifact} =~ python.?-sambacc+.*\.noarch\.rpm$ ]]; then
+            rpmextras+=("${artifact}")
         fi
         if [[ ${artifact} =~ sambacc.*\.repo$ ]]; then
             repofiles+=("${artifact}")
@@ -59,7 +63,7 @@ install_sambacc() {
             container_json_file="/usr/local/share/sambacc/examples/${DEFAULT_JSON_FILE}"
         ;;
         install-rpm)
-            dnf install -y "${rpmfiles[0]}"
+            dnf install -y "${rpmfiles[0]}" "${rpmextras[@]}"
             dnf clean all
             container_json_file="/usr/share/sambacc/examples/${DEFAULT_JSON_FILE}"
         ;;
