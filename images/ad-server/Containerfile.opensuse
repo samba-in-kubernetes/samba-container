@@ -32,6 +32,7 @@ RUN zypper --non-interactive install --no-recommends \
   samba-client \
   samba-winbind \
   python3-dnspython \
+  python3-Markdown \
   krb5-server \
   sambacc && \
   zypper clean;
