@@ -14,15 +14,32 @@ defaults:
 queue_rules:
   - name: default
     conditions:
-      - check-success=check
-      - check-success=build-server
-      - check-success=build-ad-server
-      - check-success=build-nightly-server
-      - check-success=build-nightly-ad-server
-      - check-success=build-client
-      - check-success=build-toolbox
-      - check-success=test-ad-server-kubernetes
-      - check-success=test-nightly-ad-server-kubernetes
+      - check-success=checks
+      - check-success=check-commits
+      - check-success=build-server (default, centos, amd64)
+      - check-success=build-server (default, fedora, amd64)
+      - check-success=build-server (default, opensuse, amd64)
+      - check-success=build-server (nightly, centos, amd64)
+      - check-success=build-server (nightly, fedora, amd64)
+      - check-success=build-ad-server (default, fedora, amd64)
+      - check-success=build-ad-server (default, opensuse, amd64)
+      - check-success=build-ad-server (nightly, centos, amd64)
+      - check-success=build-ad-server (nightly, fedora, amd64)
+      - check-success=build-client (centos, amd64)
+      - check-success=build-client (fedora, amd64)
+      - check-success=build-client (opensuse, amd64)
+      - check-success=build-toolbox (centos, amd64)
+      - check-success=build-toolbox (fedora, amd64)
+      - check-success=build-toolbox (opensuse, amd64)
+      - check-success=test-server (default, centos, amd64)
+      - check-success=test-server (default, fedora, amd64)
+      - check-success=test-server (default, opensuse, amd64)
+      - check-success=test-server (nightly, centos, amd64)
+      - check-success=test-server (nightly, fedora, amd64)
+      - check-success=test-ad-server-kubernetes (default, fedora, amd64)
+      - check-success=test-ad-server-kubernetes (default, opensuse, amd64)
+      - check-success=test-ad-server-kubernetes (nightly, centos, amd64)
+      - check-success=test-ad-server-kubernetes (nightly, fedora, amd64)
       - check-success=dpulls
 
 
@@ -38,15 +55,32 @@ pull_request_rules:
   # Perform automatic merge on conditions
   - name: Automatic merge on approval
     conditions:
-      - check-success=check
-      - check-success=build-server
-      - check-success=build-ad-server
-      - check-success=build-nightly-server
-      - check-success=build-nightly-ad-server
-      - check-success=build-client
-      - check-success=build-toolbox
-      - check-success=test-ad-server-kubernetes
-      - check-success=test-nightly-ad-server-kubernetes
+      - check-success=checks
+      - check-success=check-commits
+      - check-success=build-server (default, centos, amd64)
+      - check-success=build-server (default, fedora, amd64)
+      - check-success=build-server (default, opensuse, amd64)
+      - check-success=build-server (nightly, centos, amd64)
+      - check-success=build-server (nightly, fedora, amd64)
+      - check-success=build-ad-server (default, fedora, amd64)
+      - check-success=build-ad-server (default, opensuse, amd64)
+      - check-success=build-ad-server (nightly, centos, amd64)
+      - check-success=build-ad-server (nightly, fedora, amd64)
+      - check-success=build-client (centos, amd64)
+      - check-success=build-client (fedora, amd64)
+      - check-success=build-client (opensuse, amd64)
+      - check-success=build-toolbox (centos, amd64)
+      - check-success=build-toolbox (fedora, amd64)
+      - check-success=build-toolbox (opensuse, amd64)
+      - check-success=test-server (default, centos, amd64)
+      - check-success=test-server (default, fedora, amd64)
+      - check-success=test-server (default, opensuse, amd64)
+      - check-success=test-server (nightly, centos, amd64)
+      - check-success=test-server (nightly, fedora, amd64)
+      - check-success=test-ad-server-kubernetes (default, fedora, amd64)
+      - check-success=test-ad-server-kubernetes (default, opensuse, amd64)
+      - check-success=test-ad-server-kubernetes (nightly, centos, amd64)
+      - check-success=test-ad-server-kubernetes (nightly, fedora, amd64)
       - check-success=dpulls
       - "-draft"
       # Contributors should set the 'do-not-merge' label if they don't want
@@ -62,16 +96,16 @@ pull_request_rules:
       # any changes requested.
       - "#changes-requested-reviews-by=0"
       - or:
-        # Any contributor's PR can be automerged with 2 (or more) reviews.
-        - "#approved-reviews-by>=2"
-        # A maintainer's contribution that has already aged long enough to
-        # earn the "priority-review" label can be merged immediately.
-        # The label can also be applied manually in case of an important
-        # bugfix, etc.
-        - and:
-          - "label=priority-review"
-          - "author=@maintainers"
-          - "#approved-reviews-by>=1"
+          # Any contributor's PR can be automerged with 2 (or more) reviews.
+          - "#approved-reviews-by>=2"
+          # A maintainer's contribution that has already aged long enough to
+          # earn the "priority-review" label can be merged immediately.
+          # The label can also be applied manually in case of an important
+          # bugfix, etc.
+          - and:
+              - "label=priority-review"
+              - "author=@maintainers"
+              - "#approved-reviews-by>=1"
     actions:
       queue: {}
       dismiss_reviews: {}

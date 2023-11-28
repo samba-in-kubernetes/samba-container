@@ -1,0 +1,593 @@
+#!/usr/bin/python3
+"""
+build-image - A script for building a matrix of samba container images.
+
+In order to cleanly implement both logic and maintain backwards compatibility
+with image naming schemes already in the wild the build-image script
+can be used to create "Fully Qualified Image Names" that combine the
+image kind (samba-server, client, etc) and a tag that indicates all
+the unique properties of the image. This includes the package source,
+the base os, and the architecture.
+
+In addition to building the images, one can push images, list images,
+and list build status files (aka buildfiles).
+
+Usage:
+  # build an image
+  ./hack/build-image --kind server --distro-base fedora --arch amd64
+
+  # print out the FQIN
+  ./hack/build-image --kind samba-server --distro-base fedora \\
+    --arch amd64 --print
+
+  # print out the FQIN and additional tags
+  ./hack/build-image --kind samba-server --distro-base fedora \\
+    --arch amd64 --print-tags
+
+  # print out the FQIN and additional tags for multiple images, with
+  # and without a repository base
+  ./hack/build-image --kind samba-server \\
+    --distro-base fedora \\
+    --distro-base centos \\
+    --distro-base opensuse \\
+    --arch amd64 \\
+    --repo-base quay.io/foobar --without-repo-bases --print-tags
+
+"""
+
+import argparse
+import logging
+import os
+import pathlib
+import platform
+import shlex
+import shutil
+import subprocess
+import sys
+
+
+logger = logging.getLogger("build-image")
+
+# IMAGE_KINDS - map aliases/names to canonical names for the kinds
+# of images we can build
+IMG_SERVER = "samba-server"
+IMG_AD_SERVER = "samba-ad-server"
+IMG_CLIENT = "samba-client"
+IMG_TOOLBOX = "samba-toolbox"
+IMAGE_KINDS = {
+    # short names
+    "server": IMG_SERVER,
+    "ad-server": IMG_AD_SERVER,
+    "client": IMG_CLIENT,
+    "toolbox": IMG_TOOLBOX,
+    # canonical names
+    "samba-server": IMG_SERVER,
+    "samba-ad-server": IMG_AD_SERVER,
+    "samba-client": IMG_CLIENT,
+    "samba-toolbox": IMG_TOOLBOX,
+}
+
+# ARCHITECTURES - map supported arch names/alias to canonical names
+AMD64 = "amd64"
+ARM64 = "arm64"
+ARCHITECTURES = {
+    # alternate names
+    "x86_64": AMD64,
+    "aarch64": ARM64,
+    # canonical names
+    "amd64": AMD64,
+    "arm64": ARM64,
+}
+
+# DISTROS - list of supported distro bases
+FEDORA = "fedora"
+CENTOS = "centos"
+OPENSUSE = "opensuse"
+DISTROS = [
+    FEDORA,
+    CENTOS,
+    OPENSUSE,
+]
+
+# PACKAGE_SOURCES - list of known package sources
+DEFAULT = "default"
+NIGHTLY = "nightly"
+PACKAGE_SOURCES = [DEFAULT, NIGHTLY]
+
+# SOURCE_DIRS - image source paths
+# (paths are relative to common image source dir)
+SOURCE_DIRS = {
+    IMG_SERVER: "server",
+    IMG_AD_SERVER: "ad-server",
+    IMG_CLIENT: "client",
+    IMG_TOOLBOX: "toolbox",
+}
+
+DEFAULT_PKG_SOURCES = [DEFAULT]
+DEFAULT_DISTRO_BASES = [FEDORA]
+LATEST = "latest"
+QUAL_NONE = "unqualified"
+QUAL_DISTRO = "distro-qualified"
+
+
+_DISCOVERED_CONTAINER_ENGINES = []
+
+
+def check_kind(kind):
+    """Return the canonical name for the image kind or raise a ValueError."""
+    try:
+        return IMAGE_KINDS[kind]
+    except KeyError:
+        raise ValueError(f"invalid kind: {kind}")
+
+
+def check_arch(arch):
+    """Return the canonical name for the arch or raise a ValueError."""
+    try:
+        return ARCHITECTURES[arch]
+    except KeyError:
+        raise ValueError(f"invalid arch: {arch}")
+
+
+def check_distro(distro):
+    """Return the canonical name for a distro base or raise a ValueError."""
+    if distro in DISTROS:
+        return distro
+    raise ValueError(f"invalid distro: {distro}")
+
+
+def check_pkg_source(source):
+    """Return the canonical name for a package source or raise a ValueError."""
+    if source in PACKAGE_SOURCES:
+        return source
+    raise ValueError(f"invalid package source: {source}")
+
+
+def check_repo_base_for(value):
+    """Return a tuple with a (distro_base, repo_base) pair or raise a
+    ValueError.
+    """
+    if "=" not in value:
+        raise ValueError("expected '=' in value")
+    db, rb = value.split("=", 1)
+    db = check_distro(db)
+    return (db, rb)
+
+
+def _cmd_to_str(cmd):
+    """Format a command for logging."""
+    return " ".join(shlex.quote(arg) for arg in cmd)
+
+
+def run(cli, cmd, capture_output=False, check=False):
+    """Execute a command. Wraps subprocess.run."""
+    if cli.dry_run and not capture_output:
+        logger.info("Would run: %s", _cmd_to_str(cmd))
+        return subprocess.CompletedProcess(cmd, 0)
+    logger.info("Running: %s", _cmd_to_str(cmd))
+    return subprocess.run(cmd, capture_output=capture_output, check=check)
+
+
+def container_engine(cli):
+    """Return the path to a container engine. If the container engine is not
+    yet known, discover it and cache the result.
+    """
+    eng = cli.container_engine
+    if eng:
+        logger.info("Using specified container engine: %s", eng)
+        return eng
+    if _DISCOVERED_CONTAINER_ENGINES:
+        return _DISCOVERED_CONTAINER_ENGINES[0]
+    podman = shutil.which("podman")
+    if podman:
+        _DISCOVERED_CONTAINER_ENGINES.append(podman)
+    docker = shutil.which("docker")
+    if docker:
+        _DISCOVERED_CONTAINER_ENGINES.append(docker)
+    return _DISCOVERED_CONTAINER_ENGINES[0]
+
+
+def container_build(cli, target):
+    """Construct and execute a command to build the target container image."""
+    args = [container_engine(cli), "build"]
+    if target.pkg_source == NIGHTLY:
+        args.append("--build-arg=INSTALL_PACKAGES_FROM=samba-nightly")
+    # docker doesn't currently support alt. architectures
+    if "docker" in args[0]:
+        if target.arch != host_arch():
+            raise RuntimeError("Docker does not support --arch")
+    else:
+        args.append(f"--arch={target.arch}")
+    if cli.extra_build_arg:
+        args.extend(cli.extra_build_arg)
+    for tname in target.all_names(baseless=cli.without_repo_bases):
+        args.append("-t")
+        args.append(tname)
+    args.append("-f")
+    args.append(target_containerfile(target))
+    args.append(kind_source_dir(target.name))
+    args = [str(a) for a in args]
+    run(cli, args, check=True)
+
+
+def container_push(cli, push_name):
+    """Construct and execute a command to push a container image."""
+    args = [container_engine(cli), "push", push_name]
+    run(cli, args, check=True)
+
+
+def container_id(cli, target):
+    """Construct and run a command to fetch a hexidecimal id for a container
+    image.
+    """
+    args = [
+        container_engine(cli),
+        "inspect",
+        "-f",
+        "{{.Id}}",
+        target.image_name(),
+    ]
+    res = run(cli, args, capture_output=True, check=True)
+    return res.stdout.decode("utf8").strip()
+
+
+def kind_source_dir(kind):
+    """Return the path to a kind's source directory."""
+    return pathlib.Path("images") / SOURCE_DIRS[check_kind(kind)]
+
+
+def target_containerfile(target):
+    """Return the path to a containerfile given an image target."""
+    return str(kind_source_dir(target.name) / f"Containerfile.{target.distro}")
+
+
+def host_arch():
+    """Return the name of the host's native architecture."""
+    return check_arch(platform.machine().lower())
+
+
+def default_arches():
+    """Return a list of the default architectures to use for building."""
+    return [host_arch()]
+
+
+class RepoConfig:
+    def __init__(self, default_repo_base, distro_repo=None):
+        self.default = default_repo_base
+        self.distro_map = dict(distro_repo or [])
+
+    def find_base(self, distro):
+        return self.distro_map.get(distro, self.default)
+
+
+class TargetImage:
+    def __init__(
+        self, name, pkg_source, distro, arch, extra_tag="", *, repo_base=""
+    ):
+        self.name = name
+        self.pkg_source = pkg_source
+        self.distro = distro
+        self.arch = arch
+        self.extra_tag = extra_tag
+        self.repo_base = repo_base
+        self.additional_tags = []
+
+    def tag_name(self):
+        tag_parts = [self.pkg_source, self.distro, self.arch]
+        if self.extra_tag:
+            tag_parts.append(self.extra_tag)
+        tag = "-".join(tag_parts)
+        return tag
+
+    def image_name(self, *, tag=None, repo_base=None):
+        if not tag:
+            tag = self.tag_name()
+        image_name = f"{self.name}:{tag}"
+        repo_base = repo_base if repo_base is not None else self.repo_base
+        if repo_base:
+            repo_base = repo_base.rstrip("/")
+            image_name = f"{repo_base}/{image_name}"
+        return image_name
+
+    def flat_name(self):
+        return f"{self.name}.{self.tag_name()}"
+
+    def __str__(self):
+        return self.image_name()
+
+    def all_names(self, baseless=False):
+        yield self.image_name()
+        for tag, _ in self.additional_tags:
+            yield self.image_name(tag=tag)
+        if self.repo_base and baseless:
+            yield self.image_name(repo_base="")
+            for tag, qual in self.additional_tags:
+                if qual == QUAL_NONE:
+                    continue
+                yield self.image_name(tag=tag, repo_base="")
+
+    @classmethod
+    def parse(cls, image_name):
+        if "/" in image_name:
+            base, rest = image_name.rsplit("/", 1)
+        else:
+            base = ""
+            rest = image_name
+        iname, tag = rest.split(":", 1)
+        tparts = tag.split("-", 3)
+        if len(tparts) < 3:
+            raise ValueError(f"too few tag components: {tag!r}")
+        return cls(
+            iname,
+            check_pkg_source(tparts[0]),
+            check_distro(tparts[1]),
+            check_arch(tparts[2]),
+            extra_tag=(tparts[3] if len(tparts) > 3 else ""),
+            repo_base=base,
+        )
+
+
+def generate_images(cli):
+    """Given full image names or a matrix of kind/pkg_source/distro_base/arch
+    values generate a list of target images to build/process.
+    """
+    images = {}
+    for img in cli.image or []:
+        images[str(img)] = img
+    rc = RepoConfig(cli.repo_base, cli.repo_base_for)
+    for kind in cli.kind or []:
+        for pkg_source in cli.package_source or DEFAULT_PKG_SOURCES:
+            for distro_base in cli.distro_base or DEFAULT_DISTRO_BASES:
+                for arch in cli.arch or default_arches():
+                    timg = TargetImage(
+                        kind,
+                        pkg_source,
+                        distro_base,
+                        arch,
+                        extra_tag=(cli.extra_tag or ""),
+                        repo_base=rc.find_base(distro_base),
+                    )
+                    images[str(timg)] = timg
+    return list(images.values())
+
+
+def add_special_tags(img):
+    """Certain images have special tags. Given an image, add general (non-FQIN)
+    tags to that image.
+    """
+    # Most of the policy (as opposed to mechanism) resides here where we decide
+    # that certain images deserve some extra special tags.  Mostly this serves
+    # to keep us compatible with older tagging schemes from earlier versions of
+    # the project.
+    if img.distro in [FEDORA, OPENSUSE]:
+        if img.arch == host_arch() and img.pkg_source == DEFAULT:
+            img.additional_tags.append((LATEST, QUAL_NONE))
+        if img.arch == host_arch() and img.pkg_source == NIGHTLY:
+            img.additional_tags.append((NIGHTLY, QUAL_NONE))
+    if img.arch == host_arch() and img.pkg_source == "default":
+        img.additional_tags.append((f"{img.distro}-{LATEST}", QUAL_DISTRO))
+    if img.arch == host_arch() and img.pkg_source == "nightly":
+        img.additional_tags.append((f"{img.distro}-{NIGHTLY}", QUAL_DISTRO))
+
+
+def build(cli, target):
+    """Command to build images."""
+    build_file = pathlib.Path(f"{cli.buildfile_prefix}{target.flat_name()}")
+    common_src = "./images/common"
+    common_dst = str(kind_source_dir(target.name) / ".common")
+    logger.debug("Copying common tree: %r -> %r", common_src, common_dst)
+    shutil.copytree(common_src, common_dst, dirs_exist_ok=True)
+    container_build(cli, target)
+    cid = container_id(cli, target)
+    with open(build_file, "w") as fh:
+        fh.write(f"{cid} {target.image_name()}\n")
+
+
+def push(cli, target):
+    """Command to push images."""
+    if cli.push_state == "rebuild":
+        build(cli, target)
+    if cli.push_state == "exists":
+        try:
+            container_id(cli, target)
+        except subprocess.CalledProcessError:
+            build(cli, target)
+
+    push_name = target.image_name()
+    for tag, _ in target.additional_tags:
+        if tag in ("latest", "nightly"):
+            push_name = target.image_name(tag=tag)
+            break
+        if tag.endswith(("-latest", "-nightly")):
+            push_name = target.image_name(tag=tag)
+            break
+    container_push(cli, push_name)
+
+
+def print_buildfile(cli, target):
+    """Command to print build file names."""
+    build_file = pathlib.Path(f"{cli.buildfile_prefix}{target.flat_name()}")
+    print(build_file)
+
+
+def print_image(_, target):
+    """Command to print (fqin) image names."""
+    print(str(target))
+
+
+def print_tags(cli, target):
+    """Command to print fqin image and additinal tag names."""
+    for idx, name in enumerate(
+        target.all_names(baseless=cli.without_repo_bases)
+    ):
+        prefix = "" if idx == 0 else "  "
+        print(f"{prefix}{name}")
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--verbose",
+        dest="log_level",
+        action="store_const",
+        const=logging.INFO,
+        default=logging.WARNING,
+        help="Emit verbose output",
+    )
+    parser.add_argument(
+        "--debug",
+        dest="log_level",
+        action="store_const",
+        const=logging.DEBUG,
+        default=logging.WARNING,
+        help="Emit debug level output",
+    )
+    parser.add_argument(
+        "--repo-base",
+        "-R",
+        help=(
+            "Common container registry repository base"
+            " (eg. quay.io/samba.org)"
+        ),
+    )
+    parser.add_argument(
+        "--image",
+        "-i",
+        type=TargetImage.parse,
+        action="append",
+        help="Build precisely the named image (requires a FQIN)",
+    )
+    parser.add_argument(
+        "--kind",
+        "-k",
+        type=check_kind,
+        action="append",
+        help="The kind of container to build (server, ad-server, etc...)",
+    )
+    parser.add_argument(
+        "--distro-base",
+        "-d",
+        type=check_distro,
+        action="append",
+        help="The name of the base OS distribution to use.",
+    )
+    parser.add_argument(
+        "--repo-base-for",
+        "-F",
+        type=check_repo_base_for,
+        action="append",
+        help=(
+            "Assign a custom repo base given a distro base"
+            "(like: --repo-base-for=centos=wonky.io/smb)"
+        ),
+    )
+    parser.add_argument(
+        "--arch",
+        "-a",
+        type=check_arch,
+        action="append",
+        help="The name of the CPU architecture to build for",
+    )
+    parser.add_argument(
+        "--package-source",
+        "-p",
+        type=check_pkg_source,
+        action="append",
+        help="Source of Samba packages to use",
+    )
+    parser.add_argument(
+        "--container-engine",
+        help=(
+            "Expliclty specify the path to the container engine"
+            " (docker, podman, ...) to use"
+        ),
+    )
+    parser.add_argument(
+        "--extra-tag",
+        help="Specify an extra tag extension. Handy for developers.",
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Do not run build commands"
+    )
+    parser.add_argument(
+        "--push-state",
+        choices=("exists", "rebuild"),
+        default="exists",
+        help=(
+            "Only push if a state is met:"
+            "exists - image exists; rebuild - image must be rebuilt."
+        ),
+    )
+    parser.add_argument(
+        "--buildfile-prefix",
+        default=".build.",
+        help="Specify prefix for build status files",
+    )
+    parser.add_argument(
+        "--extra-build-arg",
+        "-x",
+        action="append",
+        help="Extra argument to pass to container build command",
+    )
+    parser.add_argument(
+        "--without-repo-bases",
+        "-w",
+        action="store_true",
+        help=(
+            "If an image has a repo base, also generate image names"
+            " without the repo base"
+        ),
+    )
+    behaviors = parser.add_mutually_exclusive_group()
+    behaviors.add_argument(
+        "--push",
+        action="store_const",
+        dest="main_action",
+        const=push,
+        help="Push images",
+    )
+    behaviors.add_argument(
+        "--print",
+        action="store_const",
+        dest="main_action",
+        const=print_image,
+        help="Print the image names selected",
+    )
+    behaviors.add_argument(
+        "--print-tags",
+        action="store_const",
+        dest="main_action",
+        const=print_tags,
+        help="Print the image and additional tags selected",
+    )
+    behaviors.add_argument(
+        "--print-buildfile",
+        action="store_const",
+        dest="main_action",
+        const=print_buildfile,
+        help="Print the names of build status files",
+    )
+    cli = parser.parse_args()
+
+    if os.environ.get("BUILD_IMAGE_DEBUG") in ("1", "yes"):
+        cli.log_level = logging.DEBUG
+    logging.basicConfig(level=cli.log_level)
+
+    _action = cli.main_action if cli.main_action else build
+    imgs = []
+    try:
+        imgs = generate_images(cli)
+        for img in imgs:
+            add_special_tags(img)
+            logger.info("Image %s, extra tags: %s", img, img.additional_tags)
+            _action(cli, img)
+    except subprocess.CalledProcessError as err:
+        logger.error("Failed command: %s", _cmd_to_str(err.cmd))
+        sys.exit(err.returncode)
+    if not imgs:
+        logger.error("No images or image kinds supplied")
+        sys.exit(2)
+
+
+if __name__ == "__main__":
+    main()

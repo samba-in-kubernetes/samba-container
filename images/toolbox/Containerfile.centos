@@ -1,3 +1,8 @@
+# FIXME - this is not a real tag publicly available in the
+# quay.io/samba.org/samba-client repository. This only works if you build
+# the centos client locally first or acquire the image from a side channel.
+# This needs to be converted to something public and/or configurable
+# later.
 FROM quay.io/samba.org/samba-client:centos-latest
 MAINTAINER Shachar Sharon <ssharon@redhat.com>
 

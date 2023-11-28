@@ -10,19 +10,17 @@ on:
 
 env:
   CONTAINER_CMD: docker
-
 jobs:
-
-  check:
+  checks:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    # We need a newer version of shellcheck to avoid problems with the
-    # relative imports. Our scripts work on v0.7.2 and up but not the
-    # v0.7.0 preinstalled in the ubutnu image. We can force a local
-    # install by expliclity setting SHELLCHECK to `$ALT_BIN/shellcheck`
-    - name: Run static check tools
-      run: make check SHELLCHECK=$PWD/.bin/shellcheck
+      - uses: actions/checkout@v3
+      # We need a newer version of shellcheck to avoid problems with the
+      # relative imports. Our scripts work on v0.7.2 and up but not the
+      # v0.7.0 preinstalled in the ubutnu image. We can force a local
+      # install by expliclity setting SHELLCHECK to `$ALT_BIN/shellcheck`
+      - name: Run static check tools
+        run: make check SHELLCHECK=$PWD/.bin/shellcheck
 
   check-commits:
     runs-on: ubuntu-latest
@@ -38,249 +36,173 @@ jobs:
         run: make check-gitlint
 
   build-server:
+    # Reminder: the nightly-server images consume nightly samba rpm builds
+    # it is not *just* an image that gets built nightly
+    strategy:
+      matrix:
+        package_source: [default, nightly]
+        os: [centos, fedora, opensuse]
+        arch: [amd64]
+        exclude:
+          # there are no nightly packages for opensuse
+          - package_source: nightly
+            os: opensuse
     runs-on: ubuntu-latest
     env:
       BUILDAH_FORMAT: oci
+      IMG_TAG: ${{ matrix.package_source }}-${{ matrix.os }}-${{ matrix.arch }}
     steps:
-    - uses: actions/checkout@v3
-    - name: Build the server image
-      run: make build-server
-    - name: Upload server image
-      uses: ishworkh/docker-image-artifact-upload@v1
-      with:
-        image: "samba-server:latest"
-        retention_days: 1
-  build-server-centos:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - name: Build the CentOS based server image
-      run: make OS_NAME=centos build-server
-    - name: Upload server image
-      uses: ishworkh/docker-image-artifact-upload@v1
-      with:
-        image: "samba-server:centos-latest"
-        retention_days: 1
-
-  test-server-centos:
-    needs: build-server-centos
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - name: Download server image
-      uses: ishworkh/docker-image-artifact-download@v1
-      with:
-        image: "samba-server:centos-latest"
-    - name: Test the server image
-      run: LOCAL_TAG=samba-server:centos-latest tests/test-samba-container.sh
+      - uses: actions/checkout@v3
+      - name: Build the server image
+        run: make KIND=server PACKAGE_SOURCE=${{ matrix.package_source }} OS_NAME=${{ matrix.os}} BUILD_ARCH=${{ matrix.arch}} build-image
+      - name: Upload server image
+        uses: ishworkh/container-image-artifact-upload@v1.0.0
+        with:
+          image: "samba-server:${{ env.IMG_TAG }}"
+          container_engine: ${{ env.CONTAINER_CMD }}
+          retention_days: 1
 
   build-ad-server:
+    strategy:
+      matrix:
+        package_source: [default, nightly]
+        os: [centos, fedora, opensuse]
+        arch: [amd64]
+        exclude:
+          # there are no nightly packages for opensuse
+          - package_source: nightly
+            os: opensuse
+          # the distro packages for centos do not include an ad-dc
+          - package_source: default
+            os: centos
     runs-on: ubuntu-latest
     env:
       BUILDAH_FORMAT: oci
+      IMG_TAG: ${{ matrix.package_source }}-${{ matrix.os }}-${{ matrix.arch }}
     steps:
-    - uses: actions/checkout@v3
-    - name: Build the ad server image
-      run: make build-ad-server
-    - name: Upload ad server image
-      uses: ishworkh/docker-image-artifact-upload@v1
-      with:
-        image: "samba-ad-server:latest"
-        retention_days: 1
-  build-client-centos:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - name: Build the centos client image
-      run: make OS_NAME=centos build-client
-    # Here we upload samba-client image to artifacts locally for consumption
-    # during samba-toolbox build process.
-    - name: Upload client image
-      uses: ishworkh/docker-image-artifact-upload@v1
-      with:
-        image: "quay.io/samba.org/samba-client:centos-latest"
-        retention_days: 1
-
-  build-toolbox-centos:
-    needs: build-client-centos
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    # Download locally stored samba-client image to be used as base for building
-    # samba-toolbox.
-    - name: Download client image
-      uses: ishworkh/docker-image-artifact-download@v1
-      with:
-        image: "quay.io/samba.org/samba-client:centos-latest"
-    - name: Build the toolbox image
-      run: make OS_NAME=centos build-toolbox
-
+      - uses: actions/checkout@v3
+      - name: Build the ad server image
+        run: make KIND=ad-server PACKAGE_SOURCE=${{ matrix.package_source }} OS_NAME=${{ matrix.os }} BUILD_ARCH=${{ matrix.arch }} build-image
+      - name: Upload ad server image
+        uses: ishworkh/container-image-artifact-upload@v1.0.0
+        with:
+          image: "samba-ad-server:${{ env.IMG_TAG }}"
+          container_engine: ${{ env.CONTAINER_CMD }}
+          retention_days: 1
 
   build-client:
+    strategy:
+      matrix:
+        os: [centos, fedora, opensuse]
+        arch: [amd64]
     runs-on: ubuntu-latest
     env:
       BUILDAH_FORMAT: oci
+      IMG_TAG: default-${{ matrix.os }}-${{ matrix.arch }}
     steps:
-    - uses: actions/checkout@v3
-    - name: Build the client image
-      run: make build-client
-    # Here we upload samba-client image to artifacts locally for consumption
-    # during samba-toolbox build process.
-    - name: Upload client image
-      uses: ishworkh/docker-image-artifact-upload@v1
-      with:
-        image: "quay.io/samba.org/samba-client:latest"
-        retention_days: 1
+      - uses: actions/checkout@v3
+      - name: build the client image
+        run: make KIND=client OS_NAME=${{ matrix.os }} BUILD_ARCH=${{ matrix.arch }} build-image
+      # Here we upload samba-client image to artifacts locally for consumption
+      # during  the samba-toolbox build process.
+      - name: Upload the client image
+        uses: ishworkh/container-image-artifact-upload@v1.0.0
+        with:
+          image: "samba-client:${{ env.IMG_TAG }}"
+          container_engine: ${{ env.CONTAINER_CMD }}
+          retention_days: 1
 
   build-toolbox:
+    strategy:
+      matrix:
+        os: [centos, fedora, opensuse]
+        arch: [amd64]
     needs: build-client
     runs-on: ubuntu-latest
     env:
       BUILDAH_FORMAT: oci
+      IMG_TAG: default-${{ matrix.os }}-${{ matrix.arch }}
     steps:
-    - uses: actions/checkout@v3
-    # Download locally stored samba-client image to be used as base for building
-    # samba-toolbox.
-    - name: Download client image
-      uses: ishworkh/docker-image-artifact-download@v1
-      with:
-        image: "quay.io/samba.org/samba-client:latest"
-    - name: Build the toolbox image
-      run: make build-toolbox
+      - uses: actions/checkout@v3
+      # Download locally stored samba-client image to be used as base for building
+      # samba-toolbox.
+      - name: Download client image
+        uses: ishworkh/container-image-artifact-download@v1.0.0
+        with:
+          image: "samba-client:${{ env.IMG_TAG }}"
+          container_engine: ${{ env.CONTAINER_CMD }}
+      # Workaround: retag the image so that the FQIN image matches the name in
+      # the toolbox containerfiles.
+      - name: Apply OS-latest tag to image (for centos)
+        run: ${{ env.CONTAINER_CMD }} tag samba-client:${{ env.IMG_TAG }} quay.io/samba.org/samba-client:${{ matrix.os }}-latest
+      - name: Apply latest tag to image (for fedora)
+        run: ${{ env.CONTAINER_CMD }} tag samba-client:${{ env.IMG_TAG }} quay.io/samba.org/samba-client:latest
+      - name: Build the toolbox image
+        run: make KIND=toolbox OS_NAME=${{ matrix.os }}  BUILD_ARCH=${{ matrix.arch }} build-image
 
   test-server:
+    strategy:
+      matrix:
+        package_source: [default, nightly]
+        os: [centos, fedora, opensuse]
+        arch: [amd64]
+        exclude:
+          # there are no nightly packages for opensuse
+          - package_source: nightly
+            os: opensuse
     needs: build-server
     runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - name: Download server image
-      uses: ishworkh/docker-image-artifact-download@v1
-      with:
-        image: "samba-server:latest"
-    - name: Test the server image
-      run: tests/test-samba-container.sh
-
-  # Reminder: the nightly-server images consume nightly samba rpm builds
-  # it is not *just* an image that gets built nightly
-  build-nightly-server:
-    runs-on: ubuntu-latest
     env:
       BUILDAH_FORMAT: oci
+      IMG_TAG: ${{ matrix.package_source }}-${{ matrix.os }}-${{ matrix.arch }}
     steps:
-    - uses: actions/checkout@v3
-    - name: Build the nightly server image
-      run: make build-nightly-server
-    - name: Upload nightly server image
-      uses: ishworkh/docker-image-artifact-upload@v1
-      with:
-        image: "samba-server:nightly"
-        retention_days: 1
-
-  build-nightly-server-centos:
-    runs-on: ubuntu-latest
-    env:
-      BUILDAH_FORMAT: oci
-    steps:
-    - uses: actions/checkout@v3
-    - name: Build the nightly server image
-      run: make OS_NAME=centos build-nightly-server
-    - name: Upload nightly server image
-      uses: ishworkh/docker-image-artifact-upload@v1
-      with:
-        image: "samba-server:centos-nightly"
-        retention_days: 1
-
-  build-nightly-ad-server:
-    runs-on: ubuntu-latest
-    env:
-      BUILDAH_FORMAT: oci
-    steps:
-    - uses: actions/checkout@v3
-    - name: Build the nightly ad server image
-      run: make build-nightly-ad-server
-    - name: Upload nightly ad server image
-      uses: ishworkh/docker-image-artifact-upload@v1
-      with:
-        image: "samba-ad-server:nightly"
-        retention_days: 1
-
-  test-nightly-server:
-    needs: build-nightly-server
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - name: Download nightly server image
-      uses: ishworkh/docker-image-artifact-download@v1
-      with:
-        image: "samba-server:nightly"
-    - name: Test the nightly server image
-      run: LOCAL_TAG=samba-server:nightly tests/test-samba-container.sh
-
-  test-nightly-server-centos:
-    needs: build-nightly-server-centos
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - name: Download nightly server image
-      uses: ishworkh/docker-image-artifact-download@v1
-      with:
-        image: "samba-server:centos-nightly"
-    - name: Test the nightly server image
-      run: LOCAL_TAG=samba-server:centos-nightly tests/test-samba-container.sh
+      - uses: actions/checkout@v3
+      - name: Download server image
+        uses: ishworkh/container-image-artifact-download@v1.0.0
+        with:
+          image: "samba-server:${{ env.IMG_TAG }}"
+          container_engine: ${{ env.CONTAINER_CMD }}
+      - name: Test the server image
+        run: LOCAL_TAG=samba-server:${{ env.IMG_TAG }} tests/test-samba-container.sh
 
   test-ad-server-kubernetes:
+    strategy:
+      matrix:
+        package_source: [default, nightly]
+        os: [centos, fedora, opensuse]
+        arch: [amd64]
+        exclude:
+          # there are no nightly packages for opensuse
+          - package_source: nightly
+            os: opensuse
+          # the distro packages for centos do not include an ad-dc
+          - package_source: default
+            os: centos
     needs:
       - build-ad-server
       - build-server
-    #runs-on: ubuntu-latest
     # need to explicitly use 20.04 to avoid problems with jq...
     runs-on: ubuntu-20.04
+    env:
+      BUILDAH_FORMAT: oci
+      IMG_TAG: ${{ matrix.package_source }}-${{ matrix.os }}-${{ matrix.arch }}
     steps:
-    - uses: actions/checkout@v3
-    - uses: nolar/setup-k3d-k3s@v1
-    - name: get nodes
-      run: kubectl get nodes
-    - name: Download ad server image
-      uses: ishworkh/docker-image-artifact-download@v1
-      with:
-        image: "samba-ad-server:latest"
-    - name: import ad server image
-      run: k3d image import samba-ad-server:latest
-    - name: Download file server image
-      uses: ishworkh/docker-image-artifact-download@v1
-      with:
-        image: "samba-server:latest"
-    - name: import file server image
-      run: k3d image import samba-server:latest
-    - name: run the ad-dc deployment test
-      run: ./tests/test-samba-ad-server-kubernetes.sh
-
-  test-nightly-ad-server-kubernetes:
-      needs:
-        - build-nightly-ad-server
-        - build-nightly-server
-      #runs-on: ubuntu-latest
-      # need to explicitly use 20.04 to avoid problems with jq...
-      runs-on: ubuntu-20.04
-      env:
-        IMG_TAG: nightly
-      steps:
       - uses: actions/checkout@v3
       - uses: nolar/setup-k3d-k3s@v1
       - name: get nodes
         run: kubectl get nodes
-      - name: Download nightly ad server image
-        uses: ishworkh/docker-image-artifact-download@v1
+      - name: Download ad server image
+        uses: ishworkh/container-image-artifact-download@v1.0.0
         with:
-          image: "samba-ad-server:nightly"
-      - name: import nightly ad server image
-        run: k3d image import samba-ad-server:nightly
-      - name: Download nightly file server image
-        uses: ishworkh/docker-image-artifact-download@v1
+          image: "samba-ad-server:${{ env.IMG_TAG }}"
+          container_engine: ${{ env.CONTAINER_CMD }}
+      - name: Download file server image
+        uses: ishworkh/container-image-artifact-download@v1.0.0
         with:
-          image: "samba-server:nightly"
-      - name: import nightly file server image
-        run: k3d image import samba-server:nightly
+          image: "samba-server:${{ env.IMG_TAG }}"
+          container_engine: ${{ env.CONTAINER_CMD }}
+      - name: import images to k3d
+        run: k3d image import samba-server:${{ env.IMG_TAG }} samba-ad-server:${{ env.IMG_TAG }}
       - name: run the ad-dc deployment test
         run: ./tests/test-samba-ad-server-kubernetes.sh
 
@@ -290,9 +212,7 @@ jobs:
       - build-client
       - build-toolbox
       - test-server
-      - test-nightly-server
       - test-ad-server-kubernetes
-      - test-nightly-ad-server-kubernetes
     runs-on: ubuntu-latest
     if: (github.event_name == 'push' || github.event_name == 'schedule') && github.repository == 'samba-in-kubernetes/samba-container'
     steps:

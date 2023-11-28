@@ -12,4 +12,3 @@ spec:
     - ReadWriteOnce
   hostPath:
     path: "/mnt/pv"
-
