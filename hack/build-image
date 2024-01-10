@@ -363,7 +363,7 @@ def generate_images(cli):
     return list(images.values())
 
 
-def add_special_tags(img):
+def add_special_tags(img, distro_qualified=True):
     """Certain images have special tags. Given an image, add general (non-FQIN)
     tags to that image.
     """
@@ -376,6 +376,8 @@ def add_special_tags(img):
             img.additional_tags.append((LATEST, QUAL_NONE))
         if img.arch == host_arch() and img.pkg_source == NIGHTLY:
             img.additional_tags.append((NIGHTLY, QUAL_NONE))
+    if not distro_qualified:
+        return  # skip creating "distro qualified" tags
     if img.arch == host_arch() and img.pkg_source == "default":
         img.additional_tags.append((f"{img.distro}-{LATEST}", QUAL_DISTRO))
     if img.arch == host_arch() and img.pkg_source == "nightly":
@@ -550,6 +552,15 @@ def main():
             " without the repo base"
         ),
     )
+    parser.add_argument(
+        "--distro-qualified",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Specify if image tags like fedora-nightly or centos-latest"
+            " will be created."
+        ),
+    )
     behaviors = parser.add_mutually_exclusive_group()
     behaviors.add_argument(
         "--push",
@@ -590,7 +601,7 @@ def main():
     try:
         imgs = generate_images(cli)
         for img in imgs:
-            add_special_tags(img)
+            add_special_tags(img, cli.distro_qualified)
             logger.info("Image %s, extra tags: %s", img, img.additional_tags)
             _action(cli, img)
     except subprocess.CalledProcessError as err:
