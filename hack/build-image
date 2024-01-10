@@ -48,6 +48,12 @@ import sys
 
 logger = logging.getLogger("build-image")
 
+# Set FORCE_ARCH_FLAG if you want to test passing the --arch flag to podman all
+# the time. This was the previous behavior but we found it to have some issues.
+# When this is false the --arch flag is passed to podman ONLY when the target
+# arch != the host system arch.
+FORCE_ARCH_FLAG = False
+
 # IMAGE_KINDS - map aliases/names to canonical names for the kinds
 # of images we can build
 IMG_SERVER = "samba-server"
@@ -196,7 +202,13 @@ def container_build(cli, target):
     if "docker" in args[0]:
         if target.arch != host_arch():
             raise RuntimeError("Docker does not support --arch")
-    else:
+    elif target.arch != host_arch() or FORCE_ARCH_FLAG:
+        # We've noticed a few small quirks when using podman with the --arch
+        # option. The main issue is that building the client image works
+        # but then the toolbox image fails because it somehow doesn't see
+        # the image we just built as usable. This doesn't happen when
+        # --arch is not provided. So if the target arch and the host_arch
+        # are the same, skip passing the extra argument.
         args.append(f"--arch={target.arch}")
     if cli.extra_build_arg:
         args.extend(cli.extra_build_arg)
