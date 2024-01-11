@@ -19,8 +19,6 @@ OS_BASE="$(. /etc/os-release && echo "${ID}")"
 
 case "${install_packages_from}" in
     samba-nightly)
-        # unset version suffix for nightly builds
-        samba_version_suffix=""
         get_custom_repo "https://artifacts.ci.centos.org/samba/pkgs/master/${OS_BASE}/samba-nightly-master.repo"
     ;;
     custom-repo)
