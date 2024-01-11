@@ -13,6 +13,9 @@ get_custom_repo() {
 install_packages_from="$1"
 samba_version_suffix="$2"
 install_custom_repo="$3"
+# reserve package_selection. keep args consistent with server image script.
+# unused for ad image (for now)
+# package_selection="$4"
 
 # shellcheck disable=SC1091
 OS_BASE="$(. /etc/os-release && echo "${ID}")"
@@ -26,24 +29,37 @@ case "${install_packages_from}" in
     ;;
 esac
 
+
+# Assorted packages that must be installed in the container image to
+# support the functioning of the container
+support_packages=(\
+    findutils \
+    python-pip \
+    python3-samba \
+    python3-pyxattr \
+    tdb-tools \
+    procps-ng \
+    /usr/bin/smbclient)
+# Packages belonging to the samba install. If a samba_version_suffix is given
+# all the samba_packages must share that version
+samba_packages=(samba-dc)
+
+# Assign version suffix to samba packages
+samba_versioned_packages=()
+for p in "${samba_packages[@]}"; do
+    samba_versioned_packages+=("${p}${samba_version_suffix}")
+done
+
 dnf_cmd=(dnf)
 if [[ "${OS_BASE}" = centos ]]; then
     dnf install -y epel-next-release
     dnf_cmd+=(--enablerepo=crb)
 fi
 
-packages=(\
-    findutils \
-    python-pip \
-    python3-samba \
-    python3-pyxattr \
-    tdb-tools \
-    "samba-dc${samba_version_suffix}" \
-    procps-ng \
-    /usr/bin/smbclient)
 "${dnf_cmd[@]}" \
     install --setopt=install_weak_deps=False -y \
-    "${packages[@]}"
+    "${support_packages[@]}" \
+    "${samba_versioned_packages[@]}"
 dnf clean all
 
 rm -rf /etc/samba/smb.conf

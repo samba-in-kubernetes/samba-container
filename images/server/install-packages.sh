@@ -13,6 +13,7 @@ get_custom_repo() {
 install_packages_from="$1"
 samba_version_suffix="$2"
 install_custom_repo="$3"
+package_selection="$4"
 
 # shellcheck disable=SC1091
 OS_BASE="$(. /etc/os-release && echo "${ID}")"
@@ -20,6 +21,7 @@ OS_BASE="$(. /etc/os-release && echo "${ID}")"
 case "${install_packages_from}" in
     samba-nightly)
         get_custom_repo "https://artifacts.ci.centos.org/samba/pkgs/master/${OS_BASE}/samba-nightly-master.repo"
+        package_selection=${package_selection:-nightly}
     ;;
     custom-repo)
         get_custom_repo "${install_custom_repo}"
@@ -27,32 +29,44 @@ case "${install_packages_from}" in
 esac
 
 
+# Assorted packages that must be installed in the container image to
+# support the functioning of the container
+support_packages=(\
+    findutils \
+    python-pip \
+    python3-samba \
+    python3-pyxattr \
+    tdb-tools)
+# Packages belonging to the samba install. If a samba_version_suffix is given
+# all the samba_packages must share that version
+samba_packages=(\
+    samba \
+    samba-client \
+    samba-winbind \
+    samba-winbind-clients \
+    samba-vfs-iouring \
+    ctdb)
+case "${package_selection}-${OS_BASE}" in
+    *-fedora|allvfs-*)
+        samba_packages+=(samba-vfs-cephfs samba-vfs-glusterfs)
+    ;;
+esac
+
+# Assign version suffix to samba packages
+samba_versioned_packages=()
+for p in "${samba_packages[@]}"; do
+    samba_versioned_packages+=("${p}${samba_version_suffix}")
+done
+
 dnf_cmd=(dnf)
 if [[ "${OS_BASE}" = centos ]]; then
     dnf_cmd+=(--enablerepo=crb --enablerepo=resilientstorage)
 fi
 
-packages=(\
-    findutils \
-    python-pip \
-    python3-samba \
-    python3-pyxattr \
-    "samba${samba_version_suffix}" \
-    "samba-client${samba_version_suffix}" \
-    "samba-winbind${samba_version_suffix}" \
-    "samba-winbind-clients${samba_version_suffix}" \
-    "samba-vfs-iouring${samba_version_suffix}" \
-    tdb-tools \
-    "ctdb${samba_version_suffix}")
-if [[ "${OS_BASE}" = fedora ]]; then
-    packages+=(\
-        "samba-vfs-cephfs${samba_version_suffix}" \
-        "samba-vfs-glusterfs${samba_version_suffix}" \
-    )
-fi
 "${dnf_cmd[@]}" \
     install --setopt=install_weak_deps=False -y \
-    "${packages[@]}"
+    "${support_packages[@]}" \
+    "${samba_versioned_packages[@]}"
 dnf clean all
 
 cp --preserve=all /etc/ctdb/functions /usr/share/ctdb/functions
