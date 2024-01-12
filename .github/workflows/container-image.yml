@@ -47,6 +47,10 @@ jobs:
           # there are no nightly packages for opensuse
           - package_source: nightly
             os: opensuse
+        include:
+          - package_source: devbuilds
+            os: centos
+            arch: amd64
     runs-on: ubuntu-latest
     env:
       BUILDAH_FORMAT: oci
@@ -150,6 +154,10 @@ jobs:
           # there are no nightly packages for opensuse
           - package_source: nightly
             os: opensuse
+        include:
+          - package_source: devbuilds
+            os: centos
+            arch: amd64
     needs: build-server
     runs-on: ubuntu-latest
     env:
