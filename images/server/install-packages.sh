@@ -51,6 +51,10 @@ OS_BASE="$(. /etc/os-release && echo "${ID}")"
 case "${install_packages_from}" in
     samba-nightly)
         get_custom_repo "https://artifacts.ci.centos.org/samba/pkgs/master/${OS_BASE}/samba-nightly-master.repo"
+        if [[ "${OS_BASE}" = centos ]]; then
+            dnf install --setopt=install_weak_deps=False -y \
+                epel-release centos-release-ceph-reef
+        fi
         package_selection=${package_selection:-nightly}
     ;;
     devbuilds)
@@ -93,7 +97,7 @@ case "${package_selection}-${OS_BASE}" in
     *-fedora|allvfs-*)
         samba_packages+=(samba-vfs-cephfs samba-vfs-glusterfs)
     ;;
-    devbuilds-centos|forcedevbuilds-*)
+    nightly-centos|devbuilds-centos|forcedevbuilds-*)
         dnf_cmd+=(--enablerepo=epel)
         samba_packages+=(samba-vfs-cephfs)
         # these packages should be installed as deps. of sambacc extras
