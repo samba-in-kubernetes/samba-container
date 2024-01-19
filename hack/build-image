@@ -98,7 +98,14 @@ DISTROS = [
 # PACKAGE_SOURCES - list of known package sources
 DEFAULT = "default"
 NIGHTLY = "nightly"
-PACKAGE_SOURCES = [DEFAULT, NIGHTLY]
+DEVBUILDS = "devbuilds"
+PACKAGE_SOURCES = [DEFAULT, NIGHTLY, DEVBUILDS]
+
+PACKAGES_FROM = {
+    DEFAULT: '',
+    NIGHTLY: 'samba-nightly',
+    DEVBUILDS: 'devbuilds',
+}
 
 # SOURCE_DIRS - image source paths
 # (paths are relative to common image source dir)
@@ -196,8 +203,9 @@ def container_engine(cli):
 def container_build(cli, target):
     """Construct and execute a command to build the target container image."""
     args = [container_engine(cli), "build"]
-    if target.pkg_source == NIGHTLY:
-        args.append("--build-arg=INSTALL_PACKAGES_FROM=samba-nightly")
+    pkgs_from = PACKAGES_FROM[target.pkg_source]
+    if pkgs_from:
+        args.append(f"--build-arg=INSTALL_PACKAGES_FROM={pkgs_from}")
     # docker doesn't currently support alt. architectures
     if "docker" in args[0]:
         if target.arch != host_arch():
