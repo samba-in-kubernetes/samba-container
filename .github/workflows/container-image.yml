@@ -226,7 +226,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: log in to quay.io
-        run: docker login -u "${{ secrets.QUAY_USER }}" -p "${{ secrets.QUAY_PASS }}" quay.io
+        run: ${CONTAINER_CMD} login -u "${{ secrets.QUAY_USER }}" -p "${{ secrets.QUAY_PASS }}" quay.io
       - name: push server image
         run: make push-server
       - name: push ad-server image
