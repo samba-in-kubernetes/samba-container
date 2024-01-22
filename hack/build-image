@@ -121,6 +121,7 @@ DEFAULT_DISTRO_BASES = [FEDORA]
 LATEST = "latest"
 QUAL_NONE = "unqualified"
 QUAL_DISTRO = "distro-qualified"
+QUAL_FQIN = 'fqin'
 
 
 _DISCOVERED_CONTAINER_ENGINES = []
@@ -405,6 +406,53 @@ def build(cli, target):
         fh.write(f"{cid} {target.image_name()}\n")
 
 
+class QMatcher:
+    """Push only tags that meet the specified criteria:
+    all - all tags;
+    unqualified - only unqualified tags (eg. latest);
+    distro - only distribution base qualifed tags (eg. fedora-latest);
+    fqin - only fully qualified tags (eg. default-centos-amd64);
+    mixed - only fqin and unqualified tags;
+    least-qualified (default) - exactly one tag, with the least
+    number of qualifications
+    """
+
+    def __init__(self, key):
+        self.qualifications = []
+        self.count = 0
+        self.max_matches = 0
+
+        if not key or key == "least-qualified":
+            self.qualifications = [QUAL_NONE, QUAL_DISTRO, QUAL_FQIN]
+            self.max_matches = 1
+        elif key == "all":
+            pass
+        elif key == "mixed":
+            self.qualifications = [QUAL_NONE, QUAL_FQIN]
+        else:
+            try:
+                mq = {
+                    "unqualified": QUAL_NONE,
+                    "distro": QUAL_DISTRO,
+                    "fqin": QUAL_FQIN,
+                }[key]
+            except KeyError:
+                raise argparse.ArgumentTypeError(
+                    "value must be one of:"
+                    " all, least-qualified, unqualified, distro, fqin;"
+                    f" not {key}"
+                )
+            self.qualifications = [mq]
+
+    def __call__(self, qv):
+        if self.max_matches and self.count >= self.max_matches:
+            return False
+        if not self.qualifications or qv in self.qualifications:
+            self.count += 1
+            return True
+        return False
+
+
 def push(cli, target):
     """Command to push images."""
     if cli.push_state == "rebuild":
@@ -415,15 +463,18 @@ def push(cli, target):
         except subprocess.CalledProcessError:
             build(cli, target)
 
+    to_push = []
     push_name = target.image_name()
-    for tag, _ in target.additional_tags:
+    for tag, qual in target.additional_tags:
         if tag in ("latest", "nightly"):
-            push_name = target.image_name(tag=tag)
-            break
+            to_push.append((target.image_name(tag=tag), qual))
         if tag.endswith(("-latest", "-nightly")):
-            push_name = target.image_name(tag=tag)
-            break
-    container_push(cli, push_name)
+            to_push.append((target.image_name(tag=tag), qual))
+    to_push.append((push_name, QUAL_FQIN))
+    qmatcher = cli.push_selected_tags or QMatcher("")
+    for push_name, tag_qual in to_push:
+        if qmatcher(tag_qual):
+            container_push(cli, push_name)
 
 
 def print_buildfile(cli, target):
@@ -539,6 +590,11 @@ def main():
             "Only push if a state is met:"
             "exists - image exists; rebuild - image must be rebuilt."
         ),
+    )
+    parser.add_argument(
+        "--push-selected-tags",
+        type=QMatcher,
+        help=QMatcher.__doc__
     )
     parser.add_argument(
         "--buildfile-prefix",
