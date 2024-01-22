@@ -252,6 +252,26 @@ def container_id(cli, target):
     return res.stdout.decode("utf8").strip()
 
 
+def container_tag(cli, target, tag, *tags):
+    """Add additional tags to the existing target image."""
+    if isinstance(target, str):
+        src = target  # permit target to be a string w/ the desired source
+    else:
+        src = target.image_name()
+    base_args = [
+        container_engine(cli),
+        "tag",
+        src,
+    ]
+    if "docker" not in base_args[0]:
+        # podman can do it in one command, docker (on github ci) can not
+        args += [tag] + list(tags)
+        run(cli, args, check=True)
+        return
+    for new_tag in [tag] + list(tags):
+        run(cli, base_args + [new_tag], check=True)
+
+
 def kind_source_dir(kind):
     """Return the path to a kind's source directory."""
     return pathlib.Path("images") / SOURCE_DIRS[check_kind(kind)]
@@ -477,6 +497,24 @@ def push(cli, target):
             container_push(cli, push_name)
 
 
+def retag(cli, target):
+    """Command to regenerate any missing unqualified tags."""
+    cid = container_id(cli, target)
+    tags = []
+    if cli.repo_base and target.repo_base != cli.repo_base:
+        # if repo base is given on the cli, and differs from the
+        # target, regenerate tags with the new distro base.
+        # retag list
+        target.repo_base = cli.repo_base
+        # Ensure the new FQIN is part of the new tags list
+        tags.append(target.image_name())
+    tags += [target.image_name(tag=t) for t, _ in target.additional_tags]
+    if tags:
+        container_tag(cli, cid, *tags)
+    else:
+        logger.warning("no tags to add")
+
+
 def print_buildfile(cli, target):
     """Command to print build file names."""
     build_file = pathlib.Path(f"{cli.buildfile_prefix}{target.flat_name()}")
@@ -653,6 +691,14 @@ def main():
         dest="main_action",
         const=print_buildfile,
         help="Print the names of build status files",
+    )
+    behaviors.add_argument(
+        "--retag",
+        action="store_const",
+        dest="main_action",
+        const=retag,
+        help=("Regenerate any short (unqualified) tags expected to exist"
+              " for a given FQIN. Requires FQIN to already exist locally."),
     )
     cli = parser.parse_args()
 
