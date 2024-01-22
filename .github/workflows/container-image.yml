@@ -228,20 +228,73 @@ jobs:
       - test-server
       - test-ad-server-kubernetes
     runs-on: ubuntu-latest
+    env:
+      REPO_BASE: quay.io/samba.org
     if: (github.event_name == 'push' || github.event_name == 'schedule') && github.repository == 'samba-in-kubernetes/samba-container'
     steps:
       - uses: actions/checkout@v3
       - name: log in to quay.io
         run: ${CONTAINER_CMD} login -u "${{ secrets.QUAY_USER }}" -p "${{ secrets.QUAY_PASS }}" quay.io
-      - name: push server image
-        run: make push-server
-      - name: push ad-server image
-        run: make push-ad-server
-      - name: push client image
-        run: make push-client
-      - name: push toolbox image
-        run: make push-toolbox
-      - name: push nightly server image
-        run: make push-nightly-server
-      - name: push nightly ad server image
-        run: make push-nightly-ad-server
+      # pull in already built images we plan on pushing
+      # (server images)
+      - name: Fetch server default-fedora-amd64
+        uses: ishworkh/container-image-artifact-download@v1.0.0
+        with:
+          image: "samba-server:default-fedora-amd64"
+          container_engine: ${{ env.CONTAINER_CMD }}
+      - name: Fetch server nightly-fedora-amd64
+        uses: ishworkh/container-image-artifact-download@v1.0.0
+        with:
+          image: "samba-server:nightly-fedora-amd64"
+          container_engine: ${{ env.CONTAINER_CMD }}
+      # (ad server images)
+      - name: Fetch ad-server default-fedora-amd64
+        uses: ishworkh/container-image-artifact-download@v1.0.0
+        with:
+          image: "samba-ad-server:default-fedora-amd64"
+          container_engine: ${{ env.CONTAINER_CMD }}
+      - name: Fetch ad-server nightly-fedora-amd64
+        uses: ishworkh/container-image-artifact-download@v1.0.0
+        with:
+          image: "samba-ad-server:nightly-fedora-amd64"
+          container_engine: ${{ env.CONTAINER_CMD }}
+      # (client images)
+      - name: Fetch client default-fedora-amd64
+        uses: ishworkh/container-image-artifact-download@v1.0.0
+        with:
+          image: "samba-client:default-fedora-amd64"
+          container_engine: ${{ env.CONTAINER_CMD }}
+      # (toolbox images)
+      - name: Fetch toolbox default-fedora-amd64
+        uses: ishworkh/container-image-artifact-download@v1.0.0
+        with:
+          image: "samba-toolbox:default-fedora-amd64"
+          container_engine: ${{ env.CONTAINER_CMD }}
+      # reapply missing tags
+      - name: Retag images
+        run: >
+          ./hack/build-image
+          --retag
+          --container-engine=${CONTAINER_CMD}
+          --repo-base=${REPO_BASE}
+          --no-distro-qualified
+          -i samba-server:default-fedora-amd64
+          -i samba-server:nightly-fedora-amd64
+          -i samba-ad-server:default-fedora-amd64
+          -i samba-ad-server:nightly-fedora-amd64
+          -i samba-client:default-fedora-amd64
+          -i samba-toolbox:default-fedora-amd64
+      - name: Push images
+        run: >
+          ./hack/build-image
+          --push
+          --container-engine=${CONTAINER_CMD}
+          --verbose
+          --push-state=exists
+          --push-selected-tags=mixed
+          -i ${REPO_BASE}/samba-server:default-fedora-amd64
+          -i ${REPO_BASE}/samba-server:nightly-fedora-amd64
+          -i ${REPO_BASE}/samba-ad-server:default-fedora-amd64
+          -i ${REPO_BASE}/samba-ad-server:nightly-fedora-amd64
+          -i ${REPO_BASE}/samba-client:default-fedora-amd64
+          -i ${REPO_BASE}/samba-toolbox:default-fedora-amd64
