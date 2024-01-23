@@ -247,6 +247,16 @@ jobs:
         with:
           image: "samba-server:nightly-fedora-amd64"
           container_engine: ${{ env.CONTAINER_CMD }}
+      - name: Fetch server nightly-centos-amd64
+        uses: ishworkh/container-image-artifact-download@v1.0.0
+        with:
+          image: "samba-server:nightly-centos-amd64"
+          container_engine: ${{ env.CONTAINER_CMD }}
+      - name: Fetch server devbuilds-centos-amd64
+        uses: ishworkh/container-image-artifact-download@v1.0.0
+        with:
+          image: "samba-server:devbuilds-centos-amd64"
+          container_engine: ${{ env.CONTAINER_CMD }}
       # (ad server images)
       - name: Fetch ad-server default-fedora-amd64
         uses: ishworkh/container-image-artifact-download@v1.0.0
@@ -280,6 +290,8 @@ jobs:
           --no-distro-qualified
           -i samba-server:default-fedora-amd64
           -i samba-server:nightly-fedora-amd64
+          -i samba-server:nightly-centos-amd64
+          -i samba-server:devbuilds-centos-amd64
           -i samba-ad-server:default-fedora-amd64
           -i samba-ad-server:nightly-fedora-amd64
           -i samba-client:default-fedora-amd64
@@ -294,6 +306,8 @@ jobs:
           --push-selected-tags=mixed
           -i ${REPO_BASE}/samba-server:default-fedora-amd64
           -i ${REPO_BASE}/samba-server:nightly-fedora-amd64
+          -i ${REPO_BASE}/samba-server:nightly-centos-amd64
+          -i ${REPO_BASE}/samba-server:devbuilds-centos-amd64
           -i ${REPO_BASE}/samba-ad-server:default-fedora-amd64
           -i ${REPO_BASE}/samba-ad-server:nightly-fedora-amd64
           -i ${REPO_BASE}/samba-client:default-fedora-amd64
