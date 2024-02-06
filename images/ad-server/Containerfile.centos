@@ -2,7 +2,7 @@ FROM quay.io/centos/centos:stream9
 ARG INSTALL_PACKAGES_FROM=default
 ARG SAMBA_VERSION_SUFFIX=""
 ARG SAMBACC_VERSION_SUFFIX=""
-ARG SAMBA_SPECIFICS=
+ARG SAMBA_SPECIFICS=daemon_cli_debug_output
 ARG INSTALL_CUSTOM_REPO=
 
 MAINTAINER John Mulligan <jmulligan@redhat.com>
