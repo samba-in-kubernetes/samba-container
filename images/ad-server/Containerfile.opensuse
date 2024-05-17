@@ -6,7 +6,7 @@
 
 # OBS doesn't allow a fully qualified image registry name for the offline build
 FROM opensuse/tumbleweed
-ARG SAMBA_SPECIFICS=
+ARG SAMBA_SPECIFICS=daemon_cli_debug_output
 
 MAINTAINER David Mulder <dmulder@suse.com>
 

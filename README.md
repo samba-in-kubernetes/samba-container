@@ -16,8 +16,8 @@ Container images for [Samba](https://samba.org) services.
 |-------------|------------|-------------------|----------|
 |[Samba Server](#samba-server) | [quay.io](https://quay.io/repository/samba.org/samba-server) | Yes | Standalone file server, Domain member file server |
 |[AD Domain Controller](#ad-dc) | [quay.io](https://quay.io/repository/samba.org/samba-ad-server) | Yes | Active Directory Domain Controller |
-|[Client](#client) | [quay.io](https://quay.io/repository/samba.org/samba-ad-server) | No | Basic Userspace Client Utilities |
-|[Toolbox](#toolbox) | [quay.io](https://quay.io/repository/samba.org/samba-ad-server) | No | Extra debugging and testing tools |
+|[Client](#client) | [quay.io](https://quay.io/repository/samba.org/samba-client) | No | Basic Userspace Client Utilities |
+|[Toolbox](#toolbox) | [quay.io](https://quay.io/repository/samba.org/samba-toolbox) | No | Extra debugging and testing tools |
 
 
 ## Samba Server

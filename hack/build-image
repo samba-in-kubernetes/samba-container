@@ -48,6 +48,12 @@ import sys
 
 logger = logging.getLogger("build-image")
 
+# Set FORCE_ARCH_FLAG if you want to test passing the --arch flag to podman all
+# the time. This was the previous behavior but we found it to have some issues.
+# When this is false the --arch flag is passed to podman ONLY when the target
+# arch != the host system arch.
+FORCE_ARCH_FLAG = False
+
 # IMAGE_KINDS - map aliases/names to canonical names for the kinds
 # of images we can build
 IMG_SERVER = "samba-server"
@@ -92,7 +98,14 @@ DISTROS = [
 # PACKAGE_SOURCES - list of known package sources
 DEFAULT = "default"
 NIGHTLY = "nightly"
-PACKAGE_SOURCES = [DEFAULT, NIGHTLY]
+DEVBUILDS = "devbuilds"
+PACKAGE_SOURCES = [DEFAULT, NIGHTLY, DEVBUILDS]
+
+PACKAGES_FROM = {
+    DEFAULT: '',
+    NIGHTLY: 'samba-nightly',
+    DEVBUILDS: 'devbuilds',
+}
 
 # SOURCE_DIRS - image source paths
 # (paths are relative to common image source dir)
@@ -108,6 +121,7 @@ DEFAULT_DISTRO_BASES = [FEDORA]
 LATEST = "latest"
 QUAL_NONE = "unqualified"
 QUAL_DISTRO = "distro-qualified"
+QUAL_FQIN = 'fqin'
 
 
 _DISCOVERED_CONTAINER_ENGINES = []
@@ -190,13 +204,20 @@ def container_engine(cli):
 def container_build(cli, target):
     """Construct and execute a command to build the target container image."""
     args = [container_engine(cli), "build"]
-    if target.pkg_source == NIGHTLY:
-        args.append("--build-arg=INSTALL_PACKAGES_FROM=samba-nightly")
+    pkgs_from = PACKAGES_FROM[target.pkg_source]
+    if pkgs_from:
+        args.append(f"--build-arg=INSTALL_PACKAGES_FROM={pkgs_from}")
     # docker doesn't currently support alt. architectures
     if "docker" in args[0]:
         if target.arch != host_arch():
             raise RuntimeError("Docker does not support --arch")
-    else:
+    elif target.arch != host_arch() or FORCE_ARCH_FLAG:
+        # We've noticed a few small quirks when using podman with the --arch
+        # option. The main issue is that building the client image works
+        # but then the toolbox image fails because it somehow doesn't see
+        # the image we just built as usable. This doesn't happen when
+        # --arch is not provided. So if the target arch and the host_arch
+        # are the same, skip passing the extra argument.
         args.append(f"--arch={target.arch}")
     if cli.extra_build_arg:
         args.extend(cli.extra_build_arg)
@@ -229,6 +250,26 @@ def container_id(cli, target):
     ]
     res = run(cli, args, capture_output=True, check=True)
     return res.stdout.decode("utf8").strip()
+
+
+def container_tag(cli, target, tag, *tags):
+    """Add additional tags to the existing target image."""
+    if isinstance(target, str):
+        src = target  # permit target to be a string w/ the desired source
+    else:
+        src = target.image_name()
+    base_args = [
+        container_engine(cli),
+        "tag",
+        src,
+    ]
+    if "docker" not in base_args[0]:
+        # podman can do it in one command, docker (on github ci) can not
+        args += [tag] + list(tags)
+        run(cli, args, check=True)
+        return
+    for new_tag in [tag] + list(tags):
+        run(cli, base_args + [new_tag], check=True)
 
 
 def kind_source_dir(kind):
@@ -351,7 +392,7 @@ def generate_images(cli):
     return list(images.values())
 
 
-def add_special_tags(img):
+def add_special_tags(img, distro_qualified=True):
     """Certain images have special tags. Given an image, add general (non-FQIN)
     tags to that image.
     """
@@ -364,6 +405,8 @@ def add_special_tags(img):
             img.additional_tags.append((LATEST, QUAL_NONE))
         if img.arch == host_arch() and img.pkg_source == NIGHTLY:
             img.additional_tags.append((NIGHTLY, QUAL_NONE))
+    if not distro_qualified:
+        return  # skip creating "distro qualified" tags
     if img.arch == host_arch() and img.pkg_source == "default":
         img.additional_tags.append((f"{img.distro}-{LATEST}", QUAL_DISTRO))
     if img.arch == host_arch() and img.pkg_source == "nightly":
@@ -383,6 +426,53 @@ def build(cli, target):
         fh.write(f"{cid} {target.image_name()}\n")
 
 
+class QMatcher:
+    """Push only tags that meet the specified criteria:
+    all - all tags;
+    unqualified - only unqualified tags (eg. latest);
+    distro - only distribution base qualifed tags (eg. fedora-latest);
+    fqin - only fully qualified tags (eg. default-centos-amd64);
+    mixed - only fqin and unqualified tags;
+    least-qualified (default) - exactly one tag, with the least
+    number of qualifications
+    """
+
+    def __init__(self, key):
+        self.qualifications = []
+        self.count = 0
+        self.max_matches = 0
+
+        if not key or key == "least-qualified":
+            self.qualifications = [QUAL_NONE, QUAL_DISTRO, QUAL_FQIN]
+            self.max_matches = 1
+        elif key == "all":
+            pass
+        elif key == "mixed":
+            self.qualifications = [QUAL_NONE, QUAL_FQIN]
+        else:
+            try:
+                mq = {
+                    "unqualified": QUAL_NONE,
+                    "distro": QUAL_DISTRO,
+                    "fqin": QUAL_FQIN,
+                }[key]
+            except KeyError:
+                raise argparse.ArgumentTypeError(
+                    "value must be one of:"
+                    " all, least-qualified, unqualified, distro, fqin;"
+                    f" not {key}"
+                )
+            self.qualifications = [mq]
+
+    def __call__(self, qv):
+        if self.max_matches and self.count >= self.max_matches:
+            return False
+        if not self.qualifications or qv in self.qualifications:
+            self.count += 1
+            return True
+        return False
+
+
 def push(cli, target):
     """Command to push images."""
     if cli.push_state == "rebuild":
@@ -393,15 +483,36 @@ def push(cli, target):
         except subprocess.CalledProcessError:
             build(cli, target)
 
+    to_push = []
     push_name = target.image_name()
-    for tag, _ in target.additional_tags:
+    for tag, qual in target.additional_tags:
         if tag in ("latest", "nightly"):
-            push_name = target.image_name(tag=tag)
-            break
+            to_push.append((target.image_name(tag=tag), qual))
         if tag.endswith(("-latest", "-nightly")):
-            push_name = target.image_name(tag=tag)
-            break
-    container_push(cli, push_name)
+            to_push.append((target.image_name(tag=tag), qual))
+    to_push.append((push_name, QUAL_FQIN))
+    qmatcher = cli.push_selected_tags or QMatcher("")
+    for push_name, tag_qual in to_push:
+        if qmatcher(tag_qual):
+            container_push(cli, push_name)
+
+
+def retag(cli, target):
+    """Command to regenerate any missing unqualified tags."""
+    cid = container_id(cli, target)
+    tags = []
+    if cli.repo_base and target.repo_base != cli.repo_base:
+        # if repo base is given on the cli, and differs from the
+        # target, regenerate tags with the new distro base.
+        # retag list
+        target.repo_base = cli.repo_base
+        # Ensure the new FQIN is part of the new tags list
+        tags.append(target.image_name())
+    tags += [target.image_name(tag=t) for t, _ in target.additional_tags]
+    if tags:
+        container_tag(cli, cid, *tags)
+    else:
+        logger.warning("no tags to add")
 
 
 def print_buildfile(cli, target):
@@ -519,6 +630,11 @@ def main():
         ),
     )
     parser.add_argument(
+        "--push-selected-tags",
+        type=QMatcher,
+        help=QMatcher.__doc__
+    )
+    parser.add_argument(
         "--buildfile-prefix",
         default=".build.",
         help="Specify prefix for build status files",
@@ -536,6 +652,15 @@ def main():
         help=(
             "If an image has a repo base, also generate image names"
             " without the repo base"
+        ),
+    )
+    parser.add_argument(
+        "--distro-qualified",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Specify if image tags like fedora-nightly or centos-latest"
+            " will be created."
         ),
     )
     behaviors = parser.add_mutually_exclusive_group()
@@ -567,6 +692,14 @@ def main():
         const=print_buildfile,
         help="Print the names of build status files",
     )
+    behaviors.add_argument(
+        "--retag",
+        action="store_const",
+        dest="main_action",
+        const=retag,
+        help=("Regenerate any short (unqualified) tags expected to exist"
+              " for a given FQIN. Requires FQIN to already exist locally."),
+    )
     cli = parser.parse_args()
 
     if os.environ.get("BUILD_IMAGE_DEBUG") in ("1", "yes"):
@@ -578,7 +711,7 @@ def main():
     try:
         imgs = generate_images(cli)
         for img in imgs:
-            add_special_tags(img)
+            add_special_tags(img, cli.distro_qualified)
             logger.info("Image %s, extra tags: %s", img, img.additional_tags)
             _action(cli, img)
     except subprocess.CalledProcessError as err:

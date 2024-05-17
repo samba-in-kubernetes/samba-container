@@ -7,6 +7,9 @@ on:
     branches: [master]
   schedule:
     - cron: '0 2 * * *'
+  # Allow manually triggering a run in the github ui.
+  # See: https://docs.github.com/en/actions/using-workflows/manually-running-a-workflow
+  workflow_dispatch: {}
 
 env:
   CONTAINER_CMD: docker
@@ -14,7 +17,7 @@ jobs:
   checks:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       # We need a newer version of shellcheck to avoid problems with the
       # relative imports. Our scripts work on v0.7.2 and up but not the
       # v0.7.0 preinstalled in the ubutnu image. We can force a local
@@ -26,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
@@ -47,12 +50,16 @@ jobs:
           # there are no nightly packages for opensuse
           - package_source: nightly
             os: opensuse
+        include:
+          - package_source: devbuilds
+            os: centos
+            arch: amd64
     runs-on: ubuntu-latest
     env:
       BUILDAH_FORMAT: oci
       IMG_TAG: ${{ matrix.package_source }}-${{ matrix.os }}-${{ matrix.arch }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Build the server image
         run: make KIND=server PACKAGE_SOURCE=${{ matrix.package_source }} OS_NAME=${{ matrix.os}} BUILD_ARCH=${{ matrix.arch}} build-image
       - name: Upload server image
@@ -80,7 +87,7 @@ jobs:
       BUILDAH_FORMAT: oci
       IMG_TAG: ${{ matrix.package_source }}-${{ matrix.os }}-${{ matrix.arch }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Build the ad server image
         run: make KIND=ad-server PACKAGE_SOURCE=${{ matrix.package_source }} OS_NAME=${{ matrix.os }} BUILD_ARCH=${{ matrix.arch }} build-image
       - name: Upload ad server image
@@ -100,11 +107,10 @@ jobs:
       BUILDAH_FORMAT: oci
       IMG_TAG: default-${{ matrix.os }}-${{ matrix.arch }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: build the client image
         run: make KIND=client OS_NAME=${{ matrix.os }} BUILD_ARCH=${{ matrix.arch }} build-image
-      # Here we upload samba-client image to artifacts locally for consumption
-      # during  the samba-toolbox build process.
+      # The client image is used as a base for the samba-toolbox build process.
       - name: Upload the client image
         uses: ishworkh/container-image-artifact-upload@v1.0.0
         with:
@@ -123,7 +129,7 @@ jobs:
       BUILDAH_FORMAT: oci
       IMG_TAG: default-${{ matrix.os }}-${{ matrix.arch }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       # Download locally stored samba-client image to be used as base for building
       # samba-toolbox.
       - name: Download client image
@@ -139,6 +145,13 @@ jobs:
         run: ${{ env.CONTAINER_CMD }} tag samba-client:${{ env.IMG_TAG }} quay.io/samba.org/samba-client:latest
       - name: Build the toolbox image
         run: make KIND=toolbox OS_NAME=${{ matrix.os }}  BUILD_ARCH=${{ matrix.arch }} build-image
+      # Upload the toolbox image for reference and/or image push
+      - name: Upload the toolbox image
+        uses: ishworkh/container-image-artifact-upload@v1.0.0
+        with:
+          image: "samba-toolbox:${{ env.IMG_TAG }}"
+          container_engine: ${{ env.CONTAINER_CMD }}
+          retention_days: 1
 
   test-server:
     strategy:
@@ -150,13 +163,17 @@ jobs:
           # there are no nightly packages for opensuse
           - package_source: nightly
             os: opensuse
+        include:
+          - package_source: devbuilds
+            os: centos
+            arch: amd64
     needs: build-server
     runs-on: ubuntu-latest
     env:
       BUILDAH_FORMAT: oci
       IMG_TAG: ${{ matrix.package_source }}-${{ matrix.os }}-${{ matrix.arch }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Download server image
         uses: ishworkh/container-image-artifact-download@v1.0.0
         with:
@@ -187,7 +204,7 @@ jobs:
       BUILDAH_FORMAT: oci
       IMG_TAG: ${{ matrix.package_source }}-${{ matrix.os }}-${{ matrix.arch }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: nolar/setup-k3d-k3s@v1
       - name: get nodes
         run: kubectl get nodes
@@ -214,20 +231,87 @@ jobs:
       - test-server
       - test-ad-server-kubernetes
     runs-on: ubuntu-latest
+    env:
+      REPO_BASE: quay.io/samba.org
     if: (github.event_name == 'push' || github.event_name == 'schedule') && github.repository == 'samba-in-kubernetes/samba-container'
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: log in to quay.io
-        run: docker login -u "${{ secrets.QUAY_USER }}" -p "${{ secrets.QUAY_PASS }}" quay.io
-      - name: push server image
-        run: make push-server
-      - name: push ad-server image
-        run: make push-ad-server
-      - name: push client image
-        run: make push-client
-      - name: push toolbox image
-        run: make push-toolbox
-      - name: push nightly server image
-        run: make push-nightly-server
-      - name: push nightly ad server image
-        run: make push-nightly-ad-server
+        run: ${CONTAINER_CMD} login -u "${{ secrets.QUAY_USER }}" -p "${{ secrets.QUAY_PASS }}" quay.io
+      # pull in already built images we plan on pushing
+      # (server images)
+      - name: Fetch server default-fedora-amd64
+        uses: ishworkh/container-image-artifact-download@v1.0.0
+        with:
+          image: "samba-server:default-fedora-amd64"
+          container_engine: ${{ env.CONTAINER_CMD }}
+      - name: Fetch server nightly-fedora-amd64
+        uses: ishworkh/container-image-artifact-download@v1.0.0
+        with:
+          image: "samba-server:nightly-fedora-amd64"
+          container_engine: ${{ env.CONTAINER_CMD }}
+      - name: Fetch server nightly-centos-amd64
+        uses: ishworkh/container-image-artifact-download@v1.0.0
+        with:
+          image: "samba-server:nightly-centos-amd64"
+          container_engine: ${{ env.CONTAINER_CMD }}
+      - name: Fetch server devbuilds-centos-amd64
+        uses: ishworkh/container-image-artifact-download@v1.0.0
+        with:
+          image: "samba-server:devbuilds-centos-amd64"
+          container_engine: ${{ env.CONTAINER_CMD }}
+      # (ad server images)
+      - name: Fetch ad-server default-fedora-amd64
+        uses: ishworkh/container-image-artifact-download@v1.0.0
+        with:
+          image: "samba-ad-server:default-fedora-amd64"
+          container_engine: ${{ env.CONTAINER_CMD }}
+      - name: Fetch ad-server nightly-fedora-amd64
+        uses: ishworkh/container-image-artifact-download@v1.0.0
+        with:
+          image: "samba-ad-server:nightly-fedora-amd64"
+          container_engine: ${{ env.CONTAINER_CMD }}
+      # (client images)
+      - name: Fetch client default-fedora-amd64
+        uses: ishworkh/container-image-artifact-download@v1.0.0
+        with:
+          image: "samba-client:default-fedora-amd64"
+          container_engine: ${{ env.CONTAINER_CMD }}
+      # (toolbox images)
+      - name: Fetch toolbox default-fedora-amd64
+        uses: ishworkh/container-image-artifact-download@v1.0.0
+        with:
+          image: "samba-toolbox:default-fedora-amd64"
+          container_engine: ${{ env.CONTAINER_CMD }}
+      # reapply missing tags
+      - name: Retag images
+        run: >
+          ./hack/build-image
+          --retag
+          --container-engine=${CONTAINER_CMD}
+          --repo-base=${REPO_BASE}
+          --no-distro-qualified
+          -i samba-server:default-fedora-amd64
+          -i samba-server:nightly-fedora-amd64
+          -i samba-server:nightly-centos-amd64
+          -i samba-server:devbuilds-centos-amd64
+          -i samba-ad-server:default-fedora-amd64
+          -i samba-ad-server:nightly-fedora-amd64
+          -i samba-client:default-fedora-amd64
+          -i samba-toolbox:default-fedora-amd64
+      - name: Push images
+        run: >
+          ./hack/build-image
+          --push
+          --container-engine=${CONTAINER_CMD}
+          --verbose
+          --push-state=exists
+          --push-selected-tags=mixed
+          -i ${REPO_BASE}/samba-server:default-fedora-amd64
+          -i ${REPO_BASE}/samba-server:nightly-fedora-amd64
+          -i ${REPO_BASE}/samba-server:nightly-centos-amd64
+          -i ${REPO_BASE}/samba-server:devbuilds-centos-amd64
+          -i ${REPO_BASE}/samba-ad-server:default-fedora-amd64
+          -i ${REPO_BASE}/samba-ad-server:nightly-fedora-amd64
+          -i ${REPO_BASE}/samba-client:default-fedora-amd64
+          -i ${REPO_BASE}/samba-toolbox:default-fedora-amd64
