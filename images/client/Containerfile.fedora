@@ -1,6 +1,6 @@
 # Copyright 2020 Michael Adam
 
-FROM registry.fedoraproject.org/fedora:39
+FROM registry.fedoraproject.org/fedora:40
 
 MAINTAINER Michael Adam <obnox@samba.org>
 
