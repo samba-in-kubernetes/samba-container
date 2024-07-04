@@ -95,11 +95,11 @@ samba_packages=(\
     ctdb)
 case "${package_selection}-${OS_BASE}" in
     *-fedora|allvfs-*)
-        samba_packages+=(samba-vfs-cephfs samba-vfs-glusterfs)
+        samba_packages+=(samba-vfs-cephfs samba-vfs-glusterfs ctdb-ceph-mutex)
     ;;
     nightly-centos|devbuilds-centos|forcedevbuilds-*)
         dnf_cmd+=(--enablerepo=epel)
-        samba_packages+=(samba-vfs-cephfs)
+        samba_packages+=(samba-vfs-cephfs ctdb-ceph-mutex)
         # these packages should be installed as deps. of sambacc extras
         # however, the sambacc builds do not enable the extras on centos atm.
         # Once this is fixed this line ought to be removed.
