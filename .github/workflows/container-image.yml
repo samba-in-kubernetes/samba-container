@@ -233,7 +233,12 @@ jobs:
     runs-on: ubuntu-latest
     env:
       REPO_BASE: quay.io/samba.org
-    if: (github.event_name == 'push' || github.event_name == 'schedule') && github.repository == 'samba-in-kubernetes/samba-container'
+    # NOTE: the fromJSON below is needed beause the syntax github uses
+    # doesn't actually understand JS/JSON style arrays (inline). When I left it
+    # out I just got an error. It is present in their example(s).
+    if: >
+      contains(fromJSON('["push", "schedule", "workflow_dispatch"]'), github.event_name)
+      && github.repository == 'samba-in-kubernetes/samba-container'
     steps:
       - uses: actions/checkout@v4
       - name: log in to quay.io
