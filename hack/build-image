@@ -14,15 +14,15 @@ and list build status files (aka buildfiles).
 
 Usage:
   # build an image
-  ./hack/build-image --kind server --distro-base fedora --arch amd64
+  ./hack/build-image --kind server --distro-base fedora
 
   # print out the FQIN
   ./hack/build-image --kind samba-server --distro-base fedora \\
-    --arch amd64 --print
+    --print
 
   # print out the FQIN and additional tags
   ./hack/build-image --kind samba-server --distro-base fedora \\
-    --arch amd64 --print-tags
+    --print-tags
 
   # print out the FQIN and additional tags for multiple images, with
   # and without a repository base
@@ -30,7 +30,6 @@ Usage:
     --distro-base fedora \\
     --distro-base centos \\
     --distro-base opensuse \\
-    --arch amd64 \\
     --repo-base quay.io/foobar --without-repo-bases --print-tags
 
 """
@@ -47,12 +46,6 @@ import sys
 
 
 logger = logging.getLogger("build-image")
-
-# Set FORCE_ARCH_FLAG if you want to test passing the --arch flag to podman all
-# the time. This was the previous behavior but we found it to have some issues.
-# When this is false the --arch flag is passed to podman ONLY when the target
-# arch != the host system arch.
-FORCE_ARCH_FLAG = False
 
 # IMAGE_KINDS - map aliases/names to canonical names for the kinds
 # of images we can build
@@ -73,17 +66,11 @@ IMAGE_KINDS = {
     "samba-toolbox": IMG_TOOLBOX,
 }
 
-# ARCHITECTURES - map supported arch names/alias to canonical names
-AMD64 = "amd64"
-ARM64 = "arm64"
-ARCHITECTURES = {
-    # alternate names
-    "x86_64": AMD64,
-    "aarch64": ARM64,
-    # canonical names
-    "amd64": AMD64,
-    "arm64": ARM64,
-}
+# PLATFORMS - list of supported platforms
+PLATFORMS = [
+    "linux/amd64",
+    "linux/arm64"
+]
 
 # DISTROS - list of supported distro bases
 FEDORA = "fedora"
@@ -133,15 +120,6 @@ def check_kind(kind):
         return IMAGE_KINDS[kind]
     except KeyError:
         raise ValueError(f"invalid kind: {kind}")
-
-
-def check_arch(arch):
-    """Return the canonical name for the arch or raise a ValueError."""
-    try:
-        return ARCHITECTURES[arch]
-    except KeyError:
-        raise ValueError(f"invalid arch: {arch}")
-
 
 def check_distro(distro):
     """Return the canonical name for a distro base or raise a ValueError."""
@@ -203,37 +181,51 @@ def container_engine(cli):
 
 def container_build(cli, target):
     """Construct and execute a command to build the target container image."""
-    args = [container_engine(cli), "build"]
+    engine = container_engine(cli)
+    build_args = [engine]
+    builder_rm_args = [engine]
+    builder_create_args = [engine]
+    builder_name = "samba-in-kubernetes"
+
+    if "docker" in engine:
+        build_args += ["buildx", "build", f"--builder={builder_name}"]
+        builder_rm_args += ["buildx", "rm", builder_name]
+        builder_create_args += ["buildx", "create", f"--name={builder_name}"]
+    elif "podman" in engine:
+        build_args += ["build", f"--manifest={builder_name}"]
+        builder_rm_args += ["manifest", "rm", builder_name]
+        builder_create_args += ["manifest", "create", builder_name]
+    else:
+        raise ValueError(f"invalid container engine: {engine}")
+
     pkgs_from = PACKAGES_FROM[target.pkg_source]
     if pkgs_from:
-        args.append(f"--build-arg=INSTALL_PACKAGES_FROM={pkgs_from}")
-    # docker doesn't currently support alt. architectures
-    if "docker" in args[0]:
-        if target.arch != host_arch():
-            raise RuntimeError("Docker does not support --arch")
-    elif target.arch != host_arch() or FORCE_ARCH_FLAG:
-        # We've noticed a few small quirks when using podman with the --arch
-        # option. The main issue is that building the client image works
-        # but then the toolbox image fails because it somehow doesn't see
-        # the image we just built as usable. This doesn't happen when
-        # --arch is not provided. So if the target arch and the host_arch
-        # are the same, skip passing the extra argument.
-        args.append(f"--arch={target.arch}")
+        build_args.append(f"--build-arg=INSTALL_PACKAGES_FROM={pkgs_from}")
     if cli.extra_build_arg:
-        args.extend(cli.extra_build_arg)
+        build_args.extend(cli.extra_build_arg)
     for tname in target.all_names(baseless=cli.without_repo_bases):
-        args.append("-t")
-        args.append(tname)
-    args.append("-f")
-    args.append(target_containerfile(target))
-    args.append(kind_source_dir(target.name))
-    args = [str(a) for a in args]
-    run(cli, args, check=True)
+        build_args.append("-t")
+        build_args.append(tname)
+    build_args.append("-f")
+    build_args.append(target_containerfile(target))
+    build_args.append(kind_source_dir(target.name))
+    build_args = [str(a) for a in build_args]
+    build_args.append(f"--platform={','.join(PLATFORMS)}")
+
+    # Make sure that no builder exists, so that we have a clean environment.
+    run(cli, builder_rm_args)
+    # Create builder
+    run(cli, builder_create_args, check=True)
+    # Build image
+    run(cli, build_args, check=True)
 
 
 def container_push(cli, push_name):
     """Construct and execute a command to push a container image."""
-    args = [container_engine(cli), "push", push_name]
+    args = [container_engine(cli)]
+    if "podman" in args[0]:
+        args.append("manifest")
+    args = args + ["push", push_name]
     run(cli, args, check=True)
 
 
@@ -281,17 +273,6 @@ def target_containerfile(target):
     """Return the path to a containerfile given an image target."""
     return str(kind_source_dir(target.name) / f"Containerfile.{target.distro}")
 
-
-def host_arch():
-    """Return the name of the host's native architecture."""
-    return check_arch(platform.machine().lower())
-
-
-def default_arches():
-    """Return a list of the default architectures to use for building."""
-    return [host_arch()]
-
-
 class RepoConfig:
     def __init__(self, default_repo_base, distro_repo=None):
         self.default = default_repo_base
@@ -303,18 +284,17 @@ class RepoConfig:
 
 class TargetImage:
     def __init__(
-        self, name, pkg_source, distro, arch, extra_tag="", *, repo_base=""
+        self, name, pkg_source, distro, extra_tag="", *, repo_base=""
     ):
         self.name = name
         self.pkg_source = pkg_source
         self.distro = distro
-        self.arch = arch
         self.extra_tag = extra_tag
         self.repo_base = repo_base
         self.additional_tags = []
 
     def tag_name(self):
-        tag_parts = [self.pkg_source, self.distro, self.arch]
+        tag_parts = [self.pkg_source, self.distro]
         if self.extra_tag:
             tag_parts.append(self.extra_tag)
         tag = "-".join(tag_parts)
@@ -355,21 +335,20 @@ class TargetImage:
             base = ""
             rest = image_name
         iname, tag = rest.split(":", 1)
-        tparts = tag.split("-", 3)
-        if len(tparts) < 3:
+        tparts = tag.split("-", 2)
+        if len(tparts) < 2:
             raise ValueError(f"too few tag components: {tag!r}")
         return cls(
             iname,
             check_pkg_source(tparts[0]),
             check_distro(tparts[1]),
-            check_arch(tparts[2]),
-            extra_tag=(tparts[3] if len(tparts) > 3 else ""),
+            extra_tag=(tparts[2] if len(tparts) > 3 else ""),
             repo_base=base,
         )
 
 
 def generate_images(cli):
-    """Given full image names or a matrix of kind/pkg_source/distro_base/arch
+    """Given full image names or a matrix of kind/pkg_source/distro_base
     values generate a list of target images to build/process.
     """
     images = {}
@@ -379,16 +358,14 @@ def generate_images(cli):
     for kind in cli.kind or []:
         for pkg_source in cli.package_source or DEFAULT_PKG_SOURCES:
             for distro_base in cli.distro_base or DEFAULT_DISTRO_BASES:
-                for arch in cli.arch or default_arches():
-                    timg = TargetImage(
-                        kind,
-                        pkg_source,
-                        distro_base,
-                        arch,
-                        extra_tag=(cli.extra_tag or ""),
-                        repo_base=rc.find_base(distro_base),
-                    )
-                    images[str(timg)] = timg
+                timg = TargetImage(
+                    kind,
+                    pkg_source,
+                    distro_base,
+                    extra_tag=(cli.extra_tag or ""),
+                    repo_base=rc.find_base(distro_base),
+                )
+                images[str(timg)] = timg
     return list(images.values())
 
 
@@ -401,15 +378,15 @@ def add_special_tags(img, distro_qualified=True):
     # to keep us compatible with older tagging schemes from earlier versions of
     # the project.
     if img.distro in [FEDORA, OPENSUSE]:
-        if img.arch == host_arch() and img.pkg_source == DEFAULT:
+        if img.pkg_source == DEFAULT:
             img.additional_tags.append((LATEST, QUAL_NONE))
-        if img.arch == host_arch() and img.pkg_source == NIGHTLY:
+        if img.pkg_source == NIGHTLY:
             img.additional_tags.append((NIGHTLY, QUAL_NONE))
     if not distro_qualified:
         return  # skip creating "distro qualified" tags
-    if img.arch == host_arch() and img.pkg_source == "default":
+    if img.pkg_source == "default":
         img.additional_tags.append((f"{img.distro}-{LATEST}", QUAL_DISTRO))
-    if img.arch == host_arch() and img.pkg_source == "nightly":
+    if img.pkg_source == "nightly":
         img.additional_tags.append((f"{img.distro}-{NIGHTLY}", QUAL_DISTRO))
 
 
@@ -591,13 +568,6 @@ def main():
             "Assign a custom repo base given a distro base"
             "(like: --repo-base-for=centos=wonky.io/smb)"
         ),
-    )
-    parser.add_argument(
-        "--arch",
-        "-a",
-        type=check_arch,
-        action="append",
-        help="The name of the CPU architecture to build for",
     )
     parser.add_argument(
         "--package-source",
