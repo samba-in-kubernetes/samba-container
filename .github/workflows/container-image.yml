@@ -45,7 +45,7 @@ jobs:
       matrix:
         package_source: [default, nightly]
         os: [centos, fedora, opensuse]
-        arch: [amd64]
+        arch: [amd64, arm64]
         exclude:
           # there are no nightly packages for opensuse
           - package_source: nightly
@@ -60,6 +60,10 @@ jobs:
       IMG_TAG: ${{ matrix.package_source }}-${{ matrix.os }}-${{ matrix.arch }}
     steps:
       - uses: actions/checkout@v4
+      - name: Install QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Install buildx for docker
+        uses: docker/setup-buildx-action@v3
       - name: Build the server image
         run: make KIND=server PACKAGE_SOURCE=${{ matrix.package_source }} OS_NAME=${{ matrix.os}} BUILD_ARCH=${{ matrix.arch}} build-image
       - name: Upload server image
@@ -74,7 +78,7 @@ jobs:
       matrix:
         package_source: [default, nightly]
         os: [centos, fedora, opensuse]
-        arch: [amd64]
+        arch: [amd64, arm64]
         exclude:
           # there are no nightly packages for opensuse
           - package_source: nightly
@@ -88,6 +92,10 @@ jobs:
       IMG_TAG: ${{ matrix.package_source }}-${{ matrix.os }}-${{ matrix.arch }}
     steps:
       - uses: actions/checkout@v4
+      - name: Install QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Install buildx for docker
+        uses: docker/setup-buildx-action@v3
       - name: Build the ad server image
         run: make KIND=ad-server PACKAGE_SOURCE=${{ matrix.package_source }} OS_NAME=${{ matrix.os }} BUILD_ARCH=${{ matrix.arch }} build-image
       - name: Upload ad server image
@@ -101,13 +109,17 @@ jobs:
     strategy:
       matrix:
         os: [centos, fedora, opensuse]
-        arch: [amd64]
+        arch: [amd64, arm64]
     runs-on: ubuntu-latest
     env:
       BUILDAH_FORMAT: oci
       IMG_TAG: default-${{ matrix.os }}-${{ matrix.arch }}
     steps:
       - uses: actions/checkout@v4
+      - name: Install QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Install buildx for docker
+        uses: docker/setup-buildx-action@v3
       - name: build the client image
         run: make KIND=client OS_NAME=${{ matrix.os }} BUILD_ARCH=${{ matrix.arch }} build-image
       # The client image is used as a base for the samba-toolbox build process.
@@ -122,7 +134,7 @@ jobs:
     strategy:
       matrix:
         os: [centos, fedora, opensuse]
-        arch: [amd64]
+        arch: [amd64, arm64]
     needs: build-client
     runs-on: ubuntu-latest
     env:
@@ -130,6 +142,10 @@ jobs:
       IMG_TAG: default-${{ matrix.os }}-${{ matrix.arch }}
     steps:
       - uses: actions/checkout@v4
+      - name: Install QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Install buildx for docker
+        uses: docker/setup-buildx-action@v3
       # Download locally stored samba-client image to be used as base for building
       # samba-toolbox.
       - name: Download client image
@@ -158,7 +174,7 @@ jobs:
       matrix:
         package_source: [default, nightly]
         os: [centos, fedora, opensuse]
-        arch: [amd64]
+        arch: [amd64, arm64]
         exclude:
           # there are no nightly packages for opensuse
           - package_source: nightly
@@ -174,6 +190,10 @@ jobs:
       IMG_TAG: ${{ matrix.package_source }}-${{ matrix.os }}-${{ matrix.arch }}
     steps:
       - uses: actions/checkout@v4
+      - name: Install QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Install buildx for docker
+        uses: docker/setup-buildx-action@v3
       - name: Download server image
         uses: ishworkh/container-image-artifact-download@v2.0.0
         with:
@@ -250,20 +270,40 @@ jobs:
         with:
           image: "samba-server:default-fedora-amd64"
           container_engine: ${{ env.CONTAINER_CMD }}
+      - name: Fetch server default-fedora-arm64
+        uses: ishworkh/container-image-artifact-download@v2.0.0
+        with:
+          image: "samba-server:default-fedora-arm64"
+          container_engine: ${{ env.CONTAINER_CMD }}
       - name: Fetch server nightly-fedora-amd64
         uses: ishworkh/container-image-artifact-download@v2.0.0
         with:
           image: "samba-server:nightly-fedora-amd64"
+          container_engine: ${{ env.CONTAINER_CMD }}
+      - name: Fetch server nightly-fedora-arm64
+        uses: ishworkh/container-image-artifact-download@v2.0.0
+        with:
+          image: "samba-server:nightly-fedora-arm64"
           container_engine: ${{ env.CONTAINER_CMD }}
       - name: Fetch server nightly-centos-amd64
         uses: ishworkh/container-image-artifact-download@v2.0.0
         with:
           image: "samba-server:nightly-centos-amd64"
           container_engine: ${{ env.CONTAINER_CMD }}
+      - name: Fetch server nightly-centos-arm64
+        uses: ishworkh/container-image-artifact-download@v2.0.0
+        with:
+          image: "samba-server:nightly-centos-arm64"
+          container_engine: ${{ env.CONTAINER_CMD }}
       - name: Fetch server devbuilds-centos-amd64
         uses: ishworkh/container-image-artifact-download@v2.0.0
         with:
           image: "samba-server:devbuilds-centos-amd64"
+          container_engine: ${{ env.CONTAINER_CMD }}
+      - name: Fetch server devbuilds-centos-arm64
+        uses: ishworkh/container-image-artifact-download@v2.0.0
+        with:
+          image: "samba-server:devbuilds-centos-arm64"
           container_engine: ${{ env.CONTAINER_CMD }}
       # (ad server images)
       - name: Fetch ad-server default-fedora-amd64
@@ -271,10 +311,20 @@ jobs:
         with:
           image: "samba-ad-server:default-fedora-amd64"
           container_engine: ${{ env.CONTAINER_CMD }}
+      - name: Fetch ad-server default-fedora-arm64
+        uses: ishworkh/container-image-artifact-download@v2.0.0
+        with:
+          image: "samba-ad-server:default-fedora-arm64"
+          container_engine: ${{ env.CONTAINER_CMD }}
       - name: Fetch ad-server nightly-fedora-amd64
         uses: ishworkh/container-image-artifact-download@v2.0.0
         with:
           image: "samba-ad-server:nightly-fedora-amd64"
+          container_engine: ${{ env.CONTAINER_CMD }}
+      - name: Fetch ad-server nightly-fedora-arm64
+        uses: ishworkh/container-image-artifact-download@v2.0.0
+        with:
+          image: "samba-ad-server:nightly-fedora-arm64"
           container_engine: ${{ env.CONTAINER_CMD }}
       # (client images)
       - name: Fetch client default-fedora-amd64
@@ -282,11 +332,21 @@ jobs:
         with:
           image: "samba-client:default-fedora-amd64"
           container_engine: ${{ env.CONTAINER_CMD }}
+      - name: Fetch client default-fedora-arm64
+        uses: ishworkh/container-image-artifact-download@v2.0.0
+        with:
+          image: "samba-client:default-fedora-arm64"
+          container_engine: ${{ env.CONTAINER_CMD }}
       # (toolbox images)
       - name: Fetch toolbox default-fedora-amd64
         uses: ishworkh/container-image-artifact-download@v2.0.0
         with:
-          image: "samba-toolbox:default-fedora-amd64"
+          image: "samba-toolbox:default-fedora-arm64"
+          container_engine: ${{ env.CONTAINER_CMD }}
+      - name: Fetch toolbox default-fedora-amd64
+        uses: ishworkh/container-image-artifact-download@v2.0.0
+        with:
+          image: "samba-toolbox:default-fedora-arm64"
           container_engine: ${{ env.CONTAINER_CMD }}
       # reapply missing tags
       - name: Retag images
@@ -297,13 +357,21 @@ jobs:
           --repo-base=${REPO_BASE}
           --no-distro-qualified
           -i samba-server:default-fedora-amd64
+          -i samba-server:default-fedora-arm64
           -i samba-server:nightly-fedora-amd64
+          -i samba-server:nightly-fedora-arm64
           -i samba-server:nightly-centos-amd64
+          -i samba-server:nightly-centos-arm64
           -i samba-server:devbuilds-centos-amd64
+          -i samba-server:devbuilds-centos-arm64
           -i samba-ad-server:default-fedora-amd64
+          -i samba-ad-server:default-fedora-arm64
           -i samba-ad-server:nightly-fedora-amd64
+          -i samba-ad-server:nightly-fedora-arm64
           -i samba-client:default-fedora-amd64
+          -i samba-client:default-fedora-arm64
           -i samba-toolbox:default-fedora-amd64
+          -i samba-toolbox:default-fedora-arm64
       - name: Push images
         run: >
           ./hack/build-image
@@ -313,10 +381,18 @@ jobs:
           --push-state=exists
           --push-selected-tags=mixed
           -i ${REPO_BASE}/samba-server:default-fedora-amd64
+          -i ${REPO_BASE}/samba-server:default-fedora-arm64
           -i ${REPO_BASE}/samba-server:nightly-fedora-amd64
+          -i ${REPO_BASE}/samba-server:nightly-fedora-arm64
           -i ${REPO_BASE}/samba-server:nightly-centos-amd64
+          -i ${REPO_BASE}/samba-server:nightly-centos-arm64
           -i ${REPO_BASE}/samba-server:devbuilds-centos-amd64
+          -i ${REPO_BASE}/samba-server:devbuilds-centos-arm64
           -i ${REPO_BASE}/samba-ad-server:default-fedora-amd64
+          -i ${REPO_BASE}/samba-ad-server:default-fedora-arm64
           -i ${REPO_BASE}/samba-ad-server:nightly-fedora-amd64
+          -i ${REPO_BASE}/samba-ad-server:nightly-fedora-arm64
           -i ${REPO_BASE}/samba-client:default-fedora-amd64
+          -i ${REPO_BASE}/samba-client:default-fedora-arm64
           -i ${REPO_BASE}/samba-toolbox:default-fedora-amd64
+          -i ${REPO_BASE}/samba-toolbox:default-fedora-arm64
