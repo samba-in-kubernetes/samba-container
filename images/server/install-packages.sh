@@ -40,6 +40,31 @@ EOF
     rm -rf "${tmpfile}"
 }
 
+get_samba_nightly_repo() {
+    get_custom_repo "https://artifacts.ci.centos.org/samba/pkgs/master/${OS_BASE}/samba-nightly-master.repo"
+}
+
+get_distro_ceph_repo() {
+    if [[ "${OS_BASE}" = centos ]]; then
+        dnf install --setopt=install_weak_deps=False -y \
+            epel-release centos-release-ceph-reef
+    fi
+}
+
+get_epel_repo_if_needed() {
+    if [[ "${OS_BASE}" = centos ]]; then
+        dnf install --setopt=install_weak_deps=False -y epel-release
+    fi
+}
+
+get_ceph_shaman_repo() {
+    ceph_ref="${CEPH_REPO_REF:-main}"
+    ceph_sha="${CEPH_REPO_SHA:-latest}"
+    url="https://shaman.ceph.com/api/search/?project=ceph&distros=${OS_BASE}/9/x86_64&flavor=default&ref=${ceph_ref}&sha1=${ceph_sha}"
+    generate_repo_from_shaman "${url}" "ceph-${ceph_ref}.repo"
+    cat "/etc/yum.repos.d/ceph-${ceph_ref}.repo"
+}
+
 install_packages_from="$1"
 samba_version_suffix="$2"
 install_custom_repo="$3"
@@ -50,22 +75,26 @@ OS_BASE="$(. /etc/os-release && echo "${ID}")"
 
 case "${install_packages_from}" in
     samba-nightly)
-        get_custom_repo "https://artifacts.ci.centos.org/samba/pkgs/master/${OS_BASE}/samba-nightly-master.repo"
-        if [[ "${OS_BASE}" = centos ]]; then
-            dnf install --setopt=install_weak_deps=False -y \
-                epel-release centos-release-ceph-reef
-        fi
+        get_samba_nightly_repo
+        get_distro_ceph_repo
         package_selection=${package_selection:-nightly}
     ;;
     devbuilds)
+        get_samba_nightly_repo
         # devbuilds - samba nightly dev builds and ceph dev builds
-        get_custom_repo "https://artifacts.ci.centos.org/samba/pkgs/master/${OS_BASE}/samba-nightly-master.repo"
-        generate_repo_from_shaman "https://shaman.ceph.com/api/search/?project=ceph&distros=${OS_BASE}/9/x86_64&flavor=default&ref=main&sha1=latest" ceph-main.repo
-        dnf install --setopt=install_weak_deps=False -y epel-release
+        get_ceph_shaman_repo
+        get_epel_repo_if_needed
         package_selection=${package_selection:-devbuilds}
     ;;
     custom-repo)
         get_custom_repo "${install_custom_repo}"
+        get_distro_ceph_repo
+    ;;
+    custom-devbuilds)
+        get_custom_repo "${install_custom_repo}"
+        get_ceph_shaman_repo
+        get_epel_repo_if_needed
+        package_selection=${package_selection:-devbuilds}
     ;;
 esac
 
