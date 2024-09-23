@@ -41,13 +41,8 @@ DYN_BUILDFILE=$(shell $(call _BUILD_KP,$(KIND),$(if $(PACKAGE_SOURCE),$(PACKAGE_
 
 REPO_BASE=quay.io/samba.org/
 
-_BUILD_KP=$(BUILD_IMAGE) $(if $(CONTAINER_CMD),--container-engine=$(CONTAINER_CMD)) $(BI_PREFIX_ARGS) --kind=$1 --package-source=$2 --distro-base=$(SRC_OS_NAME)  --repo-base=$(REPO_BASE) $(if $(BUILD_ARCH),--arch=$(BUILD_ARCH)) $3
+_BUILD_KP=$(BUILD_IMAGE) $(if $(CONTAINER_CMD),--container-engine=$(CONTAINER_CMD)) $(BI_PREFIX_ARGS) --kind=$1 --package-source=$2 --distro-base=$(SRC_OS_NAME)  --repo-base=$(REPO_BASE) $3
 
-
-arch_flag=$(strip $(if $(filter docker,$(CONTAINER_CMD)),\
-	$(if $(filter-out $(HOST_ARCH),$(BUILD_ARCH)),\
-		$(error Setting BUILD_ARCH != $(HOST_ARCH) not supported on docker)),\
-	$(if $(BUILD_ARCH),--arch $(BUILD_ARCH))))
 
 build: build-server build-nightly-server build-ad-server build-client \
 	build-toolbox

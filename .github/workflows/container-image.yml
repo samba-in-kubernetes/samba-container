@@ -59,9 +59,10 @@ jobs:
       BUILDAH_FORMAT: oci
       IMG_TAG: ${{ matrix.package_source }}-${{ matrix.os }}-${{ matrix.arch }}
     steps:
+      - uses: docker/setup-buildx-action@v3
       - uses: actions/checkout@v4
       - name: Build the server image
-        run: make KIND=server PACKAGE_SOURCE=${{ matrix.package_source }} OS_NAME=${{ matrix.os}} BUILD_ARCH=${{ matrix.arch}} build-image
+        run: make KIND=server PACKAGE_SOURCE=${{ matrix.package_source }} OS_NAME=${{ matrix.os}} build-image
       - name: Upload server image
         uses: ishworkh/container-image-artifact-upload@v2.0.0
         with:
@@ -89,7 +90,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build the ad server image
-        run: make KIND=ad-server PACKAGE_SOURCE=${{ matrix.package_source }} OS_NAME=${{ matrix.os }} BUILD_ARCH=${{ matrix.arch }} build-image
+        run: make KIND=ad-server PACKAGE_SOURCE=${{ matrix.package_source }} OS_NAME=${{ matrix.os }} build-image
       - name: Upload ad server image
         uses: ishworkh/container-image-artifact-upload@v2.0.0
         with:
@@ -109,7 +110,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: build the client image
-        run: make KIND=client OS_NAME=${{ matrix.os }} BUILD_ARCH=${{ matrix.arch }} build-image
+        run: make KIND=client OS_NAME=${{ matrix.os }} build-image
       # The client image is used as a base for the samba-toolbox build process.
       - name: Upload the client image
         uses: ishworkh/container-image-artifact-upload@v2.0.0
@@ -144,7 +145,7 @@ jobs:
       - name: Apply latest tag to image (for fedora)
         run: ${{ env.CONTAINER_CMD }} tag samba-client:${{ env.IMG_TAG }} quay.io/samba.org/samba-client:latest
       - name: Build the toolbox image
-        run: make KIND=toolbox OS_NAME=${{ matrix.os }}  BUILD_ARCH=${{ matrix.arch }} build-image
+        run: make KIND=toolbox OS_NAME=${{ matrix.os }} build-image
       # Upload the toolbox image for reference and/or image push
       - name: Upload the toolbox image
         uses: ishworkh/container-image-artifact-upload@v2.0.0
