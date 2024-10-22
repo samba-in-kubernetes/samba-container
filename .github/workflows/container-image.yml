@@ -54,6 +54,8 @@ jobs:
           - package_source: devbuilds
             os: centos
             arch: amd64
+          - os: fedora
+            arch: arm64
     runs-on: ubuntu-latest
     env:
       BUILDAH_FORMAT: oci
@@ -82,6 +84,9 @@ jobs:
           # the distro packages for centos do not include an ad-dc
           - package_source: default
             os: centos
+        include:
+          - os: fedora
+            arch: arm64
     runs-on: ubuntu-latest
     env:
       BUILDAH_FORMAT: oci
@@ -102,6 +107,9 @@ jobs:
       matrix:
         os: [centos, fedora, opensuse]
         arch: [amd64]
+        include:
+          - os: fedora
+            arch: arm64
     runs-on: ubuntu-latest
     env:
       BUILDAH_FORMAT: oci
@@ -250,10 +258,20 @@ jobs:
         with:
           image: "samba-server:default-fedora-amd64"
           container_engine: ${{ env.CONTAINER_CMD }}
+      - name: Fetch server default-fedora-arm64
+        uses: ishworkh/container-image-artifact-download@v2.0.0
+        with:
+          image: "samba-server:default-fedora-arm64"
+          container_engine: ${{ env.CONTAINER_CMD }}
       - name: Fetch server nightly-fedora-amd64
         uses: ishworkh/container-image-artifact-download@v2.0.0
         with:
           image: "samba-server:nightly-fedora-amd64"
+          container_engine: ${{ env.CONTAINER_CMD }}
+      - name: Fetch server nightly-fedora-arm64
+        uses: ishworkh/container-image-artifact-download@v2.0.0
+        with:
+          image: "samba-server:nightly-fedora-arm64"
           container_engine: ${{ env.CONTAINER_CMD }}
       - name: Fetch server nightly-centos-amd64
         uses: ishworkh/container-image-artifact-download@v2.0.0
@@ -271,16 +289,31 @@ jobs:
         with:
           image: "samba-ad-server:default-fedora-amd64"
           container_engine: ${{ env.CONTAINER_CMD }}
+      - name: Fetch ad-server default-fedora-arm64
+        uses: ishworkh/container-image-artifact-download@v2.0.0
+        with:
+          image: "samba-ad-server:default-fedora-arm64"
+          container_engine: ${{ env.CONTAINER_CMD }}
       - name: Fetch ad-server nightly-fedora-amd64
         uses: ishworkh/container-image-artifact-download@v2.0.0
         with:
           image: "samba-ad-server:nightly-fedora-amd64"
+          container_engine: ${{ env.CONTAINER_CMD }}
+      - name: Fetch ad-server nightly-fedora-arm64
+        uses: ishworkh/container-image-artifact-download@v2.0.0
+        with:
+          image: "samba-ad-server:nightly-fedora-arm64"
           container_engine: ${{ env.CONTAINER_CMD }}
       # (client images)
       - name: Fetch client default-fedora-amd64
         uses: ishworkh/container-image-artifact-download@v2.0.0
         with:
           image: "samba-client:default-fedora-amd64"
+          container_engine: ${{ env.CONTAINER_CMD }}
+      - name: Fetch client default-fedora-arm64
+        uses: ishworkh/container-image-artifact-download@v2.0.0
+        with:
+          image: "samba-client:default-fedora-arm64"
           container_engine: ${{ env.CONTAINER_CMD }}
       # (toolbox images)
       - name: Fetch toolbox default-fedora-amd64
@@ -297,12 +330,17 @@ jobs:
           --repo-base=${REPO_BASE}
           --no-distro-qualified
           -i samba-server:default-fedora-amd64
+          -i samba-server:default-fedora-arm64
           -i samba-server:nightly-fedora-amd64
+          -i samba-server:nightly-fedora-arm64
           -i samba-server:nightly-centos-amd64
           -i samba-server:devbuilds-centos-amd64
           -i samba-ad-server:default-fedora-amd64
+          -i samba-ad-server:default-fedora-arm64
           -i samba-ad-server:nightly-fedora-amd64
+          -i samba-ad-server:nightly-fedora-arm64
           -i samba-client:default-fedora-amd64
+          -i samba-client:default-fedora-arm64
           -i samba-toolbox:default-fedora-amd64
       - name: Push images
         run: >
@@ -313,10 +351,13 @@ jobs:
           --push-state=exists
           --push-selected-tags=mixed
           -i ${REPO_BASE}/samba-server:default-fedora-amd64
+          -i ${REPO_BASE}/samba-server:default-fedora-arm64
           -i ${REPO_BASE}/samba-server:nightly-fedora-amd64
           -i ${REPO_BASE}/samba-server:nightly-centos-amd64
           -i ${REPO_BASE}/samba-server:devbuilds-centos-amd64
           -i ${REPO_BASE}/samba-ad-server:default-fedora-amd64
+          -i ${REPO_BASE}/samba-ad-server:default-fedora-arm64
           -i ${REPO_BASE}/samba-ad-server:nightly-fedora-amd64
           -i ${REPO_BASE}/samba-client:default-fedora-amd64
+          -i ${REPO_BASE}/samba-client:default-fedora-arm64
           -i ${REPO_BASE}/samba-toolbox:default-fedora-amd64
