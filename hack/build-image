@@ -456,16 +456,17 @@ def add_special_tags(img, distro_qualified=True):
     # that certain images deserve some extra special tags.  Mostly this serves
     # to keep us compatible with older tagging schemes from earlier versions of
     # the project.
+    _host_arch = host_arch()
     if img.distro in [FEDORA, OPENSUSE]:
-        if img.arch == host_arch() and img.pkg_source == DEFAULT:
+        if img.arch == _host_arch and img.pkg_source == DEFAULT:
             img.additional_tags.append((LATEST, QUAL_NONE))
-        if img.arch == host_arch() and img.pkg_source == NIGHTLY:
+        if img.arch == _host_arch and img.pkg_source == NIGHTLY:
             img.additional_tags.append((NIGHTLY, QUAL_NONE))
     if not distro_qualified:
         return  # skip creating "distro qualified" tags
-    if img.arch == host_arch() and img.pkg_source == DEFAULT:
+    if img.arch == _host_arch and img.pkg_source == DEFAULT:
         img.additional_tags.append((f"{img.distro}-{LATEST}", QUAL_DISTRO))
-    if img.arch == host_arch() and img.pkg_source == NIGHTLY:
+    if img.arch == _host_arch and img.pkg_source == NIGHTLY:
         img.additional_tags.append((f"{img.distro}-{NIGHTLY}", QUAL_DISTRO))
 
 
