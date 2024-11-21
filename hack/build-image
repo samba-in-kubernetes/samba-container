@@ -265,7 +265,7 @@ def container_tag(cli, target, tag, *tags):
     ]
     if "docker" not in base_args[0]:
         # podman can do it in one command, docker (on github ci) can not
-        args += [tag] + list(tags)
+        args = base_args + [tag] + list(tags)
         run(cli, args, check=True)
         return
     for new_tag in [tag] + list(tags):
