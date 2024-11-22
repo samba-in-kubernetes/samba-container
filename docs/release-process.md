@@ -105,23 +105,51 @@ on GitHub (beyond the sources automatically provided there). Instead we add
 a Downloads section that notes the exact tags and digests that the images can
 be found at on quay.io.
 
-Use the following partial snippet as an example:
-```
-Images built for this release can be obtained from the quay.io image registry.
+The downloads section can be generated using the following shell script:
+```bash
+#!/usr/bin/env bash
+# Requires `skopeo` and `jq` to be installed.
 
-### samba-server
-* By tag: quay.io/samba.org/samba-server:v0.3
-* By digest: quay.io/samba.org/samba-server@sha256:09c867343af39b237230f94a734eacc8313f2330c7d934994522ced46b740715
-### samba-ad-server
-* By tag: quay.io/samba.org/samba-ad-server:v0.3
-* By digest: quay.io/samba.org/samba-ad-server@sha256:a1d901f44be2af5a516b21e45dbd6ebd2f64500dfbce112886cdce09a5c3cbd5
-```
-... and so on for each image that was pushed earlier
+set -e
 
-The tag is pretty obvious - it should match the image tag (minus any pre-release
-marker). You can get the digest from the tag using the quay.io UI (do not use
-any local digest hashes). Click on the SHA256 link and then copy the full
-manifest hash using the UI widget that appears.
+sk_digest() {
+    skopeo inspect "docker://${1}" | jq -r .Digest
+}
+
+image_info() {
+    curr_img="quay.io/samba.org/${1}:${2}"
+    digest=$(sk_digest "${curr_img}")
+    # strip preN from tag name
+    final_tag="$(echo "$2" | sed 's,pre[0-9]*$,,')"
+    tag_img="quay.io/samba.org/${1}:${final_tag}"
+    dst_img="quay.io/samba.org/${1}@${digest}"
+
+    echo "### $1"
+    echo "* By tag: $tag_img"
+    echo "* By digest: $dst_img"
+    echo ""
+}
+
+wip_tag=$1
+if [ -z "${wip_tag}" ] ; then
+    echo "No tag provided!" >&2
+    exit 1
+fi
+
+echo "## Downloads"
+echo ""
+echo "Images built for this release can be acquired from the quay.io image registry."
+echo ""
+for component in samba-server samba-ad-server samba-client samba-toolbox; do
+    image_info "${component}" "${wip_tag}"
+done
+```
+
+It is important that the digest is fetched from qauy.io after it has been
+pushed. Do not use any local digest hashes. You may want to double check the
+values produced by the script with those in the quay.io UI.  Click on the
+SHA256 link and then compare the full manifest hash using the UI widget that
+appears.
 
 Perform a final round of reviews, as needed, for the release notes and then
 publish the release.
