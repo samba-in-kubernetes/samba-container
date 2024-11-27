@@ -89,7 +89,7 @@ case "$1" in
         echo ""
         echo "available tools:"
         echo "  --gitlint"
-	echo "  --yamllint"
+	    echo "  --yamllint"
         echo "  --shellcheck"
     ;;
 esac
