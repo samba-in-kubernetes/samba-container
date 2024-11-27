@@ -9,6 +9,7 @@ Container images for [Samba](https://samba.org) services.
 * Are used by the [samba-operator](https://github.com/samba-in-kubernetes/samba-operator) for Kubernetes
 * Don't require Kubernetes
 * Are [available at quay.io](https://quay.io/organization/samba.org)
+* Are used by the [ceph project](https://github.com/ceph/ceph) to provide  SMB services on CephFS
 
 ### Image Types:
 
@@ -114,8 +115,8 @@ podman run --rm -it   quay.io/samba.org/samba-toolbox:latest
 The server images come in two variants: stable and nightly. The
 stable variant is what you get with the "latest" tag and includes
 Samba packages from the Linux distribution used in our base images.
-The "nightly" images are based on Samba packages created by the
-[samba-integration project](https://github.com/gluster/samba-integration)
+The "nightly" images are based on Samba RPM packages created by the
+[samba-build project](https://github.com/samba-in-kubernetes/samba-build)
 which builds and tests Samba builds before release. The nightly images
 are tagged with "nightly" instead of "latest".
 
