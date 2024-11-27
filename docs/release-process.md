@@ -105,45 +105,16 @@ on GitHub (beyond the sources automatically provided there). Instead we add
 a Downloads section that notes the exact tags and digests that the images can
 be found at on quay.io.
 
-The downloads section can be generated using the following shell script:
-```bash
-#!/usr/bin/env bash
-# Requires `skopeo` and `jq` to be installed.
+The downloads section can be generated using the shell script
+https://github.com/samba-in-kubernetes/samba-container/blob/master/hack/install-tools.sh in this repository.
 
-set -e
+It needs to  be invoked with the release tag as the only argument. E. G. :
 
-sk_digest() {
-    skopeo inspect "docker://${1}" | jq -r .Digest
-}
+```console
 
-image_info() {
-    curr_img="quay.io/samba.org/${1}:${2}"
-    digest=$(sk_digest "${curr_img}")
-    # strip preN from tag name
-    final_tag="$(echo "$2" | sed 's,pre[0-9]*$,,')"
-    tag_img="quay.io/samba.org/${1}:${final_tag}"
-    dst_img="quay.io/samba.org/${1}@${digest}"
-
-    echo "### $1"
-    echo "* By tag: $tag_img"
-    echo "* By digest: $dst_img"
-    echo ""
-}
-
-wip_tag=$1
-if [ -z "${wip_tag}" ] ; then
-    echo "No tag provided!" >&2
-    exit 1
-fi
-
-echo "## Downloads"
-echo ""
-echo "Images built for this release can be acquired from the quay.io image registry."
-echo ""
-for component in samba-server samba-ad-server samba-client samba-toolbox; do
-    image_info "${component}" "${wip_tag}"
-done
+$ ./hack/release-gen-download-section.sh v0.3
 ```
+
 
 It is important that the digest is fetched from qauy.io after it has been
 pushed. Do not use any local digest hashes. You may want to double check the
