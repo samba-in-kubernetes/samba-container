@@ -217,20 +217,18 @@ def container_build(cli, target):
         # architectures, and we must ensure we start with a fresh builder
         # that does not contain any images from previous builds.
         tasks.append(
-            lambda: run(cli, args + ["rm", target.flat_name()], check=False)
+            {"cmd": args + ["rm", target.flat_name()], "check": False}
         )
         tasks.append(
-            lambda: run(
-                cli,
-                args + ["create", f"--name={target.flat_name()}"],
-                check=True,
-            )
+            {
+                "cmd": args + ["create", f"--name={target.flat_name()}"],
+                "check": True,
+            }
         )
 
         tasks.append(
-            lambda: run(
-                cli,
-                args
+            {
+                "cmd": args
                 + [
                     "build",
                     f"--builder={target.flat_name()}",
@@ -238,12 +236,12 @@ def container_build(cli, target):
                     "--load",
                 ]
                 + create_common_container_engine_args(cli, target),
-                check=True,
-            )
+                "check": True,
+            }
         )
 
         tasks.append(
-            lambda: run(cli, args + ["rm", target.flat_name()], check=True)
+            {"cmd": args + ["rm", target.flat_name()], "check": True}
         )
     else:
         args = [eng, "build"]
@@ -257,15 +255,15 @@ def container_build(cli, target):
             args += [f"--arch={target.arch}"]
 
         tasks.append(
-            lambda: run(
-                cli,
-                args + create_common_container_engine_args(cli, target),
-                check=True,
-            )
+            {
+                "cmd": args
+                + create_common_container_engine_args(cli, target),
+                "check": True,
+            }
         )
 
     for task in tasks:
-        task()
+        run(cli, **task)
 
 
 def create_common_container_engine_args(cli, target):
