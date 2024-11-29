@@ -36,6 +36,7 @@ Usage:
 """
 
 import argparse
+import functools
 import logging
 import os
 import pathlib
@@ -304,6 +305,16 @@ def container_id(cli, target):
     return res.stdout.decode("utf8").strip()
 
 
+def maybe_container_id(cli, target):
+    """Same as container_id but returns None if no match for the target was
+    found.
+    """
+    try:
+        return container_id(cli, target)
+    except subprocess.CalledProcessError:
+        return None
+
+
 def container_tag(cli, target, tag, *tags):
     """Add additional tags to the existing target image."""
     if isinstance(target, str):
@@ -552,6 +563,20 @@ def push(cli, target):
             container_push(cli, push_name)
 
 
+def archive(cli, target, location):
+    """Write tarballs to archive location."""
+    # reuse push_stage flag. TODO rename flag
+    if cli.push_state == "rebuild" or (
+        cli.push_state == "exists" and not maybe_container_id(cli, target)
+    ):
+        build(cli, target)
+
+    eng = container_engine(cli)
+    fname = pathlib.Path(location) / f"{target.flat_name()}.tar"
+    args = [eng, "save", f"-o{fname}", target.image_name()]
+    run(cli, args, check=True)
+
+
 def retag(cli, target):
     """Command to regenerate any missing unqualified tags."""
     cid = container_id(cli, target)
@@ -588,6 +613,16 @@ def print_tags(cli, target):
     ):
         prefix = "" if idx == 0 else "  "
         print(f"{prefix}{name}")
+
+
+def _kwbind(func, key, conversion=None):
+    """Attach an argument value to a command-linked argument."""
+
+    def _capture(arg_value):
+        value = conversion(arg_value) if conversion else arg_value
+        return functools.partial(func, **{key: value})
+
+    return _capture
 
 
 def main():
@@ -756,6 +791,13 @@ def main():
             "Regenerate any short (unqualified) tags expected to exist"
             " for a given FQIN. Requires FQIN to already exist locally."
         ),
+    )
+    behaviors.add_argument(
+        "--archive",
+        metavar="LOCATION",
+        dest="main_action",
+        type=_kwbind(archive, "location"),
+        help="Write archive files (tarballs) to a specified location",
     )
     cli = parser.parse_args()
 
