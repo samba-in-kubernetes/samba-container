@@ -248,10 +248,10 @@ def container_build(cli, target):
     else:
         args = [eng, "build"]
         if target.arch != host_arch() or FORCE_ARCH_FLAG:
-            # We've noticed a few small quirks when using podman with the --arch
-            # option. The main issue is that building the client image works
-            # but then the toolbox image fails because it somehow doesn't see
-            # the image we just built as usable. This doesn't happen when
+            # We've noticed a few small quirks when using podman with the
+            # --arch option. The main issue is that building the client image
+            # works but then the toolbox image fails because it somehow doesn't
+            # see the image we just built as usable. This doesn't happen when
             # --arch is not provided. So if the target arch and the host_arch
             # are the same, skip passing the extra argument.
             args += [f"--arch={target.arch}"]
