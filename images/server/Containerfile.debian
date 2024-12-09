@@ -1,0 +1,66 @@
+FROM quay.io/samba.org/sambacc:latest AS sccbuilder
+
+ARG SAMBACC_VER=master
+ARG SAMBACC_DISTNAME=latest
+ARG SAMBACC_REPO=https://github.com/samba-in-kubernetes/sambacc
+RUN SAMBACC_DISTNAME=${SAMBACC_DISTNAME} \
+/usr/local/bin/build.sh ${SAMBACC_VER} ${SAMBACC_REPO}
+
+FROM docker.io/library/debian
+ARG INSTALL_PACKAGES_FROM=default
+ARG SAMBA_VERSION_SUFFIX=""
+ARG SAMBACC_VERSION_SUFFIX="${SAMBACC_DISTNAME}"
+ARG SAMBACC_DIST_DIR_HOST="sambacc-dist/latest"
+ARG SAMBACC_DIST_DIR="/tmp/sambacc-dist-latest"
+ARG SAMBA_SPECIFICS=daemon_cli_debug_output,ctdb_leader_admin_command
+ARG INSTALL_CUSTOM_REPO=
+ARG PACKAGE_SELECTION=
+
+MAINTAINER  Michael Adam <obnox@samba.org>
+
+LABEL org.opencontainers.image.title="Samba container"
+LABEL org.opencontainers.image.description="Samba container"
+LABEL org.opencontainers.image.vendor="Samba in Kubernetes"
+LABEL org.opencontainers.image.url="https://github.com/samba-in-kubernetes/samba-container"
+
+COPY smb.conf /etc/samba/smb.conf
+RUN apt-get update
+RUN apt-get upgrade --yes
+RUN apt-get install --yes \
+  findutils \
+  python3-full \
+  python3-pip \
+  python3-jsonschema \
+  python3-pyxattr \
+  samba \
+  winbind \
+  ctdb \
+  samba-vfs-modules 
+
+# If you want to install a custom version of sambacc into this image mount
+# a directory containing a sambacc RPM, or a sambacc wheel, or a .repo
+# file at /tmp/sambacc-dist-latest
+# If the directory is empty the script automatically falls back to using
+# the latest continuously built RPM from our sambacc COPR:
+# https://copr.fedorainfracloud.org/coprs/phlogistonjohn/sambacc
+RUN mkdir -p ${SAMBACC_DIST_DIR}
+COPY ${SAMBACC_DIST_DIR_HOST} $SAMBACC_DIST_DIR}
+COPY .common/install-sambacc-common.sh /usr/local/bin/install-sambacc-common.sh
+COPY install-sambacc.sh /usr/local/bin/install-sambacc.sh
+RUN --mount=type=bind,from=sccbuilder,source=/srv/dist/latest,destination=/tmp/sambacc-dist-latest bash -x /usr/local/bin/install-sambacc.sh \
+    "${SAMBACC_DIST_DIR}" \
+    "${SAMBACC_VERSION_SUFFIX}"
+
+
+VOLUME ["/share"]
+
+EXPOSE 445
+
+ENV SAMBACC_CONFIG="/etc/samba/container.json:/etc/samba/users.json"
+ENV SAMBA_CONTAINER_ID="demo"
+ENV SAMBA_SPECIFICS="$SAMBA_SPECIFICS"
+ENV SAMBACC_DIST_DIR="$SAMBACC_DIST_DIR"
+ENTRYPOINT ["samba-container"]
+CMD ["run", "smbd"]
+
+# vim:set syntax=dockerfile:
