@@ -101,7 +101,10 @@ esac
 
 dnf_cmd=(dnf)
 if [[ "${OS_BASE}" = centos ]]; then
-    dnf_cmd+=(--enablerepo=crb --enablerepo=resilientstorage)
+    dnf_cmd+=(--enablerepo=crb)
+    if [[ "${package_selection}" != "nightly" && "${package_selection}" != "devbuilds" ]]; then
+        dnf_cmd+=(--enablerepo=resilientstorage)
+    fi
 fi
 
 
