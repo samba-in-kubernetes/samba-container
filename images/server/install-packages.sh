@@ -47,7 +47,7 @@ get_samba_nightly_repo() {
 get_distro_ceph_repo() {
     if [[ "${OS_BASE}" = centos ]]; then
         dnf install --setopt=install_weak_deps=False -y \
-            epel-release centos-release-ceph-reef
+            centos-release-ceph-reef
     fi
 }
 
@@ -77,6 +77,7 @@ case "${install_packages_from}" in
     samba-nightly)
         get_samba_nightly_repo
         get_distro_ceph_repo
+        get_epel_repo_if_needed
         package_selection=${package_selection:-nightly}
     ;;
     devbuilds)
@@ -89,6 +90,7 @@ case "${install_packages_from}" in
     custom-repo)
         get_custom_repo "${install_custom_repo}"
         get_distro_ceph_repo
+        get_epel_repo_if_needed
     ;;
     custom-devbuilds)
         get_custom_repo "${install_custom_repo}"
