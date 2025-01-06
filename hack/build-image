@@ -577,6 +577,16 @@ def archive(cli, target, location):
     run(cli, args, check=True)
 
 
+def load_archived(cli, target, location):
+    """Load tarballs from archive location."""
+    fname = pathlib.Path(location) / f"{target.flat_name()}.tar"
+    logger.info("Loading from: %s", fname)
+
+    eng = container_engine(cli)
+    args = [eng, "load", f"-i{fname}"]
+    run(cli, args, check=True)
+
+
 def retag(cli, target):
     """Command to regenerate any missing unqualified tags."""
     cid = container_id(cli, target)
@@ -798,6 +808,13 @@ def main():
         dest="main_action",
         type=_kwbind(archive, "location"),
         help="Write archive files (tarballs) to a specified location",
+    )
+    behaviors.add_argument(
+        "--load",
+        metavar="LOCATION",
+        dest="main_action",
+        type=_kwbind(load_archived, "location"),
+        help="Read in archive files (tarballs) from a specified location",
     )
     cli = parser.parse_args()
 
