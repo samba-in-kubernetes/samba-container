@@ -366,6 +366,17 @@ class RepoConfig:
         return self.distro_map.get(distro, self.default)
 
 
+def _split_img(image_name, max_tag_split=3):
+    if "/" in image_name:
+        base, rest = image_name.rsplit("/", 1)
+    else:
+        base = ""
+        rest = image_name
+    iname, tag = rest.split(":", 1)
+    tparts = tag.split("-", max_tag_split)
+    return base, iname, tparts
+
+
 class TargetImage:
     def __init__(
         self, name, pkg_source, distro, arch, extra_tag="", *, repo_base=""
@@ -414,13 +425,7 @@ class TargetImage:
 
     @classmethod
     def parse(cls, image_name):
-        if "/" in image_name:
-            base, rest = image_name.rsplit("/", 1)
-        else:
-            base = ""
-            rest = image_name
-        iname, tag = rest.split(":", 1)
-        tparts = tag.split("-", 3)
+        base, iname, tparts = _split_img(image_name)
         if len(tparts) < 3:
             raise ValueError(f"too few tag components: {tag!r}")
         return cls(
