@@ -592,23 +592,33 @@ class BuildRequest:
     def __bool__(self):
         return bool(self.images or self.indexes)
 
-    def expanded(self, indexes=False, distro_qualified=True):
+    def expanded(
+        self, indexes=False, distro_qualified=True, unqualified=True
+    ):
         new_req = self.__class__(self.images, self.indexes)
         if indexes:
             new_req._build_indexes()
-        new_req._expand_special_tags(distro_qualified=distro_qualified)
+        new_req._expand_special_tags(
+            distro_qualified=distro_qualified, unqualified=unqualified
+        )
         return new_req
 
-    def _expand_special_tags(self, distro_qualified=True):
+    def _expand_special_tags(self, distro_qualified=True, unqualified=True):
         if self.indexes:
             for image in self.indexes:
                 # distro qualified is redundant with the default tag of an
                 # index/manifest as well as mainly needed for backwards
                 # compatibility something we don't want for indexes.
-                add_special_tags(image, distro_qualified=False)
+                add_special_tags(
+                    image, distro_qualified=False, unqualified=unqualified
+                )
         else:
             for image in self.images:
-                add_special_tags(image, distro_qualified=distro_qualified)
+                add_special_tags(
+                    image,
+                    distro_qualified=distro_qualified,
+                    unqualified=unqualified,
+                )
 
     def _build_indexes(self):
         _indexes = {}
@@ -645,11 +655,13 @@ def generate_request(cli):
                     )
                     images[str(timg)] = timg
     return BuildRequest(images=images.values()).expanded(
-        indexes=cli.combined, distro_qualified=cli.distro_qualified
+        indexes=cli.combined,
+        distro_qualified=cli.distro_qualified,
+        unqualified=cli.unqualified,
     )
 
 
-def add_special_tags(img, distro_qualified=True):
+def add_special_tags(img, distro_qualified=True, unqualified=True):
     """Certain images have special tags. Given an image, add general (non-FQIN)
     tags to that image.
     """
@@ -659,7 +671,7 @@ def add_special_tags(img, distro_qualified=True):
     # the project.
     _host_arch = host_arch()
     arch_ok = img.supports_arch(_host_arch)
-    if img.distro in [FEDORA, OPENSUSE]:
+    if unqualified and img.distro in [FEDORA, OPENSUSE]:
         if arch_ok and img.pkg_source == DEFAULT:
             img.additional_tags.append((LATEST, QUAL_NONE))
         if arch_ok and img.pkg_source == NIGHTLY:
@@ -975,8 +987,16 @@ def main():
         action=argparse.BooleanOptionalAction,
         default=True,
         help=(
-            "Specify if image tags like fedora-nightly or centos-latest"
+            "Specify if image tags like 'fedora-nightly' or 'centos-latest'"
             " will be created."
+        ),
+    )
+    parser.add_argument(
+        "--unqualified",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Specify if image tags like 'nightly' or 'latest' will be created."
         ),
     )
     parser.add_argument(
