@@ -351,6 +351,10 @@ def container_push(cli, push_name, manifest=False):
         args = [eng, "manifest", "push", "--all"]
     else:
         args = [eng, "push"]
+    if "podman" in eng:
+        # very strange bug? sometimes it fails to push without the format
+        # option. but I swear it also does work without it some times
+        args.append("--format=oci")
     args.append(push_name)
     run(cli, args, check=True)
 
