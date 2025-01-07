@@ -37,6 +37,7 @@ Usage:
 
 import argparse
 import functools
+import json
 import logging
 import os
 import pathlib
@@ -265,6 +266,59 @@ def container_build(cli, target):
         run(cli, **task)
 
 
+def index_build(cli, target):
+    """Construct a new index or manifest."""
+    logger.debug("Building index: %s", target)
+    eng = container_engine(cli)
+    args = [eng, "manifest", "create", target.image_name()]
+    run(cli, args, check=True)
+    # add images to index
+    for img in target.contents:
+        add_args = [eng, "manifest", "add"]
+        # Currently annotations can't be used for much, but perhaps in the
+        # future podman/docker/etc will let you filter on annotations.  Then
+        # you could choose base distro, etc using a single big index with
+        # annotations indicating various features. For now, it's mostly
+        # acedemic and for practice.
+        add_args.append(
+            "--annotation=org.samba.samba-container.pkg-source="
+            f"{img.pkg_source}"
+        )
+        add_args.append(
+            "--annotation=org.samba.samba-container.distro=" f"{img.distro}"
+        )
+        add_args += [target.image_name(), img.image_name()]
+        run(cli, add_args, check=True)
+    # apply additional tag names
+    for tname in target.all_names(baseless=cli.without_repo_bases):
+        tag_args = [eng, "tag", target.image_name(), tname]
+        if target.image_name() != tname:
+            run(cli, tag_args, check=True)
+    # verfication step
+    inspect_args = [eng, "manifest", "inspect", target.image_name()]
+    res = run(cli, inspect_args, check=True, capture_output=True)
+    idx_info = json.loads(res.stdout)
+    if len(idx_info["manifests"]) != len(target.contents):
+        logger.error("unexpected index info: %r", idx_info)
+        logger.error(
+            "saw %d entries, expected %d (%r)",
+            len(idx_info["manifests"]),
+            len(target.contents),
+            target.contents,
+        )
+        raise ValueError("unexpected number of manifest entries")
+    return target.image_name()
+
+
+def image_build(cli, target):
+    if isinstance(target, TargetIndex):
+        logger.debug("target is an index (or manifest)")
+        return index_build(cli, target)
+    else:
+        logger.debug("target is a container image")
+        return container_build(cli, target)
+
+
 def create_common_container_engine_args(cli, target):
     args = []
     pkgs_from = PACKAGES_FROM[target.pkg_source]
@@ -294,6 +348,15 @@ def container_id(cli, target):
     """Construct and run a command to fetch a hexidecimal id for a container
     image.
     """
+    if isinstance(target, TargetIndex):
+        args = [
+            container_engine(cli),
+            "manifest",
+            "exists",
+            target.image_name(),
+        ]
+        run(cli, args, check=True)
+        return target.image_name()
     args = [
         container_engine(cli),
         "inspect",
@@ -377,40 +440,16 @@ def _split_img(image_name, max_tag_split=3):
     return base, iname, tparts
 
 
-class TargetImage:
+class Target:
     def __init__(
-        self, name, pkg_source, distro, arch, extra_tag="", *, repo_base=""
+        self, name, *, pkg_source, distro, extra_tag="", repo_base=""
     ):
         self.name = name
         self.pkg_source = pkg_source
         self.distro = distro
-        self.arch = arch
         self.extra_tag = extra_tag
         self.repo_base = repo_base
         self.additional_tags = []
-
-    def tag_name(self):
-        tag_parts = [self.pkg_source, self.distro, self.arch]
-        if self.extra_tag:
-            tag_parts.append(self.extra_tag)
-        tag = "-".join(tag_parts)
-        return tag
-
-    def image_name(self, *, tag=None, repo_base=None):
-        if not tag:
-            tag = self.tag_name()
-        image_name = f"{self.name}:{tag}"
-        repo_base = repo_base if repo_base is not None else self.repo_base
-        if repo_base:
-            repo_base = repo_base.rstrip("/")
-            image_name = f"{repo_base}/{image_name}"
-        return image_name
-
-    def flat_name(self):
-        return f"{self.name}.{self.tag_name()}"
-
-    def __str__(self):
-        return self.image_name()
 
     def all_names(self, baseless=False):
         yield self.image_name()
@@ -422,6 +461,52 @@ class TargetImage:
                 if qual == QUAL_NONE:
                     continue
                 yield self.image_name(tag=tag, repo_base="")
+
+    def supports_arch(self, arch):
+        return False
+
+    def flat_name(self):
+        return f"{self.name}.{self.tag_name()}"
+
+    def tag_name(self):
+        raise NotImplementedError()
+
+    def image_name(self, *, tag=None, repo_base=None):
+        if not tag:
+            tag = self.tag_name()
+        image_name = f"{self.name}:{tag}"
+        repo_base = repo_base if repo_base is not None else self.repo_base
+        if repo_base:
+            repo_base = repo_base.rstrip("/")
+            image_name = f"{repo_base}/{image_name}"
+        return image_name
+
+    def __str__(self):
+        return self.image_name()
+
+
+class TargetImage(Target):
+    def __init__(
+        self, name, pkg_source, distro, arch, extra_tag="", *, repo_base=""
+    ):
+        super().__init__(
+            name,
+            pkg_source=pkg_source,
+            distro=distro,
+            extra_tag=extra_tag,
+            repo_base=repo_base,
+        )
+        self.arch = arch
+
+    def tag_name(self):
+        tag_parts = [self.pkg_source, self.distro, self.arch]
+        if self.extra_tag:
+            tag_parts.append(self.extra_tag)
+        tag = "-".join(tag_parts)
+        return tag
+
+    def supports_arch(self, arch):
+        return arch == self.arch
 
     @classmethod
     def parse(cls, image_name):
@@ -438,9 +523,98 @@ class TargetImage:
         )
 
 
-def generate_images(cli):
-    """Given full image names or a matrix of kind/pkg_source/distro_base/arch
-    values generate a list of target images to build/process.
+class TargetIndex(Target):
+    def __init__(
+        self,
+        name,
+        *,
+        pkg_source,
+        distro,
+        contents=None,
+        extra_tag="",
+        repo_base="",
+    ):
+        super().__init__(
+            name,
+            pkg_source=pkg_source,
+            distro=distro,
+            extra_tag=extra_tag,
+            repo_base=repo_base,
+        )
+        self.contents = contents or []
+
+    def key(self):
+        return (self.name, self.pkg_source, self.distro)
+
+    def tag_name(self):
+        tag_parts = [self.pkg_source, self.distro]
+        if self.extra_tag:
+            tag_parts.append(self.extra_tag)
+        tag = "-".join(tag_parts)
+        return tag
+
+    def merge(self, other):
+        assert self.name == other.name
+        assert self.pkg_source == other.pkg_source
+        assert self.distro == other.distro
+        self.contents.extend(other.contents)
+
+    def supports_arch(self, arch):
+        return True
+
+    @classmethod
+    def from_image(cls, img):
+        return cls(
+            img.name,
+            pkg_source=img.pkg_source,
+            distro=img.distro,
+            contents=[img],
+            repo_base=img.repo_base or "",
+        )
+
+
+class BuildRequest:
+    def __init__(self, images=None, indexes=None):
+        self.images = list(images or [])
+        self.indexes = list(indexes or [])
+
+    def __bool__(self):
+        return bool(self.images or self.indexes)
+
+    def expanded(self, indexes=False, distro_qualified=True):
+        new_req = self.__class__(self.images, self.indexes)
+        if indexes:
+            new_req._build_indexes()
+        new_req._expand_special_tags(distro_qualified=distro_qualified)
+        return new_req
+
+    def _expand_special_tags(self, distro_qualified=True):
+        if self.indexes:
+            for image in self.indexes:
+                # distro qualified is redundant with the default tag of an
+                # index/manifest as well as mainly needed for backwards
+                # compatibility something we don't want for indexes.
+                add_special_tags(image, distro_qualified=False)
+        else:
+            for image in self.images:
+                add_special_tags(image, distro_qualified=distro_qualified)
+
+    def _build_indexes(self):
+        _indexes = {}
+        for image in self.images:
+            image_index = TargetIndex.from_image(image)
+            key = image_index.key()
+            if key in _indexes:
+                _indexes[key].merge(image_index)
+            else:
+                _indexes[key] = image_index
+        self.indexes = list(_indexes.values())
+
+
+def generate_request(cli):
+    """Given command line parameters with full image names or a matrix of
+    kind/pkg_source/distro_base/arch values generate request object containing
+    the target images or indexes to build and/or otherwise process.
     """
     images = {}
     for img in cli.image or []:
@@ -459,7 +633,9 @@ def generate_images(cli):
                         repo_base=rc.find_base(distro_base),
                     )
                     images[str(timg)] = timg
-    return list(images.values())
+    return BuildRequest(images=images.values()).expanded(
+        indexes=cli.combined, distro_qualified=cli.distro_qualified
+    )
 
 
 def add_special_tags(img, distro_qualified=True):
@@ -471,28 +647,32 @@ def add_special_tags(img, distro_qualified=True):
     # to keep us compatible with older tagging schemes from earlier versions of
     # the project.
     _host_arch = host_arch()
+    arch_ok = img.supports_arch(_host_arch)
     if img.distro in [FEDORA, OPENSUSE]:
-        if img.arch == _host_arch and img.pkg_source == DEFAULT:
+        if arch_ok and img.pkg_source == DEFAULT:
             img.additional_tags.append((LATEST, QUAL_NONE))
-        if img.arch == _host_arch and img.pkg_source == NIGHTLY:
+        if arch_ok and img.pkg_source == NIGHTLY:
             img.additional_tags.append((NIGHTLY, QUAL_NONE))
     if not distro_qualified:
         return  # skip creating "distro qualified" tags
-    if img.arch == _host_arch and img.pkg_source == DEFAULT:
+    if arch_ok and img.pkg_source == DEFAULT:
         img.additional_tags.append((f"{img.distro}-{LATEST}", QUAL_DISTRO))
-    if img.arch == _host_arch and img.pkg_source == NIGHTLY:
+    if arch_ok and img.pkg_source == NIGHTLY:
         img.additional_tags.append((f"{img.distro}-{NIGHTLY}", QUAL_DISTRO))
 
 
-def build(cli, target):
+def build(cli, target, rebuild=False):
     """Command to build images."""
     build_file = pathlib.Path(f"{cli.buildfile_prefix}{target.flat_name()}")
     common_src = "./images/common"
     common_dst = str(kind_source_dir(target.name) / ".common")
-    logger.debug("Copying common tree: %r -> %r", common_src, common_dst)
-    shutil.copytree(common_src, common_dst, dirs_exist_ok=True)
-    container_build(cli, target)
-    cid = container_id(cli, target)
+    cid = maybe_container_id(cli, target)
+    logger.debug("target: %s, cid=%s, rebuild=%s", target, cid, rebuild)
+    if not cid or rebuild:
+        logger.debug("Copying common tree: %r -> %r", common_src, common_dst)
+        shutil.copytree(common_src, common_dst, dirs_exist_ok=True)
+        image_build(cli, target)
+        cid = container_id(cli, target)
     with open(build_file, "w") as fh:
         fh.write(f"{cid} {target.image_name()}\n")
 
@@ -768,6 +948,13 @@ def main():
             " will be created."
         ),
     )
+    parser.add_argument(
+        "--combined",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help=("Specify if manifests/image indexes should be created."),
+    )
+
     behaviors = parser.add_mutually_exclusive_group()
     behaviors.add_argument(
         "--push",
@@ -828,17 +1015,23 @@ def main():
     logging.basicConfig(level=cli.log_level)
 
     _action = cli.main_action if cli.main_action else build
-    imgs = []
+    req = None
     try:
-        imgs = generate_images(cli)
-        for img in imgs:
-            add_special_tags(img, cli.distro_qualified)
+        req = generate_request(cli)
+        for img in req.images:
             logger.info("Image %s, extra tags: %s", img, img.additional_tags)
             _action(cli, img)
+        for index in req.indexes:
+            logger.info(
+                "Index (Manifest) %s, extra tags: %s",
+                index,
+                index.additional_tags,
+            )
+            _action(cli, index)
     except subprocess.CalledProcessError as err:
         logger.error("Failed command: %s", _cmd_to_str(err.cmd))
         sys.exit(err.returncode)
-    if not imgs:
+    if not req:
         logger.error("No images or image kinds supplied")
         sys.exit(2)
 
