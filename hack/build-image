@@ -125,6 +125,12 @@ QUAL_NONE = "unqualified"
 QUAL_DISTRO = "distro-qualified"
 QUAL_FQIN = "fqin"
 
+# conditions
+EXISTS = "exists"
+AUTO = "auto"
+AUTO_INDEX = "auto-index"
+REBUILD = "rebuild"
+
 
 _DISCOVERED_CONTAINER_ENGINES = []
 
@@ -733,15 +739,25 @@ class QMatcher:
         return False
 
 
+def _autobuild(cli, target, is_index=None):
+    if is_index is None:
+        is_index = isinstance(target, TargetIndex)
+    if cli.condition == REBUILD:
+        rebuild(cli, target)
+    elif maybe_container_id(cli, target):
+        logger.debug("target item exists: %s", target)
+    elif cli.condition == AUTO or (cli.condition == AUTO_INDEX and is_index):
+        logger.debug("target item auto build: %s", target)
+        build(cli, target)
+    else:
+        log.error("no existing image or index: %s", target)
+        raise ValueError("not present", target)
+
+
 def push(cli, target):
     """Command to push images."""
-    if cli.push_state == "rebuild":
-        build(cli, target)
-    if cli.push_state == "exists":
-        try:
-            container_id(cli, target)
-        except subprocess.CalledProcessError:
-            build(cli, target)
+    is_index = isinstance(target, TargetIndex)  # is it a manifest push?
+    _autobuild(cli, target, is_index=is_index)
 
     to_push = []
     push_name = target.image_name()
@@ -752,22 +768,17 @@ def push(cli, target):
             to_push.append((target.image_name(tag=tag), qual))
     to_push.append((push_name, QUAL_FQIN))
     qmatcher = cli.push_selected_tags or QMatcher("")
-    manifest = isinstance(target, TargetIndex)  # is it a manifest push?
     for push_name, tag_qual in to_push:
         if qmatcher(tag_qual):
             logger.debug(
-                "pushing named object: %s (manifest=%s)", push_name, manifest
+                "pushing named object: %s (manifest=%s)", push_name, is_index
             )
-            container_push(cli, push_name, manifest=manifest)
+            container_push(cli, push_name, manifest=is_index)
 
 
 def archive(cli, target, location):
     """Write tarballs to archive location."""
-    # reuse push_stage flag. TODO rename flag
-    if cli.push_state == "rebuild" or (
-        cli.push_state == "exists" and not maybe_container_id(cli, target)
-    ):
-        build(cli, target)
+    _autobuild(cli, target)
 
     eng = container_engine(cli)
     fname = pathlib.Path(location) / f"{target.flat_name()}.tar"
@@ -920,11 +931,16 @@ def main():
     )
     parser.add_argument(
         "--push-state",
-        choices=("exists", "rebuild"),
-        default="exists",
+        "--image-condition",
+        dest="condition",
+        choices=(EXISTS, AUTO, AUTO_INDEX, REBUILD),
+        default=EXISTS,
         help=(
-            "Only push if a state is met:"
-            "exists - image exists; rebuild - image must be rebuilt."
+            "Image state must be met before continuing:"
+            " exists - item already exists;"
+            " auto - automatically build missing image;"
+            " auto-index - automatically build missing indexes only;"
+            " rebuild - image must be rebuilt."
         ),
     )
     parser.add_argument(
