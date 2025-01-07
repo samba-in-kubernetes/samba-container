@@ -338,9 +338,14 @@ def create_common_container_engine_args(cli, target):
     return [str(a) for a in args]
 
 
-def container_push(cli, push_name):
+def container_push(cli, push_name, manifest=False):
     """Construct and execute a command to push a container image."""
-    args = [container_engine(cli), "push", push_name]
+    eng = container_engine(cli)
+    if manifest:
+        args = [eng, "manifest", "push", "--all"]
+    else:
+        args = [eng, "push"]
+    args.append(push_name)
     run(cli, args, check=True)
 
 
@@ -747,9 +752,13 @@ def push(cli, target):
             to_push.append((target.image_name(tag=tag), qual))
     to_push.append((push_name, QUAL_FQIN))
     qmatcher = cli.push_selected_tags or QMatcher("")
+    manifest = isinstance(target, TargetIndex)  # is it a manifest push?
     for push_name, tag_qual in to_push:
         if qmatcher(tag_qual):
-            container_push(cli, push_name)
+            logger.debug(
+                "pushing named object: %s (manifest=%s)", push_name, manifest
+            )
+            container_push(cli, push_name, manifest=manifest)
 
 
 def archive(cli, target, location):
