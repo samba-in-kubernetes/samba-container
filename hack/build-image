@@ -677,6 +677,10 @@ def build(cli, target, rebuild=False):
         fh.write(f"{cid} {target.image_name()}\n")
 
 
+def rebuild(cli, target):
+    return build(cli, target, rebuild=True)
+
+
 class QMatcher:
     """Push only tags that meet the specified criteria:
     all - all tags;
@@ -993,6 +997,13 @@ def main():
             "Regenerate any short (unqualified) tags expected to exist"
             " for a given FQIN. Requires FQIN to already exist locally."
         ),
+    )
+    behaviors.add_argument(
+        "--rebuild",
+        action="store_const",
+        dest="main_action",
+        const=rebuild,
+        help="Always rebuild images even if matching images exist locally.",
     )
     behaviors.add_argument(
         "--archive",
