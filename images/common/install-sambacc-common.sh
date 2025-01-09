@@ -31,25 +31,36 @@ install_sambacc() {
 
 
     local action=install-from-copr-repo
-    if [ "${#wheels[@]}" -gt 1 ]; then
-        echo "more than one wheel file found"
-        exit 1
-    elif [ "${#wheels[@]}" -eq 1 ]; then
-        action=install-wheel
-    fi
-
-    if [ "${#rpmfiles[@]}" -gt 1 ]; then
-        echo "more than one sambacc rpm file found"
-        exit 1
-    elif [ "${#rpmfiles[@]}" -eq 1 ]; then
-        action=install-rpm
-    fi
-
-    if [ "${#repofiles[@]}" -gt 1 ]; then
-        echo "more than one repo file found"
-        exit 1
-    elif [ "${#repofiles[@]}" -eq 1 ]; then
-        action=install-from-repo
+    if [ "${#wheels[@]}" -gt 0 ]; then
+        echo "INFO: wheel found"
+        if [ "${#wheels[@]}" -gt 1 ]; then
+            echo "ERROR: more than one wheel file found"
+            exit 1
+        elif [ "${#wheels[@]}" -eq 1  ]; then
+            echo  "sambacc wheel found. Installing wheel."
+            action=install-wheel
+        fi
+    elif [ "${#rpmfiles[@]}" -gt 0 ]; then
+        echo "INFO: rpm file found"
+        if [ "${#rpmfiles[@]}" -gt 1 ]; then
+            echo "ERROR: more than one sambacc rpm file found"
+            exit 1
+        elif [ "${#rpmfiles[@]}" -eq 1 ]; then
+            echo "sambacc rpm found. installing rpm."
+            action=install-rpm
+        fi
+    elif [ "${#repofiles[@]}" -gt 1 ]; then
+       echo  "INFO: repo file found"
+       if [ "${#repofiles[@]}" -gt 1 ]; then
+           echo "ERROR: more than one repo file found"
+           exit 1
+       elif [ "${#repofiles[@]}" -eq 1 ]; then
+           echo "sambacc repo file found. installing from local yum repo."
+           action=install-from-repo
+       fi
+    else
+        echo "no local sambacc installation source found. falling back to copr install."
+        action=install-from-copr-repo
     fi
 
     if [ -z "${DEFAULT_JSON_FILE}" ]; then
@@ -59,7 +70,7 @@ install_sambacc() {
 
     case $action in
         install-wheel)
-            pip install "${wheels[0]}"
+            pip install --break-system-packages "${wheels[0]}"
             container_json_file="/usr/local/share/sambacc/examples/${DEFAULT_JSON_FILE}"
         ;;
         install-rpm)
