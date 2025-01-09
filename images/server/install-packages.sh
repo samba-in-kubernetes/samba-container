@@ -33,7 +33,7 @@ ref = r[0]["ref"]
 with open(dest, "w") as out:
     print(f"[ceph-{ref}]", file=out)
     print(f"name=Ceph Development Build ({ref})", file=out)
-    print(f"baseurl={url}/x86_64", file=out)
+    print(f"baseurl={url}/\$basearch", file=out)
     print("enabled=1", file=out)
     print("gpgcheck=0", file=out)
 EOF
