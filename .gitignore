@@ -1,13 +1,4 @@
 *~
-.build.server
-.build.opensuse-server
-.build.ad-server
-.build.opensuse-ad-server
-.build.client
-.build.opensuse-client
-.build.toolbox
-.build.opensuse-toolbox
-.build.nightly.server
-.build.nightly.ad-server
+.build.*
 .common
 .bin
