@@ -132,7 +132,12 @@ case "${package_selection}-${OS_BASE}" in
     *-fedora|allvfs-*)
         samba_packages+=(samba-vfs-cephfs samba-vfs-glusterfs ctdb-ceph-mutex)
     ;;
-    nightly-centos|devbuilds-centos|forcedevbuilds-*)
+    devbuilds-centos|forcedevbuilds-*)
+	# Enable libcephfs proxy for dev builds
+        support_packages+=(libcephfs-proxy2)
+	# Fall through to next case
+    ;&
+    nightly-centos)
         dnf_cmd+=(--enablerepo=epel)
         samba_packages+=(samba-vfs-cephfs ctdb-ceph-mutex)
         # these packages should be installed as deps. of sambacc extras
