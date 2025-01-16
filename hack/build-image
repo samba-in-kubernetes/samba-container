@@ -89,10 +89,12 @@ ARCHITECTURES = {
 FEDORA = "fedora"
 CENTOS = "centos"
 OPENSUSE = "opensuse"
+DEBIAN = "debian"
 DISTROS = [
     FEDORA,
     CENTOS,
     OPENSUSE,
+    DEBIAN,
 ]
 
 # PACKAGE_SOURCES - list of known package sources
