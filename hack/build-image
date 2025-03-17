@@ -102,9 +102,9 @@ DEVBUILDS = "devbuilds"
 PACKAGE_SOURCES = [DEFAULT, NIGHTLY, DEVBUILDS]
 
 PACKAGES_FROM = {
-    DEFAULT: '',
-    NIGHTLY: 'samba-nightly',
-    DEVBUILDS: 'devbuilds',
+    DEFAULT: "",
+    NIGHTLY: "samba-nightly",
+    DEVBUILDS: "devbuilds",
 }
 
 # SOURCE_DIRS - image source paths
@@ -121,7 +121,7 @@ DEFAULT_DISTRO_BASES = [FEDORA]
 LATEST = "latest"
 QUAL_NONE = "unqualified"
 QUAL_DISTRO = "distro-qualified"
-QUAL_FQIN = 'fqin'
+QUAL_FQIN = "fqin"
 
 
 _DISCOVERED_CONTAINER_ENGINES = []
@@ -207,23 +207,42 @@ def container_build(cli, target):
     tasks = []
 
     # For docker cross-builds we need to use buildx
-    if "docker" in eng and target.arch != host_arch():       
+    if "docker" in eng and target.arch != host_arch():
         args = [eng, "buildx"]
 
         # Docker's default builder only supports the host architecture.
         # Therefore, we need to create a new builder to support other
         # architectures, and we must ensure we start with a fresh builder
         # that does not contain any images from previous builds.
-        tasks.append(lambda : run(cli, args + ["rm", target.flat_name()], check=False))
-        tasks.append(lambda : run(cli, args + ["create", f"--name={target.flat_name()}"], check=True))
+        tasks.append(
+            lambda: run(cli, args + ["rm", target.flat_name()], check=False)
+        )
+        tasks.append(
+            lambda: run(
+                cli,
+                args + ["create", f"--name={target.flat_name()}"],
+                check=True,
+            )
+        )
 
-        tasks.append(lambda : run(cli, args + [
-            "build",
-            f"--builder={target.flat_name()}",
-            f"--platform=linux/{target.arch}",
-            "--load"] + create_common_container_engine_args(cli, target), check=True))
+        tasks.append(
+            lambda: run(
+                cli,
+                args
+                + [
+                    "build",
+                    f"--builder={target.flat_name()}",
+                    f"--platform=linux/{target.arch}",
+                    "--load",
+                ]
+                + create_common_container_engine_args(cli, target),
+                check=True,
+            )
+        )
 
-        tasks.append(lambda : run(cli, args + ["rm", target.flat_name()], check=True))
+        tasks.append(
+            lambda: run(cli, args + ["rm", target.flat_name()], check=True)
+        )
     else:
         args = [eng, "build"]
         if target.arch != host_arch() or FORCE_ARCH_FLAG:
@@ -235,17 +254,24 @@ def container_build(cli, target):
             # are the same, skip passing the extra argument.
             args += [f"--arch={target.arch}"]
 
-        tasks.append(lambda : run(cli, args + create_common_container_engine_args(cli, target), check=True))
+        tasks.append(
+            lambda: run(
+                cli,
+                args + create_common_container_engine_args(cli, target),
+                check=True,
+            )
+        )
 
     for task in tasks:
         task()
+
 
 def create_common_container_engine_args(cli, target):
     args = []
     pkgs_from = PACKAGES_FROM[target.pkg_source]
     if pkgs_from:
         args.append(f"--build-arg=INSTALL_PACKAGES_FROM={pkgs_from}")
-        
+
     if cli.extra_build_arg:
         args.extend(cli.extra_build_arg)
 
@@ -257,6 +283,7 @@ def create_common_container_engine_args(cli, target):
     args.append(target_containerfile(target))
     args.append(kind_source_dir(target.name))
     return [str(a) for a in args]
+
 
 def container_push(cli, push_name):
     """Construct and execute a command to push a container image."""
@@ -306,7 +333,9 @@ def kind_source_dir(kind):
 
 def target_containerfile(target):
     """Return the path to a containerfile given an image target."""
-    return str(kind_source_dir(target.name) / f"Containerfile.{target.distro}")
+    return str(
+        kind_source_dir(target.name) / f"Containerfile.{target.distro}"
+    )
 
 
 def host_arch():
@@ -659,7 +688,7 @@ def main():
     parser.add_argument(
         "--push-selected-tags",
         type=QMatcher,
-        help=QMatcher.__doc__
+        help=QMatcher.__doc__,
     )
     parser.add_argument(
         "--buildfile-prefix",
@@ -724,8 +753,10 @@ def main():
         action="store_const",
         dest="main_action",
         const=retag,
-        help=("Regenerate any short (unqualified) tags expected to exist"
-              " for a given FQIN. Requires FQIN to already exist locally."),
+        help=(
+            "Regenerate any short (unqualified) tags expected to exist"
+            " for a given FQIN. Requires FQIN to already exist locally."
+        ),
     )
     cli = parser.parse_args()
 
