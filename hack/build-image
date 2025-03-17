@@ -271,6 +271,14 @@ def create_common_container_engine_args(cli, target):
     pkgs_from = PACKAGES_FROM[target.pkg_source]
     if pkgs_from:
         args.append(f"--build-arg=INSTALL_PACKAGES_FROM={pkgs_from}")
+    if target.pkg_source != DEFAULT:
+        # consuming a recent samba with new specifics flag for mutex helper
+        args.append(
+            "--build-arg=SAMBA_SPECIFICS="
+            "daemon_cli_debug_output,"
+            "ctdb_leader_admin_command,"
+            "ctdb_rados_mutex_skip_reg"
+        )
 
     if cli.extra_build_arg:
         args.extend(cli.extra_build_arg)
