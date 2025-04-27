@@ -205,8 +205,7 @@ jobs:
     needs:
       - build-ad-server
       - build-server
-    # need to explicitly use 20.04 to avoid problems with jq...
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     env:
       BUILDAH_FORMAT: oci
       IMG_TAG: ${{ matrix.package_source }}-${{ matrix.os }}-${{ matrix.arch }}
