@@ -73,7 +73,7 @@ install_sambacc() {
 
     case $action in
         install-wheel)
-            pip install "${wheels[0]}"
+            pip install --break-system-packages "${wheels[0]}"
             container_json_file="/usr/local/share/sambacc/examples/${DEFAULT_JSON_FILE}"
         ;;
         install-rpm)
