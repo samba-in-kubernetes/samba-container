@@ -74,6 +74,10 @@ ARG SAMBACC_VER=my-cool-branch
 ARG SAMBACC_REPO=https://github.com/example-user/sambacc
 RUN SAMBACC_DISTNAME=latest \
     /usr/local/bin/build.sh ${SAMBACC_VER} ${SAMBACC_REPO}
+# create yum/dnf repo for temp. packages (file uses paths in dest container)
+RUN dnf install -y /usr/bin/createrepo_c \
+    && createrepo_c /srv/dist/latest \
+    && echo -e '[sambacc]\nbaseurl=file:///tmp/sambacc-dist-latest\nenabled=1\ngpgcheck=0\n' > /srv/dist/latest/sambacc.repo
 # --- end new stuff ---
 
 FROM registry.fedoraproject.org/fedora:38
