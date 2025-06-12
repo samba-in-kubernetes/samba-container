@@ -47,7 +47,7 @@ get_samba_nightly_repo() {
 get_distro_ceph_repo() {
     if [[ "${OS_BASE}" = centos ]]; then
         dnf install --setopt=install_weak_deps=False -y \
-            centos-release-ceph-reef
+            centos-release-ceph-squid
     fi
 }
 
@@ -74,30 +74,33 @@ package_selection="$4"
 # shellcheck disable=SC1091
 OS_BASE="$(. /etc/os-release && echo "${ID}")"
 
+get_epel_repo_if_needed
+
 case "${install_packages_from}" in
     samba-nightly)
         get_samba_nightly_repo
         get_distro_ceph_repo
-        get_epel_repo_if_needed
         package_selection=${package_selection:-nightly}
     ;;
     devbuilds)
         get_samba_nightly_repo
         # devbuilds - samba nightly dev builds and ceph dev builds
         get_ceph_shaman_repo
-        get_epel_repo_if_needed
         package_selection=${package_selection:-devbuilds}
     ;;
     custom-repo)
         get_custom_repo "${install_custom_repo}"
         get_distro_ceph_repo
-        get_epel_repo_if_needed
+        package_selection=${package_selection:-custom}
     ;;
     custom-devbuilds)
         get_custom_repo "${install_custom_repo}"
         get_ceph_shaman_repo
-        get_epel_repo_if_needed
-        package_selection=${package_selection:-devbuilds}
+        package_selection=${package_selection:-custom-devbuilds}
+    ;;
+    *)
+        get_distro_ceph_repo
+        package_selection=${package_selection:-default}
     ;;
 esac
 
@@ -105,7 +108,7 @@ esac
 dnf_cmd=(dnf)
 if [[ "${OS_BASE}" = centos ]]; then
     dnf_cmd+=(--enablerepo=crb)
-    if [[ "${package_selection}" != "nightly" && "${package_selection}" != "devbuilds" ]]; then
+    if [[ "${package_selection}" = "default" ]]; then
         dnf_cmd+=(--enablerepo=resilientstorage)
     fi
 fi
@@ -132,7 +135,7 @@ case "${package_selection}-${OS_BASE}" in
     *-fedora|allvfs-*)
         samba_packages+=(samba-vfs-cephfs samba-vfs-glusterfs ctdb-ceph-mutex)
     ;;
-    devbuilds-centos|forcedevbuilds-*)
+    *devbuilds-centos|forcedevbuilds-*)
 	# Enable libcephfs proxy for dev builds
         support_packages+=(libcephfs-proxy2)
 	# Fall through to next case
