@@ -47,7 +47,7 @@ get_samba_nightly_repo() {
 get_distro_ceph_repo() {
     if [[ "${OS_BASE}" = centos ]]; then
         dnf install --setopt=install_weak_deps=False -y \
-            centos-release-ceph-squid
+            centos-release-ceph
     fi
 }
 
