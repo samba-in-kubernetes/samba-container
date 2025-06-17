@@ -44,6 +44,13 @@ get_samba_nightly_repo() {
     get_custom_repo "https://artifacts.ci.centos.org/samba/pkgs/master/${OS_BASE}/samba-nightly-master.repo"
 }
 
+get_sig_samba_repo() {
+    if [[ "${OS_BASE}" = centos ]]; then
+        dnf install --setopt=install_weak_deps=False -y \
+            centos-release-samba
+    fi
+}
+
 get_distro_ceph_repo() {
     if [[ "${OS_BASE}" = centos ]]; then
         dnf install --setopt=install_weak_deps=False -y \
@@ -99,6 +106,7 @@ case "${install_packages_from}" in
         package_selection=${package_selection:-custom-devbuilds}
     ;;
     *)
+        get_sig_samba_repo
         get_distro_ceph_repo
         package_selection=${package_selection:-default}
     ;;
@@ -108,9 +116,6 @@ esac
 dnf_cmd=(dnf)
 if [[ "${OS_BASE}" = centos ]]; then
     dnf_cmd+=(--enablerepo=crb)
-    if [[ "${package_selection}" = "default" ]]; then
-        dnf_cmd+=(--enablerepo=resilientstorage)
-    fi
 fi
 
 
@@ -140,7 +145,7 @@ case "${package_selection}-${OS_BASE}" in
         support_packages+=(libcephfs-proxy2)
 	# Fall through to next case
     ;&
-    nightly-centos)
+    nightly-centos|default-centos)
         dnf_cmd+=(--enablerepo=epel)
         samba_packages+=(samba-vfs-cephfs ctdb-ceph-mutex)
         # these packages should be installed as deps. of sambacc extras
