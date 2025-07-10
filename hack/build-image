@@ -99,12 +99,14 @@ DISTROS = [
 DEFAULT = "default"
 NIGHTLY = "nightly"
 DEVBUILDS = "devbuilds"
-PACKAGE_SOURCES = [DEFAULT, NIGHTLY, DEVBUILDS]
+CEPH20 = "ceph20"
+PACKAGE_SOURCES = [DEFAULT, NIGHTLY, DEVBUILDS, CEPH20]
 
 PACKAGES_FROM = {
     DEFAULT: "",
     NIGHTLY: "samba-nightly",
     DEVBUILDS: "devbuilds",
+    CEPH20: "ceph20",
 }
 
 # SOURCE_DIRS - image source paths
