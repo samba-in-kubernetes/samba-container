@@ -89,6 +89,10 @@ if [[ "$1" =~ ^--.+$ ]]; then
             --samba-version-suffix=*) samba_version_suffix="${arg/*=/}" ;;
             --install-custom-repo=*) install_custom_repo="${arg/*=/}" ;;
             --package-selection=*) package_selection="${arg/*=/}" ;;
+            --custom-repos=*)
+                IFS=' ' read -ra custom_repos <<< "${arg/*=/}"
+                for x in "${custom_repos[@]}"; do echo custom repo: "$x"; done
+            ;;
             *)
                 echo "error: unexpected argument: ${arg}"
                 exit 2
@@ -122,7 +126,14 @@ case "${install_packages_from}" in
     ;;
     custom-repo)
         get_custom_repo "${install_custom_repo}"
-        get_distro_ceph_repo
+        customized=0
+        for crepo in "${custom_repos[@]}" ; do
+            get_custom_repo "${crepo}"
+            customized=1
+        done
+        if [ $customized != 1 ]; then
+            get_distro_ceph_repo
+        fi
         package_selection=${package_selection:-custom}
     ;;
     custom-devbuilds)
