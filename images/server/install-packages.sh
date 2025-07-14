@@ -14,6 +14,14 @@ get_custom_repo() {
     url="$1"
     fname="$(basename "$url")"
     dest="/etc/yum.repos.d/${fname}"
+    while [ -e "$dest" ]; do
+        u="$(echo "${url}" | sha256sum | head -c12)"
+        if [ -z "$u" ]; then
+            echo "failed to uniquify repo file name"
+            exit 2
+        fi
+        dest="/etc/yum.repos.d/${u}-${fname}"
+    done
     need_curl
     curl -L "$url" -o "$dest"
 }
