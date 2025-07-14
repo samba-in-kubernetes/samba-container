@@ -73,10 +73,27 @@ get_ceph_shaman_repo() {
     cat "/etc/yum.repos.d/ceph-${ceph_ref}.repo"
 }
 
-install_packages_from="$1"
-samba_version_suffix="$2"
-install_custom_repo="$3"
-package_selection="$4"
+if [[ "$1" =~ ^--.+$ ]]; then
+    # named (activated if first arg starts with `--`
+    for arg in "$@"; do
+        case "$arg" in
+            --install-packages-from=*) install_packages_from="${arg/*=/}" ;;
+            --samba-version-suffix=*) samba_version_suffix="${arg/*=/}" ;;
+            --install-custom-repo=*) install_custom_repo="${arg/*=/}" ;;
+            --package-selection=*) package_selection="${arg/*=/}" ;;
+            *)
+                echo "error: unexpected argument: ${arg}"
+                exit 2
+            ;;
+        esac
+    done
+else
+    # legacy positional only
+    install_packages_from="$1"
+    samba_version_suffix="$2"
+    install_custom_repo="$3"
+    package_selection="$4"
+fi
 
 # shellcheck disable=SC1091
 OS_BASE="$(. /etc/os-release && echo "${ID}")"
