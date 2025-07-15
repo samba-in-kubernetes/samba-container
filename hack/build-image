@@ -99,12 +99,14 @@ DISTROS = [
 DEFAULT = "default"
 NIGHTLY = "nightly"
 DEVBUILDS = "devbuilds"
-PACKAGE_SOURCES = [DEFAULT, NIGHTLY, DEVBUILDS]
+CUSTOM = "custom"
+PACKAGE_SOURCES = [DEFAULT, NIGHTLY, DEVBUILDS, CUSTOM]
 
 PACKAGES_FROM = {
     DEFAULT: "",
     NIGHTLY: "samba-nightly",
     DEVBUILDS: "devbuilds",
+    CUSTOM: "custom-repo"
 }
 
 # SOURCE_DIRS - image source paths

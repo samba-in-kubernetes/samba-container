@@ -14,6 +14,14 @@ get_custom_repo() {
     url="$1"
     fname="$(basename "$url")"
     dest="/etc/yum.repos.d/${fname}"
+    while [ -e "$dest" ]; do
+        u="$(echo "${url}" | sha256sum | head -c12)"
+        if [ -z "$u" ]; then
+            echo "failed to uniquify repo file name"
+            exit 2
+        fi
+        dest="/etc/yum.repos.d/${u}-${fname}"
+    done
     need_curl
     curl -L "$url" -o "$dest"
 }
@@ -73,10 +81,31 @@ get_ceph_shaman_repo() {
     cat "/etc/yum.repos.d/ceph-${ceph_ref}.repo"
 }
 
-install_packages_from="$1"
-samba_version_suffix="$2"
-install_custom_repo="$3"
-package_selection="$4"
+if [[ "$1" =~ ^--.+$ ]]; then
+    # named (activated if first arg starts with `--`
+    for arg in "$@"; do
+        case "$arg" in
+            --install-packages-from=*) install_packages_from="${arg/*=/}" ;;
+            --samba-version-suffix=*) samba_version_suffix="${arg/*=/}" ;;
+            --install-custom-repo=*) install_custom_repo="${arg/*=/}" ;;
+            --package-selection=*) package_selection="${arg/*=/}" ;;
+            --custom-repos=*)
+                IFS=' ' read -ra custom_repos <<< "${arg/*=/}"
+                for x in "${custom_repos[@]}"; do echo custom repo: "$x"; done
+            ;;
+            *)
+                echo "error: unexpected argument: ${arg}"
+                exit 2
+            ;;
+        esac
+    done
+else
+    # legacy positional only
+    install_packages_from="$1"
+    samba_version_suffix="$2"
+    install_custom_repo="$3"
+    package_selection="$4"
+fi
 
 # shellcheck disable=SC1091
 OS_BASE="$(. /etc/os-release && echo "${ID}")"
@@ -97,7 +126,14 @@ case "${install_packages_from}" in
     ;;
     custom-repo)
         get_custom_repo "${install_custom_repo}"
-        get_distro_ceph_repo
+        customized=0
+        for crepo in "${custom_repos[@]}" ; do
+            get_custom_repo "${crepo}"
+            customized=1
+        done
+        if [ $customized != 1 ]; then
+            get_distro_ceph_repo
+        fi
         package_selection=${package_selection:-custom}
     ;;
     custom-devbuilds)
