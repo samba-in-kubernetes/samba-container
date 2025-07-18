@@ -36,6 +36,7 @@ Usage:
 """
 
 import argparse
+import configparser
 import logging
 import os
 import pathlib
@@ -280,8 +281,7 @@ def create_common_container_engine_args(cli, target):
             "ctdb_rados_mutex_skip_reg"
         )
 
-    if cli.extra_build_arg:
-        args.extend(cli.extra_build_arg)
+    args.extend(cli.extra_build_arguments())
 
     for tname in target.all_names(baseless=cli.without_repo_bases):
         args.append("-t")
@@ -600,6 +600,60 @@ def print_tags(cli, target):
         print(f"{prefix}{name}")
 
 
+class CLIContext:
+    def __init__(self, cli):
+        self._cli = cli
+        self._customizations = None
+
+    def __getattr__(self, key):
+        return getattr(self._cli, key)
+
+    def read_customizations(self):
+        if not self._cli.customizations:
+            return
+        self._customizations = configparser.ConfigParser()
+        files = self._customizations.read(self._cli.customizations)
+        if not files:
+            raise ValueError("no customization files could be read")
+
+    def customizations(self):
+        if self._customizations is None:
+            self.read_customizations()
+        return self._customizations or configparser.ConfigParser()
+
+    def extra_build_arguments(self):
+        args = []
+        # extra args from customizations file
+        if "image" in self.customizations():
+            cimg = self.customizations()["image"]
+            for build_arg, vtype, name in self._args_custom_vars():
+                cvalue = cimg.get(name, None)
+                if cvalue is None:
+                    continue
+                if vtype is list:
+                    cvalue = " ".join(cvalue.strip().split())
+                elif vtype is bool:
+                    cvalue = str(int(bool(cvalue)))
+                args.append(f"--build-arg={build_arg}={cvalue}")
+            if xargs := cimg.get("extra_arguments"):
+                args.extend(shlex.split(xargs.strip()))
+        # CLI extra args
+        if self._cli.extra_build_arg:
+            args.extend(self._cli.extra_build_arg)
+        return args
+
+    def _args_custom_vars(self):
+        return [
+            ("INSTALL_PACKAGES_FROM", str, "install_packages_from"),
+            ("SAMBA_VERSION_SUFFIX", str, "samba_version_suffix"),
+            ("SAMBACC_VERSION_SUFFIX", str, "sambacc_version_suffix"),
+            ("SAMBA_SPECIFICS", str, "samba_specifics"),
+            ("INSTALL_CUSTOM_REPOS", list, "custom_repos"),
+            ("PACKAGE_SELECTION", str, "package_selection"),
+            ("CEPH_FROM_CUSTOM", bool, "ceph_from_custom"),
+        ]
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -720,6 +774,12 @@ def main():
         ),
     )
     parser.add_argument(
+        "--customizations",
+        "-C",
+        type=pathlib.Path,
+        help="",
+    )
+    parser.add_argument(
         "--distro-qualified",
         action=argparse.BooleanOptionalAction,
         default=True,
@@ -767,7 +827,7 @@ def main():
             " for a given FQIN. Requires FQIN to already exist locally."
         ),
     )
-    cli = parser.parse_args()
+    cli = CLIContext(parser.parse_args())
 
     if os.environ.get("BUILD_IMAGE_DEBUG") in ("1", "yes"):
         cli.log_level = logging.DEBUG
