@@ -37,6 +37,7 @@ Usage:
 
 import argparse
 import configparser
+import contextlib
 import logging
 import os
 import pathlib
@@ -267,13 +268,13 @@ def container_build(cli, target):
     """Construct and execute a command to build the target container image."""
     eng = container_engine(cli)
     # For docker cross-builds we need to use buildx
-    if "docker" in eng and target.arch != host_arch():
-        tasks = _buildx_build_tasks(cli, target)
-    else:
-        tasks = _common_build_tasks(cli, target)
-
-    for task in tasks:
-        run(cli, **task)
+    with edited_containerfile(cli, target) as containerfile:
+        if "docker" in eng and target.arch != host_arch():
+            tasks = _buildx_build_tasks(cli, target, containerfile)
+        else:
+            tasks = _common_build_tasks(cli, target, containerfile)
+        for task in tasks:
+            run(cli, **task)
 
 
 def create_common_container_engine_args(cli, target, containerfile=""):
@@ -300,6 +301,99 @@ def create_common_container_engine_args(cli, target, containerfile=""):
     args.append(containerfile or target_containerfile(target))
     args.append(kind_source_dir(target.name))
     return [str(a) for a in args]
+
+
+@contextlib.contextmanager
+def edited_containerfile(cli, target):
+    if "sambacc" not in cli.customizations():
+        yield target_containerfile(target)
+        return
+    orig_containerfile = target_containerfile(target)
+    try:
+        wip = (
+            orig_containerfile.parent
+            / f".{orig_containerfile.name}.{os.getpid()}.tmp"
+        )
+        with open(wip, "w") as fh:
+            for line in _sambacc_prefix(cli):
+                fh.write(line)
+                fh.write("\n")
+            replacements = {"sambacc": _sambacc_install(cli)}
+            for line, meta in _scan_containerfile(orig_containerfile):
+                if meta in replacements:
+                    for line in replacements[meta]:
+                        fh.write(line)
+                        fh.write("\n")
+                    replacements.pop(meta, None)
+                    continue
+                elif meta:
+                    continue
+                fh.write(line)
+        with open(wip) as fh:
+            print(fh.read())
+        yield wip
+    finally:
+        wip.unlink(missing_ok=True)
+
+
+def _sambacc_prefix(cli):
+    cfg = cli.customizations()["sambacc"]
+    base_image = cfg.get("base_image", "quay.io/samba.org/sambacc:latest")
+    sambacc_ver = cfg.get("sambacc_ver", "master")
+    sambacc_repo = cfg.get(
+        "sambacc_repo", "https://github.com/samba-in-kubernetes/sambacc"
+    )
+    distname = cfg.get("distname", "latest")
+    distpath = f"/srv/dist/{distname}"
+    yield "# --- sambacc prefix ---"
+    yield f"FROM {base_image} AS sccbuilder"
+    yield f"ARG SAMBACC_VER={sambacc_ver}"
+    yield f"ARG SAMBACC_REPO={sambacc_repo}"
+    yield (
+        f"RUN SAMBACC_DISTNAME={distname}"
+        " /usr/local/bin/build.sh ${SAMBACC_VER} ${SAMBACC_REPO}"
+    )
+    yield (
+        "RUN dnf install -y /usr/bin/createrepo_c"
+        f" && createrepo_c {distpath}"
+        f" && echo -e '[sambacc]\\nbaseurl=file://{distpath}\\nenabled=1\\ngpgcheck=0\\n'"
+        f" > {distpath}/sambacc.repo"
+    )
+    yield "# --- sambacc prefix ---"
+    yield ""
+
+
+def _sambacc_install(cli):
+    cfg = cli.customizations()["sambacc"]
+    distname = cfg.get("distname", "latest")
+    distpath = f"/srv/dist/{distname}"
+    yield "# --- begin modified sambacc install ---"
+    yield (
+        "RUN"
+        f" --mount=type=bind,from=sccbuilder,source={distpath},destination={distpath}"
+        f" bash -x /usr/local/bin/install-sambacc.sh {distpath}"
+        " ${SAMBACC_VERSION_SUFFIX}"
+    )
+    yield "# --- end modified sambacc install ---"
+    yield ""
+
+
+def _scan_containerfile(path, tags="sambacc"):
+    tags = tags.split()
+    active_tag = None
+    with open(path) as fh:
+        for line in fh:
+            for tag in tags:
+                if f"---begin {tag}---" in line:
+                    active_tag = tag
+            yield line, active_tag
+            for tag in tags:
+                if f"---end {tag}--" in line:
+                    if tag != active_tag:
+                        raise ValueError(
+                            f"bad tag: {tag}, expected {active_tag}"
+                        )
+                    active_tag = None
 
 
 def container_push(cli, push_name):
@@ -350,9 +444,7 @@ def kind_source_dir(kind):
 
 def target_containerfile(target):
     """Return the path to a containerfile given an image target."""
-    return str(
-        kind_source_dir(target.name) / f"Containerfile.{target.distro}"
-    )
+    return kind_source_dir(target.name) / f"Containerfile.{target.distro}"
 
 
 def host_arch():
