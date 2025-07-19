@@ -32,9 +32,11 @@ RUN /usr/local/bin/install-packages.sh \
 # https://copr.fedorainfracloud.org/coprs/phlogistonjohn/sambacc
 COPY .common/install-sambacc-common.sh /usr/local/bin/install-sambacc-common.sh
 COPY install-sambacc.sh /usr/local/bin/install-sambacc.sh
+# ---begin sambacc---
 RUN /usr/local/bin/install-sambacc.sh \
     "/tmp/sambacc-dist-latest" \
     "${SAMBACC_VERSION_SUFFIX}"
+# ---end sambacc---
 
 
 VOLUME ["/share"]
