@@ -204,7 +204,7 @@ def container_engine(cli):
     return _DISCOVERED_CONTAINER_ENGINES[0]
 
 
-def _buildx_build_tasks(cli, target):
+def _buildx_build_tasks(cli, target, containerfile=""):
     eng = container_engine(cli)
     tasks = []
     args = [eng, "buildx"]
@@ -230,7 +230,7 @@ def _buildx_build_tasks(cli, target):
                 f"--platform=linux/{target.arch}",
                 "--load",
             ]
-            + create_common_container_engine_args(cli, target),
+            + create_common_container_engine_args(cli, target, containerfile),
             "check": True,
         }
     )
@@ -239,7 +239,7 @@ def _buildx_build_tasks(cli, target):
     return tasks
 
 
-def _common_build_tasks(cli, target):
+def _common_build_tasks(cli, target, containerfile=""):
     # podman/common build tasks
     eng = container_engine(cli)
     tasks = []
@@ -255,7 +255,8 @@ def _common_build_tasks(cli, target):
 
     tasks.append(
         {
-            "cmd": args + create_common_container_engine_args(cli, target),
+            "cmd": args
+            + create_common_container_engine_args(cli, target, containerfile),
             "check": True,
         }
     )
@@ -275,7 +276,7 @@ def container_build(cli, target):
         run(cli, **task)
 
 
-def create_common_container_engine_args(cli, target):
+def create_common_container_engine_args(cli, target, containerfile=""):
     args = []
     pkgs_from = PACKAGES_FROM[target.pkg_source]
     if pkgs_from:
@@ -296,7 +297,7 @@ def create_common_container_engine_args(cli, target):
         args.append(tname)
 
     args.append("-f")
-    args.append(target_containerfile(target))
+    args.append(containerfile or target_containerfile(target))
     args.append(kind_source_dir(target.name))
     return [str(a) for a in args]
 
