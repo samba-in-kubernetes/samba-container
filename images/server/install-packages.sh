@@ -130,7 +130,7 @@ case "${install_packages_from}" in
     ;;
     custom-repos)
         get_custom_repos "${install_custom_repos}"
-        package_selection=${package_selection:-custom}
+        package_selection=${package_selection:-custom-repos-devbuilds}
     ;;
     custom-devbuilds)
         get_custom_repos "${install_custom_repos}"
