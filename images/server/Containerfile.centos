@@ -3,7 +3,7 @@ ARG INSTALL_PACKAGES_FROM=default
 ARG SAMBA_VERSION_SUFFIX=""
 ARG SAMBACC_VERSION_SUFFIX=""
 ARG SAMBA_SPECIFICS=daemon_cli_debug_output,ctdb_leader_admin_command
-ARG INSTALL_CUSTOM_REPO=
+ARG INSTALL_CUSTOM_REPOS=
 ARG PACKAGE_SELECTION=
 
 MAINTAINER John Mulligan <jmulligan@redhat.com>
@@ -19,7 +19,7 @@ COPY install-packages.sh /usr/local/bin/install-packages.sh
 RUN /usr/local/bin/install-packages.sh \
     "--install-packages-from=${INSTALL_PACKAGES_FROM}" \
     "--samba-version-suffix=${SAMBA_VERSION_SUFFIX}" \
-    "--install-custom-repo=${INSTALL_CUSTOM_REPO}" \
+    "--install-custom-repos=${INSTALL_CUSTOM_REPOS}" \
     "--package-selection=${PACKAGE_SELECTION}"
 
 # If you want to install a custom version of sambacc into this image mount
