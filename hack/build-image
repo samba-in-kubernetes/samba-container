@@ -106,7 +106,7 @@ PACKAGES_FROM = {
     DEFAULT: "",
     NIGHTLY: "samba-nightly",
     DEVBUILDS: "devbuilds",
-    CUSTOM: "custom-repo"
+    CUSTOM: "custom-repos"
 }
 
 # SOURCE_DIRS - image source paths
