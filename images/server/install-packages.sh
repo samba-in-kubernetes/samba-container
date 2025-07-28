@@ -10,7 +10,7 @@ need_curl() {
     dnf install --setopt=install_weak_deps=False -y /usr/bin/curl
 }
 
-get_custom_repo() {
+get_custom_repos() {
     if [[ -n $1 ]]; then
         need_curl
         for url in $1; do
@@ -55,7 +55,7 @@ EOF
 }
 
 get_samba_nightly_repo() {
-    get_custom_repo "https://artifacts.ci.centos.org/samba/pkgs/master/${OS_BASE}/samba-nightly-master.repo"
+    get_custom_repos "https://artifacts.ci.centos.org/samba/pkgs/master/${OS_BASE}/samba-nightly-master.repo"
 }
 
 get_sig_samba_repo() {
@@ -93,7 +93,7 @@ if [[ "$1" =~ ^--.+$ ]]; then
         case "$arg" in
             --install-packages-from=*) install_packages_from="${arg/*=/}" ;;
             --samba-version-suffix=*) samba_version_suffix="${arg/*=/}" ;;
-            --install-custom-repo=*) install_custom_repo="${arg/*=/}" ;;
+            --install-custom-repos=*) install_custom_repos="${arg/*=/}" ;;
             --package-selection=*) package_selection="${arg/*=/}" ;;
             *)
                 echo "error: unexpected argument: ${arg}"
@@ -105,7 +105,7 @@ else
     # legacy positional only
     install_packages_from="$1"
     samba_version_suffix="$2"
-    install_custom_repo="$3"
+    install_custom_repos="$3"
     package_selection="$4"
 fi
 
@@ -126,12 +126,12 @@ case "${install_packages_from}" in
         get_ceph_shaman_repo
         package_selection=${package_selection:-devbuilds}
     ;;
-    custom-repo)
-        get_custom_repo "${install_custom_repo}"
+    custom-repos)
+        get_custom_repos "${install_custom_repos}"
         package_selection=${package_selection:-custom}
     ;;
     custom-devbuilds)
-        get_custom_repo "${install_custom_repo}"
+        get_custom_repos "${install_custom_repos}"
         get_ceph_shaman_repo
         package_selection=${package_selection:-custom-devbuilds}
     ;;
