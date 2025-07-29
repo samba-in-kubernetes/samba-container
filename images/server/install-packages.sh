@@ -12,8 +12,12 @@ need_curl() {
 
 get_custom_repos() {
     if [[ -n $1 ]]; then
+        urls=$1
         need_curl
-        for url in $1; do
+        if [[ $ceph_from_custom -ne 1 ]]; then
+            get_distro_ceph_repo
+        fi
+        for url in $urls; do
             fname="$(basename "$url")"
             dest="/etc/yum.repos.d/${fname}"
             while [ -e "$dest" ]; do
@@ -26,9 +30,6 @@ get_custom_repos() {
             done
             curl -L "$url" -o "$dest"
         done
-        if [[ $(wc -w <<< "$1") -eq 1 ]]; then
-            get_distro_ceph_repo
-        fi
     fi
 }
 
@@ -95,6 +96,7 @@ if [[ "$1" =~ ^--.+$ ]]; then
             --samba-version-suffix=*) samba_version_suffix="${arg/*=/}" ;;
             --install-custom-repos=*) install_custom_repos="${arg/*=/}" ;;
             --package-selection=*) package_selection="${arg/*=/}" ;;
+            --ceph-from-custom) ceph_from_custom=1 ;;
             *)
                 echo "error: unexpected argument: ${arg}"
                 exit 2
