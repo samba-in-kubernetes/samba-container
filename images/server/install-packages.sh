@@ -79,6 +79,12 @@ get_epel_repo_if_needed() {
     fi
 }
 
+get_glusterfs_repo_if_needed() {
+    if [[ "${OS_BASE}" = centos ]]; then
+        dnf install --setopt=install_weak_deps=False -y centos-release-gluster
+    fi
+}
+
 get_ceph_shaman_repo() {
     ceph_ref="${CEPH_REPO_REF:-main}"
     ceph_sha="${CEPH_REPO_SHA:-latest}"
@@ -115,6 +121,7 @@ fi
 OS_BASE="$(. /etc/os-release && echo "${ID}")"
 
 get_epel_repo_if_needed
+get_glusterfs_repo_if_needed
 
 case "${install_packages_from}" in
     samba-nightly)
@@ -179,7 +186,7 @@ case "${package_selection}-${OS_BASE}" in
     ;&
     nightly-centos|default-centos)
         dnf_cmd+=(--enablerepo=epel)
-        samba_packages+=(samba-vfs-cephfs ctdb-ceph-mutex)
+        samba_packages+=(samba-vfs-cephfs samba-vfs-glusterfs ctdb-ceph-mutex)
         # these packages should be installed as deps. of sambacc extras
         # however, the sambacc builds do not enable the extras on centos atm.
         # Once this is fixed this line ought to be removed.
