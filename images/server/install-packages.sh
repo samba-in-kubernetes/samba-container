@@ -185,7 +185,6 @@ case "${package_selection}-${OS_BASE}" in
 	# Fall through to next case
     ;&
     nightly-centos|default-centos)
-        dnf_cmd+=(--enablerepo=epel)
         samba_packages+=(samba-vfs-cephfs samba-vfs-glusterfs ctdb-ceph-mutex)
         # these packages should be installed as deps. of sambacc extras
         # however, the sambacc builds do not enable the extras on centos atm.
