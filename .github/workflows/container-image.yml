@@ -56,6 +56,9 @@ jobs:
           - package_source: devbuilds
             os: centos
             arch: amd64
+          - package_source: ceph20
+            os: centos
+            arch: amd64
     runs-on: ubuntu-latest
     env:
       BUILDAH_FORMAT: oci
@@ -174,6 +177,9 @@ jobs:
           - package_source: devbuilds
             os: centos
             arch: amd64
+          - package_source: ceph20
+            os: centos
+            arch: amd64
     needs: build-server
     runs-on: ubuntu-latest
     env:
@@ -286,6 +292,11 @@ jobs:
         with:
           image: "samba-server:devbuilds-centos-amd64"
           container_engine: ${{ env.CONTAINER_CMD }}
+      - name: Fetch server ceph20-centos-amd64
+        uses: ishworkh/container-image-artifact-download@v2.0.0
+        with:
+          image: "samba-server:ceph20-centos-amd64"
+          container_engine: ${{ env.CONTAINER_CMD }}
       # (ad server images)
       - name: Fetch ad-server default-fedora-amd64
         uses: ishworkh/container-image-artifact-download@v2.0.0
@@ -349,6 +360,7 @@ jobs:
           -i samba-server:nightly-fedora-arm64
           -i samba-server:nightly-centos-amd64
           -i samba-server:devbuilds-centos-amd64
+          -i samba-server:ceph20-centos-amd64
           -i samba-ad-server:default-fedora-amd64
           -i samba-ad-server:default-fedora-arm64
           -i samba-ad-server:default-opensuse-arm64
@@ -372,6 +384,7 @@ jobs:
           -i ${REPO_BASE}/samba-server:nightly-fedora-amd64
           -i ${REPO_BASE}/samba-server:nightly-centos-amd64
           -i ${REPO_BASE}/samba-server:devbuilds-centos-amd64
+          -i ${REPO_BASE}/samba-server:ceph20-centos-amd64
           -i ${REPO_BASE}/samba-ad-server:default-fedora-amd64
           -i ${REPO_BASE}/samba-ad-server:default-fedora-arm64
           -i ${REPO_BASE}/samba-ad-server:default-opensuse-arm64
