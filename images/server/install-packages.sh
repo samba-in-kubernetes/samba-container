@@ -105,7 +105,8 @@ if [[ "$1" =~ ^--.+$ ]]; then
             --samba-version-suffix=*) samba_version_suffix="${arg/*=/}" ;;
             --install-custom-repos=*) install_custom_repos="${arg/*=/}" ;;
             --package-selection=*) package_selection="${arg/*=/}" ;;
-            --ceph-from-custom) ceph_from_custom=1 ;;
+            --ceph-from-custom|--ceph-from-custom=1) ceph_from_custom=1 ;;
+            --ceph-from-custom=0) ceph_from_custom=0 ;;
             *)
                 echo "error: unexpected argument: ${arg}"
                 exit 2
