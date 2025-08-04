@@ -5,7 +5,7 @@
 # to dedup some of the check-x=y repetition in the future.
 queue_rules:
   - name: default
-    conditions:
+    queue_conditions:
       - check-success=checks
       - check-success=check-commits
       - check-success=build-server (default, centos, amd64)
