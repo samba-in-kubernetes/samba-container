@@ -1,10 +1,11 @@
 FROM quay.io/samba.org/samba-client:latest
-MAINTAINER Shachar Sharon <ssharon@redhat.com>
 
 LABEL org.opencontainers.image.title="Samba Toolbox container"
 LABEL org.opencontainers.image.description="Samba Toolbox container"
 LABEL org.opencontainers.image.vendor="Samba in Kubernetes"
 LABEL org.opencontainers.image.url="https://github.com/samba-in-kubernetes/samba-container"
+LABEL org.opencontainers.image.source="https://github.com/samba-in-kubernetes/samba-container"
+LABEL org.opencontainers.image.authors="The samba-container team, Shachar Sharon <ssharon@redhat.com>"
 
 
 RUN dnf -y install samba-test \
