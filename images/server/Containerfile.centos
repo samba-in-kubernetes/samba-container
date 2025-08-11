@@ -7,12 +7,12 @@ ARG INSTALL_CUSTOM_REPOS=
 ARG PACKAGE_SELECTION=
 ARG CEPH_FROM_CUSTOM=0
 
-MAINTAINER John Mulligan <jmulligan@redhat.com>
-
 LABEL org.opencontainers.image.title="Samba container"
 LABEL org.opencontainers.image.description="Samba container"
 LABEL org.opencontainers.image.vendor="Samba in Kubernetes"
 LABEL org.opencontainers.image.url="https://github.com/samba-in-kubernetes/samba-container"
+LABEL org.opencontainers.image.source="https://github.com/samba-in-kubernetes/samba-container"
+LABEL org.opencontainers.image.authors="The samba-container team, John Mulligan <jmulligan@redhat.com>"
 
 
 COPY smb.conf /etc/samba/smb.conf
