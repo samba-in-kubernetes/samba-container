@@ -102,13 +102,15 @@ DEFAULT = "default"
 NIGHTLY = "nightly"
 DEVBUILDS = "devbuilds"
 CUSTOM = "custom"
-PACKAGE_SOURCES = [DEFAULT, NIGHTLY, DEVBUILDS, CUSTOM]
+CEPH20 = "ceph20"
+PACKAGE_SOURCES = [DEFAULT, NIGHTLY, DEVBUILDS, CUSTOM, CEPH20]
 
 PACKAGES_FROM = {
     DEFAULT: "",
     NIGHTLY: "samba-nightly",
     DEVBUILDS: "devbuilds",
     CUSTOM: "custom-repos",
+    CEPH20: "ceph20",
 }
 
 # SOURCE_DIRS - image source paths
