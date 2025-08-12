@@ -64,15 +64,26 @@ get_samba_nightly_repo() {
 
 get_sig_samba_repo() {
     if [[ "${OS_BASE}" = centos ]]; then
-        dnf install --setopt=install_weak_deps=False -y \
-            centos-release-samba
+        if [[ -z $1 ]]; then
+            dnf install --setopt=install_weak_deps=False -y \
+                centos-release-samba
+        else
+            dnf install --setopt=install_weak_deps=False -y \
+                centos-release-samba"${1//.}"
+        fi
     fi
 }
 
+# shellcheck disable=SC2120
 get_distro_ceph_repo() {
     if [[ "${OS_BASE}" = centos ]]; then
-        dnf install --setopt=install_weak_deps=False -y \
-            centos-release-ceph
+        if [[ -z $1 ]]; then
+            dnf install --setopt=install_weak_deps=False -y \
+                centos-release-ceph
+        else
+            dnf install --setopt=install_weak_deps=False -y \
+                centos-release-ceph-"${1}"
+        fi
     fi
 }
 
@@ -148,6 +159,15 @@ case "${install_packages_from}" in
         get_ceph_shaman_repo
         package_selection=${package_selection:-custom-devbuilds}
     ;;
+    ceph20)
+        get_sig_samba_repo "4.22"
+        # Replace the following with 'get_distro_ceph_repo "tentacle"'
+        # once tentacle builds are out and remove the shellcheck waiver
+        # for get_distro_ceph_repo
+        CEPH_REPO_REF=tentacle
+        get_ceph_shaman_repo
+        package_selection=${package_selection:-stable}
+    ;;
     *)
         get_sig_samba_repo
         get_distro_ceph_repo
@@ -183,7 +203,7 @@ case "${package_selection}-${OS_BASE}" in
     *-fedora|allvfs-*)
         samba_packages+=(samba-vfs-cephfs samba-vfs-glusterfs ctdb-ceph-mutex)
     ;;
-    *devbuilds-centos|forcedevbuilds-*)
+    *devbuilds-centos|forcedevbuilds-*|stable-*)
 	# Enable libcephfs proxy for dev builds
         support_packages+=(libcephfs-proxy2)
 	# Fall through to next case
