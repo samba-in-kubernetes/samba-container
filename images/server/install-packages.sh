@@ -92,7 +92,7 @@ get_ceph_shaman_repo() {
     ceph_ref="${CEPH_REPO_REF:-main}"
     ceph_sha="${CEPH_REPO_SHA:-latest}"
     ceph_arch=$( ([[ "$(arch)" = "aarch64" ]] && echo "arm64") || arch )
-    url="https://shaman.ceph.com/api/search/?project=ceph&distros=${OS_BASE}/9/${ceph_arch}&flavor=default&ref=${ceph_ref}&sha1=${ceph_sha}"
+    url="https://shaman.ceph.com/api/search/?project=ceph&distros=${OS_BASE}/9/${ceph_arch}&flavor=default&ref=${ceph_ref}&sha1=${ceph_sha}&status=ready"
     generate_repo_from_shaman "${url}" "ceph-${ceph_ref}.repo"
     cat "/etc/yum.repos.d/ceph-${ceph_ref}.repo"
 }
