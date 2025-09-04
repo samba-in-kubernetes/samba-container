@@ -10,12 +10,30 @@ need_curl() {
     dnf install --setopt=install_weak_deps=False -y /usr/bin/curl
 }
 
-get_custom_repo() {
-    url="$1"
-    fname="$(basename "$url")"
-    dest="/etc/yum.repos.d/${fname}"
-    need_curl
-    curl -L "$url" -o "$dest"
+get_custom_repos() {
+    if [[ -n $1 ]]; then
+        urls=$1
+        need_curl
+        if [[ $ceph_from_custom -ne 1 ]]; then
+            get_distro_ceph_repo
+        fi
+        for url in $urls; do
+            fname="$(basename "$url")"
+            dest="/etc/yum.repos.d/${fname}"
+            if [ -e "$dest" ]; then
+                u="$(echo "${url}" | sha256sum | head -c12)"
+                if [ -z "$u" ]; then
+                    echo "failed to uniquify repo file name"
+                    exit 2
+                fi
+                dest="/etc/yum.repos.d/${u}-${fname}"
+                if [ -e "$dest" ]; then
+                    continue
+                fi
+            fi
+            curl -L "$url" -o "$dest"
+        done
+    fi
 }
 
 generate_repo_from_shaman() {
@@ -33,7 +51,7 @@ ref = r[0]["ref"]
 with open(dest, "w") as out:
     print(f"[ceph-{ref}]", file=out)
     print(f"name=Ceph Development Build ({ref})", file=out)
-    print(f"baseurl={url}/x86_64", file=out)
+    print(f"baseurl={url}/\$basearch", file=out)
     print("enabled=1", file=out)
     print("gpgcheck=0", file=out)
 EOF
@@ -41,13 +59,31 @@ EOF
 }
 
 get_samba_nightly_repo() {
-    get_custom_repo "https://artifacts.ci.centos.org/samba/pkgs/master/${OS_BASE}/samba-nightly-master.repo"
+    get_custom_repos "https://artifacts.ci.centos.org/samba/pkgs/master/${OS_BASE}/samba-nightly-master.repo"
 }
 
+get_sig_samba_repo() {
+    if [[ "${OS_BASE}" = centos ]]; then
+        if [[ -z $1 ]]; then
+            dnf install --setopt=install_weak_deps=False -y \
+                centos-release-samba
+        else
+            dnf install --setopt=install_weak_deps=False -y \
+                centos-release-samba"${1//.}"
+        fi
+    fi
+}
+
+# shellcheck disable=SC2120
 get_distro_ceph_repo() {
     if [[ "${OS_BASE}" = centos ]]; then
-        dnf install --setopt=install_weak_deps=False -y \
-            epel-release centos-release-ceph-reef
+        if [[ -z $1 ]]; then
+            dnf install --setopt=install_weak_deps=False -y \
+                centos-release-ceph
+        else
+            dnf install --setopt=install_weak_deps=False -y \
+                centos-release-ceph-"${1}"
+        fi
     fi
 }
 
@@ -57,21 +93,50 @@ get_epel_repo_if_needed() {
     fi
 }
 
+get_glusterfs_repo_if_needed() {
+    if [[ "${OS_BASE}" = centos ]]; then
+        dnf install --setopt=install_weak_deps=False -y centos-release-gluster
+    fi
+}
+
 get_ceph_shaman_repo() {
     ceph_ref="${CEPH_REPO_REF:-main}"
     ceph_sha="${CEPH_REPO_SHA:-latest}"
-    url="https://shaman.ceph.com/api/search/?project=ceph&distros=${OS_BASE}/9/x86_64&flavor=default&ref=${ceph_ref}&sha1=${ceph_sha}"
+    ceph_arch=$( ([[ "$(arch)" = "aarch64" ]] && echo "arm64") || arch )
+    url="https://shaman.ceph.com/api/search/?project=ceph&distros=${OS_BASE}/9/${ceph_arch}&flavor=default&ref=${ceph_ref}&sha1=${ceph_sha}&status=ready"
     generate_repo_from_shaman "${url}" "ceph-${ceph_ref}.repo"
     cat "/etc/yum.repos.d/ceph-${ceph_ref}.repo"
 }
 
-install_packages_from="$1"
-samba_version_suffix="$2"
-install_custom_repo="$3"
-package_selection="$4"
+if [[ "$1" =~ ^--.+$ ]]; then
+    # named (activated if first arg starts with `--`
+    for arg in "$@"; do
+        case "$arg" in
+            --install-packages-from=*) install_packages_from="${arg/*=/}" ;;
+            --samba-version-suffix=*) samba_version_suffix="${arg/*=/}" ;;
+            --install-custom-repos=*) install_custom_repos="${arg/*=/}" ;;
+            --package-selection=*) package_selection="${arg/*=/}" ;;
+            --ceph-from-custom|--ceph-from-custom=1) ceph_from_custom=1 ;;
+            --ceph-from-custom=0) ceph_from_custom=0 ;;
+            *)
+                echo "error: unexpected argument: ${arg}"
+                exit 2
+            ;;
+        esac
+    done
+else
+    # legacy positional only
+    install_packages_from="$1"
+    samba_version_suffix="$2"
+    install_custom_repos="$3"
+    package_selection="$4"
+fi
 
 # shellcheck disable=SC1091
 OS_BASE="$(. /etc/os-release && echo "${ID}")"
+
+get_epel_repo_if_needed
+get_glusterfs_repo_if_needed
 
 case "${install_packages_from}" in
     samba-nightly)
@@ -83,25 +148,37 @@ case "${install_packages_from}" in
         get_samba_nightly_repo
         # devbuilds - samba nightly dev builds and ceph dev builds
         get_ceph_shaman_repo
-        get_epel_repo_if_needed
         package_selection=${package_selection:-devbuilds}
     ;;
-    custom-repo)
-        get_custom_repo "${install_custom_repo}"
-        get_distro_ceph_repo
+    custom-repos)
+        get_custom_repos "${install_custom_repos}"
+        package_selection=${package_selection:-custom-repos-devbuilds}
     ;;
     custom-devbuilds)
-        get_custom_repo "${install_custom_repo}"
+        get_custom_repos "${install_custom_repos}"
         get_ceph_shaman_repo
-        get_epel_repo_if_needed
-        package_selection=${package_selection:-devbuilds}
+        package_selection=${package_selection:-custom-devbuilds}
+    ;;
+    ceph20)
+        get_sig_samba_repo "4.22"
+        # Replace the following with 'get_distro_ceph_repo "tentacle"'
+        # once tentacle builds are out and remove the shellcheck waiver
+        # for get_distro_ceph_repo
+        CEPH_REPO_REF=tentacle
+        get_ceph_shaman_repo
+        package_selection=${package_selection:-stable}
+    ;;
+    *)
+        get_sig_samba_repo
+        get_distro_ceph_repo
+        package_selection=${package_selection:-default}
     ;;
 esac
 
 
 dnf_cmd=(dnf)
 if [[ "${OS_BASE}" = centos ]]; then
-    dnf_cmd+=(--enablerepo=crb --enablerepo=resilientstorage)
+    dnf_cmd+=(--enablerepo=crb)
 fi
 
 
@@ -126,9 +203,13 @@ case "${package_selection}-${OS_BASE}" in
     *-fedora|allvfs-*)
         samba_packages+=(samba-vfs-cephfs samba-vfs-glusterfs ctdb-ceph-mutex)
     ;;
-    nightly-centos|devbuilds-centos|forcedevbuilds-*)
-        dnf_cmd+=(--enablerepo=epel)
-        samba_packages+=(samba-vfs-cephfs ctdb-ceph-mutex)
+    *devbuilds-centos|forcedevbuilds-*|stable-*)
+	# Enable libcephfs proxy for dev builds
+        support_packages+=(libcephfs-proxy2)
+	# Fall through to next case
+    ;&
+    nightly-centos|default-centos)
+        samba_packages+=(samba-vfs-cephfs samba-vfs-glusterfs ctdb-ceph-mutex)
         # these packages should be installed as deps. of sambacc extras
         # however, the sambacc builds do not enable the extras on centos atm.
         # Once this is fixed this line ought to be removed.

@@ -3,8 +3,9 @@ ARG INSTALL_PACKAGES_FROM=default
 ARG SAMBA_VERSION_SUFFIX=""
 ARG SAMBACC_VERSION_SUFFIX=""
 ARG SAMBA_SPECIFICS=daemon_cli_debug_output,ctdb_leader_admin_command
-ARG INSTALL_CUSTOM_REPO=
+ARG INSTALL_CUSTOM_REPOS=
 ARG PACKAGE_SELECTION=
+ARG CEPH_FROM_CUSTOM=0
 
 MAINTAINER John Mulligan <jmulligan@redhat.com>
 
@@ -17,10 +18,11 @@ LABEL org.opencontainers.image.url="https://github.com/samba-in-kubernetes/samba
 COPY smb.conf /etc/samba/smb.conf
 COPY install-packages.sh /usr/local/bin/install-packages.sh
 RUN /usr/local/bin/install-packages.sh \
-    "${INSTALL_PACKAGES_FROM}" \
-    "${SAMBA_VERSION_SUFFIX}" \
-    "${INSTALL_CUSTOM_REPO}" \
-    "${PACKAGE_SELECTION}"
+    "--install-packages-from=${INSTALL_PACKAGES_FROM}" \
+    "--samba-version-suffix=${SAMBA_VERSION_SUFFIX}" \
+    "--install-custom-repos=${INSTALL_CUSTOM_REPOS}" \
+    "--ceph-from-custom=${CEPH_FROM_CUSTOM}" \
+    "--package-selection=${PACKAGE_SELECTION}"
 
 # If you want to install a custom version of sambacc into this image mount
 # a directory containing a sambacc RPM, or a sambacc wheel, or a .repo
@@ -30,9 +32,11 @@ RUN /usr/local/bin/install-packages.sh \
 # https://copr.fedorainfracloud.org/coprs/phlogistonjohn/sambacc
 COPY .common/install-sambacc-common.sh /usr/local/bin/install-sambacc-common.sh
 COPY install-sambacc.sh /usr/local/bin/install-sambacc.sh
+# ---begin sambacc---
 RUN /usr/local/bin/install-sambacc.sh \
     "/tmp/sambacc-dist-latest" \
     "${SAMBACC_VERSION_SUFFIX}"
+# ---end sambacc---
 
 
 VOLUME ["/share"]

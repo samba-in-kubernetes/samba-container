@@ -105,23 +105,22 @@ on GitHub (beyond the sources automatically provided there). Instead we add
 a Downloads section that notes the exact tags and digests that the images can
 be found at on quay.io.
 
-Use the following partial snippet as an example:
-```
-Images built for this release can be obtained from the quay.io image registry.
+The downloads section can be generated using the shell script
+https://github.com/samba-in-kubernetes/samba-container/blob/master/hack/install-tools.sh in this repository.
 
-### samba-server
-* By tag: quay.io/samba.org/samba-server:v0.3
-* By digest: quay.io/samba.org/samba-server@sha256:09c867343af39b237230f94a734eacc8313f2330c7d934994522ced46b740715
-### samba-ad-server
-* By tag: quay.io/samba.org/samba-ad-server:v0.3
-* By digest: quay.io/samba.org/samba-ad-server@sha256:a1d901f44be2af5a516b21e45dbd6ebd2f64500dfbce112886cdce09a5c3cbd5
-```
-... and so on for each image that was pushed earlier
+It needs to  be invoked with the release tag as the only argument. E. G. :
 
-The tag is pretty obvious - it should match the image tag (minus any pre-release
-marker). You can get the digest from the tag using the quay.io UI (do not use
-any local digest hashes). Click on the SHA256 link and then copy the full
-manifest hash using the UI widget that appears.
+```console
+
+$ ./hack/release-gen-download-section.sh v0.3
+```
+
+
+It is important that the digest is fetched from qauy.io after it has been
+pushed. Do not use any local digest hashes. You may want to double check the
+values produced by the script with those in the quay.io UI.  Click on the
+SHA256 link and then compare the full manifest hash using the UI widget that
+appears.
 
 Perform a final round of reviews, as needed, for the release notes and then
 publish the release.
