@@ -74,7 +74,6 @@ get_sig_samba_repo() {
     fi
 }
 
-# shellcheck disable=SC2120
 get_distro_ceph_repo() {
     if [[ "${OS_BASE}" = centos ]]; then
         if [[ -z $1 ]]; then
@@ -161,11 +160,7 @@ case "${install_packages_from}" in
     ;;
     ceph20)
         get_sig_samba_repo "4.22"
-        # Replace the following with 'get_distro_ceph_repo "tentacle"'
-        # once tentacle builds are out and remove the shellcheck waiver
-        # for get_distro_ceph_repo
-        CEPH_REPO_REF=tentacle
-        get_ceph_shaman_repo
+        get_distro_ceph_repo "tentacle"
         package_selection=${package_selection:-stable}
     ;;
     *)
