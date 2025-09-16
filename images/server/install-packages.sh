@@ -198,12 +198,8 @@ case "${package_selection}-${OS_BASE}" in
     *-fedora|allvfs-*)
         samba_packages+=(samba-vfs-cephfs samba-vfs-glusterfs ctdb-ceph-mutex)
     ;;
-    *devbuilds-centos|forcedevbuilds-*|stable-*)
-	# Enable libcephfs proxy for dev builds
+    *-centos|forcedevbuilds-*)
         support_packages+=(libcephfs-proxy2)
-	# Fall through to next case
-    ;&
-    nightly-centos|default-centos)
         samba_packages+=(samba-vfs-cephfs samba-vfs-glusterfs ctdb-ceph-mutex)
         # these packages should be installed as deps. of sambacc extras
         # however, the sambacc builds do not enable the extras on centos atm.
