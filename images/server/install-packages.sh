@@ -201,10 +201,6 @@ case "${package_selection}-${OS_BASE}" in
     *-centos|forcedevbuilds-*)
         support_packages+=(libcephfs-proxy2)
         samba_packages+=(samba-vfs-cephfs samba-vfs-glusterfs ctdb-ceph-mutex)
-        # these packages should be installed as deps. of sambacc extras
-        # however, the sambacc builds do not enable the extras on centos atm.
-        # Once this is fixed this line ought to be removed.
-        support_packages+=(python3-pyyaml python3-tomli python3-rados)
     ;;
 esac
 
