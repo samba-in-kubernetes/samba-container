@@ -74,7 +74,6 @@ get_sig_samba_repo() {
     fi
 }
 
-# shellcheck disable=SC2120
 get_distro_ceph_repo() {
     if [[ "${OS_BASE}" = centos ]]; then
         if [[ -z $1 ]]; then
@@ -160,12 +159,8 @@ case "${install_packages_from}" in
         package_selection=${package_selection:-custom-devbuilds}
     ;;
     ceph20)
-        get_sig_samba_repo "4.22"
-        # Replace the following with 'get_distro_ceph_repo "tentacle"'
-        # once tentacle builds are out and remove the shellcheck waiver
-        # for get_distro_ceph_repo
-        CEPH_REPO_REF=tentacle
-        get_ceph_shaman_repo
+        get_sig_samba_repo "4.23"
+        get_distro_ceph_repo "tentacle"
         package_selection=${package_selection:-stable}
     ;;
     *)
@@ -203,17 +198,9 @@ case "${package_selection}-${OS_BASE}" in
     *-fedora|allvfs-*)
         samba_packages+=(samba-vfs-cephfs samba-vfs-glusterfs ctdb-ceph-mutex)
     ;;
-    *devbuilds-centos|forcedevbuilds-*|stable-*)
-	# Enable libcephfs proxy for dev builds
+    *-centos|forcedevbuilds-*)
         support_packages+=(libcephfs-proxy2)
-	# Fall through to next case
-    ;&
-    nightly-centos|default-centos)
         samba_packages+=(samba-vfs-cephfs samba-vfs-glusterfs ctdb-ceph-mutex)
-        # these packages should be installed as deps. of sambacc extras
-        # however, the sambacc builds do not enable the extras on centos atm.
-        # Once this is fixed this line ought to be removed.
-        support_packages+=(python3-pyyaml python3-tomli python3-rados)
     ;;
 esac
 

@@ -1,4 +1,4 @@
-FROM registry.fedoraproject.org/fedora:41
+FROM registry.fedoraproject.org/fedora:42
 ARG INSTALL_PACKAGES_FROM=default
 ARG SAMBA_VERSION_SUFFIX="-4.21.7"
 ARG SAMBACC_VERSION_SUFFIX="-0.7-1.fc41"
@@ -6,12 +6,13 @@ ARG SAMBA_SPECIFICS=daemon_cli_debug_output,ctdb_leader_admin_command
 ARG INSTALL_CUSTOM_REPO=
 ARG PACKAGE_SELECTION=
 
-MAINTAINER John Mulligan <jmulligan@redhat.com>
-
 LABEL org.opencontainers.image.title="Samba container"
 LABEL org.opencontainers.image.description="Samba container"
 LABEL org.opencontainers.image.vendor="Samba in Kubernetes"
 LABEL org.opencontainers.image.url="https://github.com/samba-in-kubernetes/samba-container"
+LABEL org.opencontainers.image.source="https://github.com/samba-in-kubernetes/samba-container"
+LABEL org.opencontainers.image.authors="The samba-container team, John Mulligan <jmulligan@redhat.com>"
+
 
 COPY smb.conf /etc/samba/smb.conf
 COPY install-packages.sh /usr/local/bin/install-packages.sh
