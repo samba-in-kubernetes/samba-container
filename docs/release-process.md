@@ -106,7 +106,8 @@ a Downloads section that notes the exact tags and digests that the images can
 be found at on quay.io.
 
 The downloads section can be generated using the shell script
-https://github.com/samba-in-kubernetes/samba-container/blob/master/hack/install-tools.sh in this repository.
+https://github.com/samba-in-kubernetes/samba-container/blob/master/hack/release-gen-download-section.sh
+in this repository.
 
 It needs to  be invoked with the release tag as the only argument. E. G. :
 
