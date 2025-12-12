@@ -143,10 +143,12 @@ jobs:
       # Download locally stored samba-client image to be used as base for building
       # samba-toolbox.
       - name: Download client image
-        uses: ishworkh/container-image-artifact-download@v2.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
         with:
-          image: "samba-client:${{ env.IMG_TAG }}"
-          container_engine: ${{ env.CONTAINER_CMD }}
+          name: "action_image_artifact_samba-client_${{ env.IMG_TAG }}"
+      - name: Load client image
+        run: |
+          ${{ env.CONTAINER_CMD }} image load -i "samba-client_${{ env.IMG_TAG }}"
       # Workaround: retag the image so that the FQIN image matches the name in
       # the toolbox containerfiles.
       - name: Apply OS-latest tag to image (for centos)
@@ -188,10 +190,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Download server image
-        uses: ishworkh/container-image-artifact-download@v2.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
         with:
-          image: "samba-server:${{ env.IMG_TAG }}"
-          container_engine: ${{ env.CONTAINER_CMD }}
+          name: "action_image_artifact_samba-server_${{ env.IMG_TAG }}"
+      - name: Load server image
+        run: |
+          ${{ env.CONTAINER_CMD }} image load -i "samba-server_${{ env.IMG_TAG }}"
       - name: Test the server image
         run: LOCAL_TAG=samba-server:${{ env.IMG_TAG }} tests/test-samba-container.sh
 
