@@ -12,7 +12,7 @@ on:
   workflow_dispatch: {}
 
 env:
-  CONTAINER_CMD: docker
+  CONTAINER_CMD: podman
 jobs:
   checks:
     runs-on: ubuntu-latest
