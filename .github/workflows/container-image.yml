@@ -269,95 +269,17 @@ jobs:
       - name: log in to quay.io
         run: ${CONTAINER_CMD} login -u "${{ secrets.QUAY_USER }}" -p "${{ secrets.QUAY_PASS }}" quay.io
       # pull in already built images we plan on pushing
-      # (server images)
-      - name: Fetch server default-fedora-amd64
-        uses: ishworkh/container-image-artifact-download@v2.0.0
+      - name: Download images
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
         with:
-          image: "samba-server:default-fedora-amd64"
-          container_engine: ${{ env.CONTAINER_CMD }}
-      - name: Fetch server default-fedora-arm64
-        uses: ishworkh/container-image-artifact-download@v2.0.0
-        with:
-          image: "samba-server:default-fedora-arm64"
-          container_engine: ${{ env.CONTAINER_CMD }}
-      - name: Fetch server default-opensuse-arm64
-        uses: ishworkh/container-image-artifact-download@v2.0.0
-        with:
-          image: "samba-server:default-opensuse-arm64"
-          container_engine: ${{ env.CONTAINER_CMD }}
-      - name: Fetch server nightly-fedora-amd64
-        uses: ishworkh/container-image-artifact-download@v2.0.0
-        with:
-          image: "samba-server:nightly-fedora-amd64"
-          container_engine: ${{ env.CONTAINER_CMD }}
-      - name: Fetch server nightly-fedora-arm64
-        uses: ishworkh/container-image-artifact-download@v2.0.0
-        with:
-          image: "samba-server:nightly-fedora-arm64"
-          container_engine: ${{ env.CONTAINER_CMD }}
-      - name: Fetch server nightly-centos-amd64
-        uses: ishworkh/container-image-artifact-download@v2.0.0
-        with:
-          image: "samba-server:nightly-centos-amd64"
-          container_engine: ${{ env.CONTAINER_CMD }}
-      - name: Fetch server devbuilds-centos-amd64
-        uses: ishworkh/container-image-artifact-download@v2.0.0
-        with:
-          image: "samba-server:devbuilds-centos-amd64"
-          container_engine: ${{ env.CONTAINER_CMD }}
-      - name: Fetch server ceph20-centos-amd64
-        uses: ishworkh/container-image-artifact-download@v2.0.0
-        with:
-          image: "samba-server:ceph20-centos-amd64"
-          container_engine: ${{ env.CONTAINER_CMD }}
-      # (ad server images)
-      - name: Fetch ad-server default-fedora-amd64
-        uses: ishworkh/container-image-artifact-download@v2.0.0
-        with:
-          image: "samba-ad-server:default-fedora-amd64"
-          container_engine: ${{ env.CONTAINER_CMD }}
-      - name: Fetch ad-server default-fedora-arm64
-        uses: ishworkh/container-image-artifact-download@v2.0.0
-        with:
-          image: "samba-ad-server:default-fedora-arm64"
-          container_engine: ${{ env.CONTAINER_CMD }}
-      - name: Fetch ad-server default-opensuse-arm64
-        uses: ishworkh/container-image-artifact-download@v2.0.0
-        with:
-          image: "samba-ad-server:default-opensuse-arm64"
-          container_engine: ${{ env.CONTAINER_CMD }}
-      - name: Fetch ad-server nightly-fedora-amd64
-        uses: ishworkh/container-image-artifact-download@v2.0.0
-        with:
-          image: "samba-ad-server:nightly-fedora-amd64"
-          container_engine: ${{ env.CONTAINER_CMD }}
-      - name: Fetch ad-server nightly-fedora-arm64
-        uses: ishworkh/container-image-artifact-download@v2.0.0
-        with:
-          image: "samba-ad-server:nightly-fedora-arm64"
-          container_engine: ${{ env.CONTAINER_CMD }}
-      # (client images)
-      - name: Fetch client default-fedora-amd64
-        uses: ishworkh/container-image-artifact-download@v2.0.0
-        with:
-          image: "samba-client:default-fedora-amd64"
-          container_engine: ${{ env.CONTAINER_CMD }}
-      - name: Fetch client default-fedora-arm64
-        uses: ishworkh/container-image-artifact-download@v2.0.0
-        with:
-          image: "samba-client:default-fedora-arm64"
-          container_engine: ${{ env.CONTAINER_CMD }}
-      - name: Fetch client default-opensuse-arm64
-        uses: ishworkh/container-image-artifact-download@v2.0.0
-        with:
-          image: "samba-client:default-opensuse-arm64"
-          container_engine: ${{ env.CONTAINER_CMD }}
-      # (toolbox images)
-      - name: Fetch toolbox default-fedora-amd64
-        uses: ishworkh/container-image-artifact-download@v2.0.0
-        with:
-          image: "samba-toolbox:default-fedora-amd64"
-          container_engine: ${{ env.CONTAINER_CMD }}
+          pattern: "action_image_artifact_samba-*"
+          path: image_files
+      - name: Load all images
+        run: |
+          for img in $(find image_files -type f) ; do
+            ${{ env.CONTAINER_CMD }} image load -i "$img"
+            rm -f "$img" # free space on runner limited disk
+          done
       # reapply missing tags
       - name: Retag images
         run: >
@@ -383,6 +305,9 @@ jobs:
           -i samba-client:default-fedora-arm64
           -i samba-client:default-opensuse-arm64
           -i samba-toolbox:default-fedora-amd64
+      - name: List images prior to pushing (debug)
+        run: |
+          ${{ env.CONTAINER_CMD }} images
       - name: Push images
         run: >
           ./hack/build-image
