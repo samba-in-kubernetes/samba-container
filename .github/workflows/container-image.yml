@@ -314,7 +314,6 @@ jobs:
           --no-distro-qualified
           -i samba-server:default-fedora-amd64
           -i samba-server:default-fedora-arm64
-          -i samba-server:default-opensuse-arm64
           -i samba-server:nightly-fedora-amd64
           -i samba-server:nightly-fedora-arm64
           -i samba-server:nightly-centos-amd64
@@ -322,12 +321,10 @@ jobs:
           -i samba-server:ceph20-centos-amd64
           -i samba-ad-server:default-fedora-amd64
           -i samba-ad-server:default-fedora-arm64
-          -i samba-ad-server:default-opensuse-arm64
           -i samba-ad-server:nightly-fedora-amd64
           -i samba-ad-server:nightly-fedora-arm64
           -i samba-client:default-fedora-amd64
           -i samba-client:default-fedora-arm64
-          -i samba-client:default-opensuse-arm64
           -i samba-toolbox:default-fedora-amd64
       - name: Create manifests/indexes
         run: >
@@ -336,18 +333,15 @@ jobs:
           --container-engine=${CONTAINER_CMD}
           -i ${REPO_BASE}/samba-server:default-fedora-amd64
           -i ${REPO_BASE}/samba-server:default-fedora-arm64
-          -i ${REPO_BASE}/samba-server:default-opensuse-arm64
           -i ${REPO_BASE}/samba-server:nightly-fedora-amd64
           -i ${REPO_BASE}/samba-server:nightly-centos-amd64
           -i ${REPO_BASE}/samba-server:devbuilds-centos-amd64
           -i ${REPO_BASE}/samba-server:ceph20-centos-amd64
           -i ${REPO_BASE}/samba-ad-server:default-fedora-amd64
           -i ${REPO_BASE}/samba-ad-server:default-fedora-arm64
-          -i ${REPO_BASE}/samba-ad-server:default-opensuse-arm64
           -i ${REPO_BASE}/samba-ad-server:nightly-fedora-amd64
           -i ${REPO_BASE}/samba-client:default-fedora-amd64
           -i ${REPO_BASE}/samba-client:default-fedora-arm64
-          -i ${REPO_BASE}/samba-client:default-opensuse-arm64
           -i ${REPO_BASE}/samba-toolbox:default-fedora-amd64
       - name: List images prior to pushing (debug)
         run: |
@@ -363,16 +357,13 @@ jobs:
           --push-format=oci
           -i ${REPO_BASE}/samba-server:default-fedora-amd64
           -i ${REPO_BASE}/samba-server:default-fedora-arm64
-          -i ${REPO_BASE}/samba-server:default-opensuse-arm64
           -i ${REPO_BASE}/samba-server:nightly-fedora-amd64
           -i ${REPO_BASE}/samba-server:nightly-centos-amd64
           -i ${REPO_BASE}/samba-server:devbuilds-centos-amd64
           -i ${REPO_BASE}/samba-server:ceph20-centos-amd64
           -i ${REPO_BASE}/samba-ad-server:default-fedora-amd64
           -i ${REPO_BASE}/samba-ad-server:default-fedora-arm64
-          -i ${REPO_BASE}/samba-ad-server:default-opensuse-arm64
           -i ${REPO_BASE}/samba-ad-server:nightly-fedora-amd64
           -i ${REPO_BASE}/samba-client:default-fedora-amd64
           -i ${REPO_BASE}/samba-client:default-fedora-arm64
-          -i ${REPO_BASE}/samba-client:default-opensuse-arm64
           -i ${REPO_BASE}/samba-toolbox:default-fedora-amd64
