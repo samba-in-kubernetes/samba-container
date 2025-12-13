@@ -67,12 +67,17 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build the server image
         run: make KIND=server PACKAGE_SOURCE=${{ matrix.package_source }} OS_NAME=${{ matrix.os}} BUILD_ARCH=${{ matrix.arch}} build-image
+      - name: Save image
+        run: >
+          ${{ env.CONTAINER_CMD }} save
+          -o samba-server_${{ env.IMG_TAG }}
+          samba-server:${{ env.IMG_TAG }}
       - name: Upload server image
-        uses: ishworkh/container-image-artifact-upload@v2.0.0
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         with:
-          image: "samba-server:${{ env.IMG_TAG }}"
-          container_engine: ${{ env.CONTAINER_CMD }}
-          retention_days: 1
+          name: action_image_artifact_samba-server_${{ env.IMG_TAG }}
+          path: samba-server_${{ env.IMG_TAG }}
+          retention-days: 1
 
   build-ad-server:
     strategy:
@@ -97,12 +102,17 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build the ad server image
         run: make KIND=ad-server PACKAGE_SOURCE=${{ matrix.package_source }} OS_NAME=${{ matrix.os }} BUILD_ARCH=${{ matrix.arch }} build-image
+      - name: Save image
+        run: >
+          ${{ env.CONTAINER_CMD }} save
+          -o samba-ad-server_${{ env.IMG_TAG }}
+          samba-ad-server:${{ env.IMG_TAG }}
       - name: Upload ad server image
-        uses: ishworkh/container-image-artifact-upload@v2.0.0
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         with:
-          image: "samba-ad-server:${{ env.IMG_TAG }}"
-          container_engine: ${{ env.CONTAINER_CMD }}
-          retention_days: 1
+          name: action_image_artifact_samba-ad-server_${{ env.IMG_TAG }}
+          path: samba-ad-server_${{ env.IMG_TAG }}
+          retention-days: 1
 
   build-client:
     strategy:
@@ -121,12 +131,17 @@ jobs:
       - name: build the client image
         run: make KIND=client OS_NAME=${{ matrix.os }} BUILD_ARCH=${{ matrix.arch }} build-image
       # The client image is used as a base for the samba-toolbox build process.
+      - name: Save image
+        run: >
+          ${{ env.CONTAINER_CMD }} save
+          -o samba-client_${{ env.IMG_TAG }}
+          samba-client:${{ env.IMG_TAG }}
       - name: Upload the client image
-        uses: ishworkh/container-image-artifact-upload@v2.0.0
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         with:
-          image: "samba-client:${{ env.IMG_TAG }}"
-          container_engine: ${{ env.CONTAINER_CMD }}
-          retention_days: 1
+          name: action_image_artifact_samba-client_${{ env.IMG_TAG }}
+          path: samba-client_${{ env.IMG_TAG }}
+          retention-days: 1
 
   build-toolbox:
     strategy:
@@ -158,12 +173,17 @@ jobs:
       - name: Build the toolbox image
         run: make KIND=toolbox OS_NAME=${{ matrix.os }}  BUILD_ARCH=${{ matrix.arch }} build-image
       # Upload the toolbox image for reference and/or image push
+      - name: Save image
+        run: >
+          ${{ env.CONTAINER_CMD }} save
+          -o samba-toolbox_${{ env.IMG_TAG }}
+          samba-toolbox:${{ env.IMG_TAG }}
       - name: Upload the toolbox image
-        uses: ishworkh/container-image-artifact-upload@v2.0.0
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         with:
-          image: "samba-toolbox:${{ env.IMG_TAG }}"
-          container_engine: ${{ env.CONTAINER_CMD }}
-          retention_days: 1
+          name: action_image_artifact_samba-toolbox_${{ env.IMG_TAG }}
+          path: samba-toolbox_${{ env.IMG_TAG }}
+          retention-days: 1
 
   test-server:
     strategy:
