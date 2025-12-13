@@ -17,7 +17,7 @@ jobs:
   checks:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       # We need a newer version of shellcheck to avoid problems with the
       # relative imports. Our scripts work on v0.7.2 and up but not the
       # v0.7.0 preinstalled in the ubutnu image. We can force a local
@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
@@ -64,7 +64,7 @@ jobs:
       BUILDAH_FORMAT: oci
       IMG_TAG: ${{ matrix.package_source }}-${{ matrix.os }}-${{ matrix.arch }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - name: Build the server image
         run: make KIND=server PACKAGE_SOURCE=${{ matrix.package_source }} OS_NAME=${{ matrix.os}} BUILD_ARCH=${{ matrix.arch}} build-image
       - name: Save image
@@ -99,7 +99,7 @@ jobs:
       BUILDAH_FORMAT: oci
       IMG_TAG: ${{ matrix.package_source }}-${{ matrix.os }}-${{ matrix.arch }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - name: Build the ad server image
         run: make KIND=ad-server PACKAGE_SOURCE=${{ matrix.package_source }} OS_NAME=${{ matrix.os }} BUILD_ARCH=${{ matrix.arch }} build-image
       - name: Save image
@@ -127,7 +127,7 @@ jobs:
       BUILDAH_FORMAT: oci
       IMG_TAG: default-${{ matrix.os }}-${{ matrix.arch }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - name: build the client image
         run: make KIND=client OS_NAME=${{ matrix.os }} BUILD_ARCH=${{ matrix.arch }} build-image
       # The client image is used as a base for the samba-toolbox build process.
@@ -154,7 +154,7 @@ jobs:
       BUILDAH_FORMAT: oci
       IMG_TAG: default-${{ matrix.os }}-${{ matrix.arch }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       # Download locally stored samba-client image to be used as base for building
       # samba-toolbox.
       - name: Download client image
@@ -208,7 +208,7 @@ jobs:
       BUILDAH_FORMAT: oci
       IMG_TAG: ${{ matrix.package_source }}-${{ matrix.os }}-${{ matrix.arch }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - name: Download server image
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
         with:
@@ -241,7 +241,7 @@ jobs:
       IMG_TAG: ${{ matrix.package_source }}-${{ matrix.os }}-${{ matrix.arch }}
       CONTAINER_CMD: docker  # this k3d tool requires docker
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - uses: nolar/setup-k3d-k3s@v1
       - name: get nodes
         run: kubectl get nodes
@@ -285,7 +285,7 @@ jobs:
       contains(fromJSON('["push", "schedule", "workflow_dispatch"]'), github.event_name)
       && github.repository == 'samba-in-kubernetes/samba-container'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - name: log in to quay.io
         run: ${CONTAINER_CMD} login -u "${{ secrets.QUAY_USER }}" -p "${{ secrets.QUAY_PASS }}" quay.io
       # pull in already built images we plan on pushing
