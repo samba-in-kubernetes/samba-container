@@ -17,7 +17,7 @@ jobs:
   checks:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       # We need a newer version of shellcheck to avoid problems with the
       # relative imports. Our scripts work on v0.7.2 and up but not the
       # v0.7.0 preinstalled in the ubutnu image. We can force a local
@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
@@ -64,15 +64,20 @@ jobs:
       BUILDAH_FORMAT: oci
       IMG_TAG: ${{ matrix.package_source }}-${{ matrix.os }}-${{ matrix.arch }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - name: Build the server image
         run: make KIND=server PACKAGE_SOURCE=${{ matrix.package_source }} OS_NAME=${{ matrix.os}} BUILD_ARCH=${{ matrix.arch}} build-image
+      - name: Save image
+        run: >
+          ${{ env.CONTAINER_CMD }} save
+          -o samba-server_${{ env.IMG_TAG }}
+          samba-server:${{ env.IMG_TAG }}
       - name: Upload server image
-        uses: ishworkh/container-image-artifact-upload@v2.0.0
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         with:
-          image: "samba-server:${{ env.IMG_TAG }}"
-          container_engine: ${{ env.CONTAINER_CMD }}
-          retention_days: 1
+          name: action_image_artifact_samba-server_${{ env.IMG_TAG }}
+          path: samba-server_${{ env.IMG_TAG }}
+          retention-days: 1
 
   build-ad-server:
     strategy:
@@ -94,15 +99,20 @@ jobs:
       BUILDAH_FORMAT: oci
       IMG_TAG: ${{ matrix.package_source }}-${{ matrix.os }}-${{ matrix.arch }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - name: Build the ad server image
         run: make KIND=ad-server PACKAGE_SOURCE=${{ matrix.package_source }} OS_NAME=${{ matrix.os }} BUILD_ARCH=${{ matrix.arch }} build-image
+      - name: Save image
+        run: >
+          ${{ env.CONTAINER_CMD }} save
+          -o samba-ad-server_${{ env.IMG_TAG }}
+          samba-ad-server:${{ env.IMG_TAG }}
       - name: Upload ad server image
-        uses: ishworkh/container-image-artifact-upload@v2.0.0
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         with:
-          image: "samba-ad-server:${{ env.IMG_TAG }}"
-          container_engine: ${{ env.CONTAINER_CMD }}
-          retention_days: 1
+          name: action_image_artifact_samba-ad-server_${{ env.IMG_TAG }}
+          path: samba-ad-server_${{ env.IMG_TAG }}
+          retention-days: 1
 
   build-client:
     strategy:
@@ -117,16 +127,21 @@ jobs:
       BUILDAH_FORMAT: oci
       IMG_TAG: default-${{ matrix.os }}-${{ matrix.arch }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - name: build the client image
         run: make KIND=client OS_NAME=${{ matrix.os }} BUILD_ARCH=${{ matrix.arch }} build-image
       # The client image is used as a base for the samba-toolbox build process.
+      - name: Save image
+        run: >
+          ${{ env.CONTAINER_CMD }} save
+          -o samba-client_${{ env.IMG_TAG }}
+          samba-client:${{ env.IMG_TAG }}
       - name: Upload the client image
-        uses: ishworkh/container-image-artifact-upload@v2.0.0
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         with:
-          image: "samba-client:${{ env.IMG_TAG }}"
-          container_engine: ${{ env.CONTAINER_CMD }}
-          retention_days: 1
+          name: action_image_artifact_samba-client_${{ env.IMG_TAG }}
+          path: samba-client_${{ env.IMG_TAG }}
+          retention-days: 1
 
   build-toolbox:
     strategy:
@@ -139,14 +154,16 @@ jobs:
       BUILDAH_FORMAT: oci
       IMG_TAG: default-${{ matrix.os }}-${{ matrix.arch }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       # Download locally stored samba-client image to be used as base for building
       # samba-toolbox.
       - name: Download client image
-        uses: ishworkh/container-image-artifact-download@v2.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
         with:
-          image: "samba-client:${{ env.IMG_TAG }}"
-          container_engine: ${{ env.CONTAINER_CMD }}
+          name: "action_image_artifact_samba-client_${{ env.IMG_TAG }}"
+      - name: Load client image
+        run: |
+          ${{ env.CONTAINER_CMD }} image load -i "samba-client_${{ env.IMG_TAG }}"
       # Workaround: retag the image so that the FQIN image matches the name in
       # the toolbox containerfiles.
       - name: Apply OS-latest tag to image (for centos)
@@ -156,12 +173,17 @@ jobs:
       - name: Build the toolbox image
         run: make KIND=toolbox OS_NAME=${{ matrix.os }}  BUILD_ARCH=${{ matrix.arch }} build-image
       # Upload the toolbox image for reference and/or image push
+      - name: Save image
+        run: >
+          ${{ env.CONTAINER_CMD }} save
+          -o samba-toolbox_${{ env.IMG_TAG }}
+          samba-toolbox:${{ env.IMG_TAG }}
       - name: Upload the toolbox image
-        uses: ishworkh/container-image-artifact-upload@v2.0.0
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         with:
-          image: "samba-toolbox:${{ env.IMG_TAG }}"
-          container_engine: ${{ env.CONTAINER_CMD }}
-          retention_days: 1
+          name: action_image_artifact_samba-toolbox_${{ env.IMG_TAG }}
+          path: samba-toolbox_${{ env.IMG_TAG }}
+          retention-days: 1
 
   test-server:
     strategy:
@@ -186,12 +208,14 @@ jobs:
       BUILDAH_FORMAT: oci
       IMG_TAG: ${{ matrix.package_source }}-${{ matrix.os }}-${{ matrix.arch }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - name: Download server image
-        uses: ishworkh/container-image-artifact-download@v2.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
         with:
-          image: "samba-server:${{ env.IMG_TAG }}"
-          container_engine: ${{ env.CONTAINER_CMD }}
+          name: "action_image_artifact_samba-server_${{ env.IMG_TAG }}"
+      - name: Load server image
+        run: |
+          ${{ env.CONTAINER_CMD }} image load -i "samba-server_${{ env.IMG_TAG }}"
       - name: Test the server image
         run: LOCAL_TAG=samba-server:${{ env.IMG_TAG }} tests/test-samba-container.sh
 
@@ -215,21 +239,30 @@ jobs:
     env:
       BUILDAH_FORMAT: oci
       IMG_TAG: ${{ matrix.package_source }}-${{ matrix.os }}-${{ matrix.arch }}
+      CONTAINER_CMD: docker  # this k3d tool requires docker
     steps:
-      - uses: actions/checkout@v4
-      - uses: nolar/setup-k3d-k3s@v1
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      - uses: nolar/setup-k3d-k3s@293b8e5822a20bc0d5bcdd4826f1a665e72aba96
       - name: get nodes
         run: kubectl get nodes
       - name: Download ad server image
-        uses: ishworkh/container-image-artifact-download@v2.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
         with:
-          image: "samba-ad-server:${{ env.IMG_TAG }}"
-          container_engine: ${{ env.CONTAINER_CMD }}
+          name: "action_image_artifact_samba-ad-server_${{ env.IMG_TAG }}"
+      - name: Load ad server image
+        run: |
+          ${{ env.CONTAINER_CMD }} image load -i "samba-ad-server_${{ env.IMG_TAG }}"
+          ${{ env.CONTAINER_CMD }} image tag "localhost/samba-ad-server:${{ env.IMG_TAG }}" "samba-ad-server:${{ env.IMG_TAG }}" || true
       - name: Download file server image
-        uses: ishworkh/container-image-artifact-download@v2.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
         with:
-          image: "samba-server:${{ env.IMG_TAG }}"
-          container_engine: ${{ env.CONTAINER_CMD }}
+          name: "action_image_artifact_samba-server_${{ env.IMG_TAG }}"
+      - name: Load file server image
+        run: |
+          ${{ env.CONTAINER_CMD }} image load -i "samba-server_${{ env.IMG_TAG }}"
+          ${{ env.CONTAINER_CMD }} image tag "localhost/samba-server:${{ env.IMG_TAG }}" "samba-server:${{ env.IMG_TAG }}" || true
+      - name: Display images
+        run: ${{ env.CONTAINER_CMD }} images
       - name: import images to k3d
         run: k3d image import samba-server:${{ env.IMG_TAG }} samba-ad-server:${{ env.IMG_TAG }}
       - name: run the ad-dc deployment test
@@ -252,99 +285,21 @@ jobs:
       contains(fromJSON('["push", "schedule", "workflow_dispatch"]'), github.event_name)
       && github.repository == 'samba-in-kubernetes/samba-container'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - name: log in to quay.io
         run: ${CONTAINER_CMD} login -u "${{ secrets.QUAY_USER }}" -p "${{ secrets.QUAY_PASS }}" quay.io
       # pull in already built images we plan on pushing
-      # (server images)
-      - name: Fetch server default-fedora-amd64
-        uses: ishworkh/container-image-artifact-download@v2.0.0
+      - name: Download images
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
         with:
-          image: "samba-server:default-fedora-amd64"
-          container_engine: ${{ env.CONTAINER_CMD }}
-      - name: Fetch server default-fedora-arm64
-        uses: ishworkh/container-image-artifact-download@v2.0.0
-        with:
-          image: "samba-server:default-fedora-arm64"
-          container_engine: ${{ env.CONTAINER_CMD }}
-      - name: Fetch server default-opensuse-arm64
-        uses: ishworkh/container-image-artifact-download@v2.0.0
-        with:
-          image: "samba-server:default-opensuse-arm64"
-          container_engine: ${{ env.CONTAINER_CMD }}
-      - name: Fetch server nightly-fedora-amd64
-        uses: ishworkh/container-image-artifact-download@v2.0.0
-        with:
-          image: "samba-server:nightly-fedora-amd64"
-          container_engine: ${{ env.CONTAINER_CMD }}
-      - name: Fetch server nightly-fedora-arm64
-        uses: ishworkh/container-image-artifact-download@v2.0.0
-        with:
-          image: "samba-server:nightly-fedora-arm64"
-          container_engine: ${{ env.CONTAINER_CMD }}
-      - name: Fetch server nightly-centos-amd64
-        uses: ishworkh/container-image-artifact-download@v2.0.0
-        with:
-          image: "samba-server:nightly-centos-amd64"
-          container_engine: ${{ env.CONTAINER_CMD }}
-      - name: Fetch server devbuilds-centos-amd64
-        uses: ishworkh/container-image-artifact-download@v2.0.0
-        with:
-          image: "samba-server:devbuilds-centos-amd64"
-          container_engine: ${{ env.CONTAINER_CMD }}
-      - name: Fetch server ceph20-centos-amd64
-        uses: ishworkh/container-image-artifact-download@v2.0.0
-        with:
-          image: "samba-server:ceph20-centos-amd64"
-          container_engine: ${{ env.CONTAINER_CMD }}
-      # (ad server images)
-      - name: Fetch ad-server default-fedora-amd64
-        uses: ishworkh/container-image-artifact-download@v2.0.0
-        with:
-          image: "samba-ad-server:default-fedora-amd64"
-          container_engine: ${{ env.CONTAINER_CMD }}
-      - name: Fetch ad-server default-fedora-arm64
-        uses: ishworkh/container-image-artifact-download@v2.0.0
-        with:
-          image: "samba-ad-server:default-fedora-arm64"
-          container_engine: ${{ env.CONTAINER_CMD }}
-      - name: Fetch ad-server default-opensuse-arm64
-        uses: ishworkh/container-image-artifact-download@v2.0.0
-        with:
-          image: "samba-ad-server:default-opensuse-arm64"
-          container_engine: ${{ env.CONTAINER_CMD }}
-      - name: Fetch ad-server nightly-fedora-amd64
-        uses: ishworkh/container-image-artifact-download@v2.0.0
-        with:
-          image: "samba-ad-server:nightly-fedora-amd64"
-          container_engine: ${{ env.CONTAINER_CMD }}
-      - name: Fetch ad-server nightly-fedora-arm64
-        uses: ishworkh/container-image-artifact-download@v2.0.0
-        with:
-          image: "samba-ad-server:nightly-fedora-arm64"
-          container_engine: ${{ env.CONTAINER_CMD }}
-      # (client images)
-      - name: Fetch client default-fedora-amd64
-        uses: ishworkh/container-image-artifact-download@v2.0.0
-        with:
-          image: "samba-client:default-fedora-amd64"
-          container_engine: ${{ env.CONTAINER_CMD }}
-      - name: Fetch client default-fedora-arm64
-        uses: ishworkh/container-image-artifact-download@v2.0.0
-        with:
-          image: "samba-client:default-fedora-arm64"
-          container_engine: ${{ env.CONTAINER_CMD }}
-      - name: Fetch client default-opensuse-arm64
-        uses: ishworkh/container-image-artifact-download@v2.0.0
-        with:
-          image: "samba-client:default-opensuse-arm64"
-          container_engine: ${{ env.CONTAINER_CMD }}
-      # (toolbox images)
-      - name: Fetch toolbox default-fedora-amd64
-        uses: ishworkh/container-image-artifact-download@v2.0.0
-        with:
-          image: "samba-toolbox:default-fedora-amd64"
-          container_engine: ${{ env.CONTAINER_CMD }}
+          pattern: "action_image_artifact_samba-*"
+          path: image_files
+      - name: Load all images
+        run: |
+          for img in $(find image_files -type f) ; do
+            ${{ env.CONTAINER_CMD }} image load -i "$img"
+            rm -f "$img" # free space on runner limited disk
+          done
       # reapply missing tags
       - name: Retag images
         run: >
@@ -370,6 +325,9 @@ jobs:
           -i samba-client:default-fedora-arm64
           -i samba-client:default-opensuse-arm64
           -i samba-toolbox:default-fedora-amd64
+      - name: List images prior to pushing (debug)
+        run: |
+          ${{ env.CONTAINER_CMD }} images
       - name: Push images
         run: >
           ./hack/build-image
