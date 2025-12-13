@@ -242,7 +242,7 @@ jobs:
       CONTAINER_CMD: docker  # this k3d tool requires docker
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
-      - uses: nolar/setup-k3d-k3s@v1
+      - uses: nolar/setup-k3d-k3s@293b8e5822a20bc0d5bcdd4826f1a665e72aba96
       - name: get nodes
         run: kubectl get nodes
       - name: Download ad server image
