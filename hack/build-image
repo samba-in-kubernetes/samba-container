@@ -38,6 +38,7 @@ Usage:
 import argparse
 import configparser
 import contextlib
+import json
 import logging
 import os
 import pathlib
@@ -86,6 +87,7 @@ ARCHITECTURES = {
     "amd64": AMD64,
     "arm64": ARM64,
 }
+ANY_ARCH = "any"
 
 # DISTROS - list of supported distro bases
 FEDORA = "fedora"
@@ -406,6 +408,42 @@ def container_push(cli, push_name):
     run(cli, args, check=True)
 
 
+def manifest_inspect(cli, name):
+    """Return manifest information."""
+    eng = container_engine(cli)
+    args = [eng, "manifest", "inspect", name]
+    res = run(cli, args, check=True, capture_output=True)
+    index_info = json.loads(res.stdout)
+    return index_info
+
+
+def manifest_create(cli, name):
+    """Create a manifest."""
+    eng = container_engine(cli)
+    args = [eng, "manifest", "create", name]
+    return run(cli, args, check=True)
+
+
+def manifest_add(
+    cli, manifest_name, name, *, annotations=None, containers_storage=True
+):
+    """Add an item to a manifest."""
+    eng = container_engine(cli)
+    args = [eng, "manifest", "add"]
+    # annotations are not used for much but it could become interesting or
+    # useful in the future
+    for key, value in (annotations or {}).items():
+        args.append(f"--annotation={key}={value}")
+
+    args.append(manifest_name)
+    # this works around a very weird issue I saw where the image ids
+    # were changing after push.
+    if containers_storage:
+        name = f"containers-storage:{name}"
+    args.append(name)
+    return run(cli, args, check=True)
+
+
 def container_id(cli, target):
     """Construct and run a command to fetch a hexidecimal id for a container
     image.
@@ -516,6 +554,17 @@ class TargetImage:
                     continue
                 yield self.image_name(tag=tag, repo_base="")
 
+    def as_index(self):
+        """Return a new target index object based on this image."""
+        return TargetIndex(
+            name=self.name,
+            pkg_source=self.pkg_source,
+            distro=self.distro,
+            extra_tag=self.extra_tag,
+            repo_base=self.repo_base,
+            include=self,
+        )
+
     @classmethod
     def parse(cls, image_name):
         if "/" in image_name:
@@ -534,6 +583,48 @@ class TargetImage:
             check_arch(tparts[2]),
             extra_tag=(tparts[3] if len(tparts) > 3 else ""),
             repo_base=base,
+        )
+
+
+class TargetIndex(TargetImage):
+    def __init__(
+        self,
+        name,
+        pkg_source,
+        distro,
+        *,
+        extra_tag="",
+        repo_base=None,
+        include=None,
+    ):
+        self.name = name
+        self.pkg_source = pkg_source
+        self.distro = distro
+        self.arch = ANY_ARCH
+        self.extra_tag = extra_tag
+        self.repo_base = repo_base
+        self._images = []
+        if isinstance(include, list):
+            self._images.extend(include)
+        elif include:
+            self._images.append(include)
+
+    def images(self):
+        return self._images
+
+    def merge(self, other):
+        if other is None:
+            return self
+        assert self.name == other.name
+        assert self.pkg_source == other.pkg_source
+        assert self.distro == other.distro
+        return self.__class__(
+            name=self.name,
+            pkg_source=self.pkg_source,
+            distro=self.distro,
+            extra_tag=self.extra_tag,
+            repo_base=self.repo_base,
+            include=self._images + other.images(),
         )
 
 
@@ -729,6 +820,72 @@ class SimpleBuilder(Builder):
 
     def for_all(self, cli):
         pass
+
+
+class BasicBuilder(Builder):
+    def generate(self, cli):
+        return generate_images(cli)
+
+    def for_all(self, cli):
+        pass
+
+
+class IndexBuilder(BasicBuilder):
+    def __init__(self):
+        self.indexes = {}
+
+    def for_target(self, cli, target):
+        idxtarget = target.as_index()
+        logger.info("Target index: %s", idxtarget)
+        key = str(idxtarget)
+        self.indexes[key] = idxtarget.merge(self.indexes.get(key))
+
+    def for_all(self, cli):
+        for idxtarget in self.indexes.values():
+            logger.info("Creating index: %s", idxtarget)
+            self._clear(cli, idxtarget)
+            self._build(cli, idxtarget)
+            count = self._verify(cli, idxtarget)
+            logger.info("Created %s with %d manifests", idxtarget, count)
+
+    def _clear(self, cli, idxtarget):
+        eng = container_engine(cli)
+        args = [eng, "manifest", "rm", idxtarget.image_name()]
+        res = run(cli, args, capture_output=True, check=False)
+        if res.returncode == 0:
+            logger.info("Removed previous manifest %s", idxtarget)
+        else:
+            logger.debug("Unable to remove previous manifest %s", idxtarget)
+
+    def _build(self, cli, idxtarget):
+        manifest_create(cli, idxtarget.image_name())
+        pfx = "org.samba.samba-container"
+        for img in idxtarget.images():
+            manifest_add(
+                cli,
+                idxtarget.image_name(),
+                img.image_name(),
+                annotations={
+                    f"{pfx}.pkg-source": img.pkg_source,
+                    f"{pfx}.distro": img.distro,
+                },
+            )
+
+    def _verify(self, cli, idxtarget):
+        index_info = manifest_inspect(cli, idxtarget.image_name())
+        img_count = len(index_info["manifests"])
+        expecting = len(idxtarget.images())
+        # I saw some weird stuff while developing this and so this
+        # check tries to alert on some of those conditions.
+        if img_count != expecting:
+            logger.error(
+                "confused manifest: saw %d entries, expected %d (%r)",
+                img_count,
+                expecting,
+                idxtarget.images(),
+            )
+            raise ValueError("unexpected number of manifest entries")
+        return img_count
 
 
 class CLIContext:
@@ -957,6 +1114,13 @@ def main():
             "Regenerate any short (unqualified) tags expected to exist"
             " for a given FQIN. Requires FQIN to already exist locally."
         ),
+    )
+    behaviors.add_argument(
+        "--index",
+        action="store_const",
+        dest="main_action",
+        const=IndexBuilder,
+        help="Create indexes (aka manifests) for named images",
     )
     cli = CLIContext(parser.parse_args())
 
