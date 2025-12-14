@@ -358,7 +358,8 @@ def _sambacc_prefix(cli):
     yield (
         "RUN dnf install -y /usr/bin/createrepo_c"
         f" && createrepo_c {distpath}"
-        f" && echo -e '[sambacc]\\nbaseurl=file://{distpath}\\nenabled=1\\ngpgcheck=0\\n'"
+        " && echo -e '[sambacc]\\n"
+        f"baseurl=file://{distpath}\\nenabled=1\\ngpgcheck=0\\n'"
         f" > {distpath}/sambacc.repo"
     )
     yield "# --- sambacc prefix ---"
@@ -372,7 +373,8 @@ def _sambacc_install(cli):
     yield "# --- begin modified sambacc install ---"
     yield (
         "RUN"
-        f" --mount=type=bind,from=sccbuilder,source={distpath},destination={distpath}"
+        f" --mount=type=bind,from=sccbuilder,source={distpath},"
+        f"destination={distpath}"
         f" bash -x /usr/local/bin/install-sambacc.sh {distpath}"
         " ${SAMBACC_VERSION_SUFFIX}"
     )
