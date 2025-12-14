@@ -130,6 +130,7 @@ LATEST = "latest"
 QUAL_NONE = "unqualified"
 QUAL_DISTRO = "distro-qualified"
 QUAL_FQIN = "fqin"
+QUAL_INDEX = "index"
 
 
 _DISCOVERED_CONTAINER_ENGINES = []
@@ -404,7 +405,24 @@ def _scan_containerfile(path, tags="sambacc"):
 
 def container_push(cli, push_name):
     """Construct and execute a command to push a container image."""
-    args = [container_engine(cli), "push", push_name]
+    args = [container_engine(cli), "push"]
+    if cli.push_format:
+        args.append(f"-f{cli.push_format}")
+    args.append(push_name)
+    run(cli, args, check=True)
+
+
+def manifest_push(cli, push_name):
+    """Construct and execute a command to push a manifest/index."""
+    args = [
+        container_engine(cli),
+        "manifest",
+        "push",
+    ]
+    if cli.push_format:
+        args.append(f"-f{cli.push_format}")
+    args.append("--all")
+    args.append(push_name)
     run(cli, args, check=True)
 
 
@@ -701,12 +719,17 @@ class QMatcher:
         only fqin and unqualified tags;
     least-qualified (default):
         exactly one tag, with the least number of qualifications;
+    index:
+        Index/manifest "images";
+    index-multiarch:
+        Index/manifest "images" that represent more than one architecture;
     """
 
     def __init__(self, key):
         self.qualifications = set()
         self.count = 0
         self.max_matches = 0
+        self.minimum_index_images = 1
 
         if not key:
             self.enable("")
@@ -718,6 +741,7 @@ class QMatcher:
     def enable(self, key):
         if not key:
             key = ""
+        _multiarch = f"{QUAL_INDEX}-multiarch"
         aliases = {
             "least-qualified": [QUAL_NONE, QUAL_DISTRO, QUAL_FQIN],
             "": [QUAL_NONE, QUAL_DISTRO, QUAL_FQIN],
@@ -727,6 +751,8 @@ class QMatcher:
             QUAL_DISTRO: [QUAL_DISTRO],
             "distro": [QUAL_DISTRO],
             QUAL_FQIN: [QUAL_FQIN],
+            QUAL_INDEX: [QUAL_INDEX],
+            _multiarch: [QUAL_INDEX],
         }
         try:
             quals = aliases[key]
@@ -738,6 +764,8 @@ class QMatcher:
         self.qualifications.update(quals)
         if not key or key == "least-qualified":
             self.max_matches = 1
+        if key == _multiarch:
+            self.minimum_index_images = 2
 
     def __call__(self, qv):
         if self.max_matches and self.count >= self.max_matches:
@@ -878,6 +906,18 @@ class IndexBuilder(BasicBuilder):
         return img_count
 
 
+def _push_weight(value):
+    push_name, tag_qual = value
+    # do all "real" fqin images first
+    if tag_qual == QUAL_FQIN:
+        return 0, push_name
+    # do indexes last
+    if tag_qual == QUAL_INDEX:
+        return 100, push_name
+    # do non-fqins after fqins
+    return 10, push_name
+
+
 class Pusher(BasicBuilder):
     def __init__(self):
         self._to_push = set()
@@ -897,12 +937,37 @@ class Pusher(BasicBuilder):
             if tag.endswith(("-latest", "-nightly")):
                 self._to_push.add((target.image_name(tag=tag), qual))
         self._to_push.add((push_name, QUAL_FQIN))
+        qmatcher = cli.push_kinds or QMatcher("")
+        if QUAL_INDEX in qmatcher.qualifications:
+            self._to_push.add((target.as_index().image_name(), QUAL_INDEX))
 
     def for_all(self, cli):
         qmatcher = cli.push_kinds or QMatcher("")
-        for push_name, tag_qual in sorted(self._to_push):
-            if qmatcher(tag_qual):
+        for push_name, tag_qual in sorted(self._to_push, key=_push_weight):
+            if not qmatcher(tag_qual):
+                logger.debug("Excluding %s from push", push_name)
+                continue
+            if tag_qual == QUAL_INDEX:
+                self._push_index(cli, qmatcher, push_name)
+            else:
                 container_push(cli, push_name)
+
+    def _push_index(self, cli, qmatcher, push_name):
+        try:
+            index_info = manifest_inspect(cli, push_name)
+        except subprocess.CalledProcessError:
+            logger.warning("No manifest present for %s, skipping", push_name)
+            return
+        img_count = len(index_info["manifests"])
+        logger.debug("Manifest/index %s has %d images", push_name, img_count)
+        if img_count >= qmatcher.minimum_index_images:
+            manifest_push(cli, push_name)
+        else:
+            logger.warning(
+                "Skipping manifest push for %s, too few images (%d)",
+                push_name,
+                img_count,
+            )
 
 
 class CLIContext:
@@ -1059,6 +1124,11 @@ def main():
         "--push-selected-tags",
         type=QMatcher,
         help=QMatcher.__doc__,
+    )
+    parser.add_argument(
+        "--push-format",
+        choices=("oci", "v2s2"),
+        help="Manifest type to use when pushing",
     )
     parser.add_argument(
         "--buildfile-prefix",
