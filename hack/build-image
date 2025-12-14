@@ -705,6 +705,32 @@ def print_tags(cli, target):
         print(f"{prefix}{name}")
 
 
+class Builder:
+    def generate(self, cli):
+        raise NotImplementedError()
+
+    def for_target(self, cli, target):
+        raise NotImplementedError()
+
+    def for_all(self, cli):
+        raise NotImplementedError()
+
+
+class SimpleBuilder(Builder):
+    def __init__(self, target_fn, generate_fn=None):
+        self.target_fn = target_fn
+        self.generate_fn = generate_fn or generate_images
+
+    def generate(self, cli):
+        return self.generate_fn(cli)
+
+    def for_target(self, cli, target):
+        return self.target_fn(cli, target)
+
+    def for_all(self, cli):
+        pass
+
+
 class CLIContext:
     def __init__(self, cli):
         self._cli = cli
@@ -938,14 +964,23 @@ def main():
         cli.log_level = logging.DEBUG
     logging.basicConfig(level=cli.log_level)
 
-    _action = cli.main_action if cli.main_action else build
+    if not cli.main_action:
+        logger.debug("Using default action")
+        builder = SimpleBuilder(build)
+    elif hasattr(cli.main_action, "generate"):
+        logger.debug("Using builder object: %r", cli.main_action)
+        builder = cli.main_action()
+    else:
+        logger.debug("Legacy mode: using simple builder wrapper")
+        builder = SimpleBuilder(cli.main_action)
     imgs = []
     try:
-        imgs = generate_images(cli)
+        imgs = builder.generate(cli)
         for img in imgs:
             add_special_tags(img, cli.distro_qualified)
             logger.info("Image %s, extra tags: %s", img, img.additional_tags)
-            _action(cli, img)
+            builder.for_target(cli, img)
+        builder.for_all(cli)
     except subprocess.CalledProcessError as err:
         logger.error("Failed command: %s", _cmd_to_str(err.cmd))
         sys.exit(err.returncode)
