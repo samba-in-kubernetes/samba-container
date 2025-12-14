@@ -689,41 +689,55 @@ def build(cli, target):
 
 class QMatcher:
     """Push only tags that meet the specified criteria:
-    all - all tags;
-    unqualified - only unqualified tags (eg. latest);
-    distro - only distribution base qualifed tags (eg. fedora-latest);
-    fqin - only fully qualified tags (eg. default-centos-amd64);
-    mixed - only fqin and unqualified tags;
-    least-qualified (default) - exactly one tag, with the least
-    number of qualifications
+    all:
+        all tags;
+    unqualified:
+        only unqualified tags (eg. latest);
+    distro/distro-qualified:
+        only distribution base qualifed tags (eg. fedora-latest);
+    fqin:
+        only fully qualified tags (eg. default-centos-amd64);
+    mixed:
+        only fqin and unqualified tags;
+    least-qualified (default):
+        exactly one tag, with the least number of qualifications;
     """
 
     def __init__(self, key):
-        self.qualifications = []
+        self.qualifications = set()
         self.count = 0
         self.max_matches = 0
 
+        if not key:
+            self.enable("")
+            return
+        kinds = key if isinstance(key, list) else key.split(",")
+        for kind in kinds:
+            self.enable(kind)
+
+    def enable(self, key):
+        if not key:
+            key = ""
+        aliases = {
+            "least-qualified": [QUAL_NONE, QUAL_DISTRO, QUAL_FQIN],
+            "": [QUAL_NONE, QUAL_DISTRO, QUAL_FQIN],
+            "all": [QUAL_NONE, QUAL_DISTRO, QUAL_FQIN],
+            "mixed": [QUAL_NONE, QUAL_FQIN],
+            QUAL_NONE: [QUAL_NONE],
+            QUAL_DISTRO: [QUAL_DISTRO],
+            "distro": [QUAL_DISTRO],
+            QUAL_FQIN: [QUAL_FQIN],
+        }
+        try:
+            quals = aliases[key]
+        except KeyError:
+            vals = ", ".join(aliases.keys())
+            raise argparse.ArgumentTypeError(
+                f"value must be one of: {vals} - not {key!r}"
+            )
+        self.qualifications.update(quals)
         if not key or key == "least-qualified":
-            self.qualifications = [QUAL_NONE, QUAL_DISTRO, QUAL_FQIN]
             self.max_matches = 1
-        elif key == "all":
-            pass
-        elif key == "mixed":
-            self.qualifications = [QUAL_NONE, QUAL_FQIN]
-        else:
-            try:
-                mq = {
-                    "unqualified": QUAL_NONE,
-                    "distro": QUAL_DISTRO,
-                    "fqin": QUAL_FQIN,
-                }[key]
-            except KeyError:
-                raise argparse.ArgumentTypeError(
-                    "value must be one of:"
-                    " all, least-qualified, unqualified, distro, fqin;"
-                    f" not {key}"
-                )
-            self.qualifications = [mq]
 
     def __call__(self, qv):
         if self.max_matches and self.count >= self.max_matches:
@@ -866,7 +880,7 @@ class IndexBuilder(BasicBuilder):
 
 class Pusher(BasicBuilder):
     def __init__(self):
-        self._to_push = []
+        self._to_push = set()
 
     def for_target(self, cli, target):
         if cli.push_state == "rebuild":
@@ -879,14 +893,14 @@ class Pusher(BasicBuilder):
         push_name = target.image_name()
         for tag, qual in target.additional_tags:
             if tag in ("latest", "nightly"):
-                self._to_push.append((target.image_name(tag=tag), qual))
+                self._to_push.add((target.image_name(tag=tag), qual))
             if tag.endswith(("-latest", "-nightly")):
-                self._to_push.append((target.image_name(tag=tag), qual))
-        self._to_push.append((push_name, QUAL_FQIN))
+                self._to_push.add((target.image_name(tag=tag), qual))
+        self._to_push.add((push_name, QUAL_FQIN))
 
     def for_all(self, cli):
-        qmatcher = cli.push_selected_tags or QMatcher("")
-        for push_name, tag_qual in self._to_push:
+        qmatcher = cli.push_kinds or QMatcher("")
+        for push_name, tag_qual in sorted(self._to_push):
             if qmatcher(tag_qual):
                 container_push(cli, push_name)
 
@@ -1040,6 +1054,8 @@ def main():
         ),
     )
     parser.add_argument(
+        "--push-kinds",
+        "--push-what",
         "--push-selected-tags",
         type=QMatcher,
         help=QMatcher.__doc__,
