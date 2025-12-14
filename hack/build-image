@@ -734,30 +734,6 @@ class QMatcher:
         return False
 
 
-def push(cli, target):
-    """Command to push images."""
-    if cli.push_state == "rebuild":
-        build(cli, target)
-    if cli.push_state == "exists":
-        try:
-            container_id(cli, target)
-        except subprocess.CalledProcessError:
-            build(cli, target)
-
-    to_push = []
-    push_name = target.image_name()
-    for tag, qual in target.additional_tags:
-        if tag in ("latest", "nightly"):
-            to_push.append((target.image_name(tag=tag), qual))
-        if tag.endswith(("-latest", "-nightly")):
-            to_push.append((target.image_name(tag=tag), qual))
-    to_push.append((push_name, QUAL_FQIN))
-    qmatcher = cli.push_selected_tags or QMatcher("")
-    for push_name, tag_qual in to_push:
-        if qmatcher(tag_qual):
-            container_push(cli, push_name)
-
-
 def retag(cli, target):
     """Command to regenerate any missing unqualified tags."""
     cid = container_id(cli, target)
@@ -886,6 +862,33 @@ class IndexBuilder(BasicBuilder):
             )
             raise ValueError("unexpected number of manifest entries")
         return img_count
+
+
+class Pusher(BasicBuilder):
+    def __init__(self):
+        self._to_push = []
+
+    def for_target(self, cli, target):
+        if cli.push_state == "rebuild":
+            build(cli, target)
+        if cli.push_state == "exists":
+            try:
+                container_id(cli, target)
+            except subprocess.CalledProcessError:
+                build(cli, target)
+        push_name = target.image_name()
+        for tag, qual in target.additional_tags:
+            if tag in ("latest", "nightly"):
+                self._to_push.append((target.image_name(tag=tag), qual))
+            if tag.endswith(("-latest", "-nightly")):
+                self._to_push.append((target.image_name(tag=tag), qual))
+        self._to_push.append((push_name, QUAL_FQIN))
+
+    def for_all(self, cli):
+        qmatcher = cli.push_selected_tags or QMatcher("")
+        for push_name, tag_qual in self._to_push:
+            if qmatcher(tag_qual):
+                container_push(cli, push_name)
 
 
 class CLIContext:
@@ -1081,7 +1084,7 @@ def main():
         "--push",
         action="store_const",
         dest="main_action",
-        const=push,
+        const=Pusher,
         help="Push images",
     )
     behaviors.add_argument(
