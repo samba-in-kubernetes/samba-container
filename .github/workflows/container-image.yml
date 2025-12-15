@@ -53,12 +53,20 @@ jobs:
           - package_source: nightly
             os: opensuse
         include:
+          # include ceph devbuilds on centos only
           - package_source: devbuilds
+            os: centos
+            arch: {name: amd64, host: ubuntu-24.04}
+          - package_source: devbuilds
+            os: centos
+            arch: {name: arm64, host: ubuntu-24.04-arm}
+          # include ceph20 (tentacle) on centos only
+          - package_source: ceph20
             os: centos
             arch: {name: amd64, host: ubuntu-24.04}
           - package_source: ceph20
             os: centos
-            arch: {name: amd64, host: ubuntu-24.04}
+            arch: {name: arm64, host: ubuntu-24.04-arm}
     runs-on: ${{ matrix.arch.host }}
     env:
       BUILDAH_FORMAT: oci
@@ -308,11 +316,13 @@ jobs:
           --repo-base=${REPO_BASE}
           --no-distro-qualified
           -i samba-server:ceph20-centos-amd64
+          -i samba-server:ceph20-centos-arm64
           -i samba-server:default-centos-amd64
           -i samba-server:default-centos-arm64
           -i samba-server:default-fedora-amd64
           -i samba-server:default-fedora-arm64
           -i samba-server:devbuilds-centos-amd64
+          -i samba-server:devbuilds-centos-arm64
           -i samba-server:nightly-centos-amd64
           -i samba-server:nightly-centos-arm64
           -i samba-server:nightly-fedora-amd64
@@ -334,11 +344,13 @@ jobs:
           --index
           --container-engine=${CONTAINER_CMD}
           -i ${REPO_BASE}/samba-server:ceph20-centos-amd64
+          -i ${REPO_BASE}/samba-server:ceph20-centos-arm64
           -i ${REPO_BASE}/samba-server:default-centos-amd64
           -i ${REPO_BASE}/samba-server:default-centos-arm64
           -i ${REPO_BASE}/samba-server:default-fedora-amd64
           -i ${REPO_BASE}/samba-server:default-fedora-arm64
           -i ${REPO_BASE}/samba-server:devbuilds-centos-amd64
+          -i ${REPO_BASE}/samba-server:devbuilds-centos-arm64
           -i ${REPO_BASE}/samba-server:nightly-centos-amd64
           -i ${REPO_BASE}/samba-server:nightly-centos-arm64
           -i ${REPO_BASE}/samba-server:nightly-fedora-amd64
@@ -368,11 +380,13 @@ jobs:
           --push-kinds=mixed,index-multiarch
           --push-format=oci
           -i ${REPO_BASE}/samba-server:ceph20-centos-amd64
+          -i ${REPO_BASE}/samba-server:ceph20-centos-arm64
           -i ${REPO_BASE}/samba-server:default-centos-amd64
           -i ${REPO_BASE}/samba-server:default-centos-arm64
           -i ${REPO_BASE}/samba-server:default-fedora-amd64
           -i ${REPO_BASE}/samba-server:default-fedora-arm64
           -i ${REPO_BASE}/samba-server:devbuilds-centos-amd64
+          -i ${REPO_BASE}/samba-server:devbuilds-centos-arm64
           -i ${REPO_BASE}/samba-server:nightly-centos-amd64
           -i ${REPO_BASE}/samba-server:nightly-centos-arm64
           -i ${REPO_BASE}/samba-server:nightly-fedora-amd64
