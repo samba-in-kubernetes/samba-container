@@ -158,7 +158,7 @@ jobs:
       # Download locally stored samba-client image to be used as base for building
       # samba-toolbox.
       - name: Download client image
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
           name: "action_image_artifact_samba-client_${{ env.IMG_TAG }}"
       - name: Load client image
@@ -210,7 +210,7 @@ jobs:
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - name: Download server image
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
           name: "action_image_artifact_samba-server_${{ env.IMG_TAG }}"
       - name: Load server image
@@ -246,7 +246,7 @@ jobs:
       - name: get nodes
         run: kubectl get nodes
       - name: Download ad server image
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
           name: "action_image_artifact_samba-ad-server_${{ env.IMG_TAG }}"
       - name: Load ad server image
@@ -254,7 +254,7 @@ jobs:
           ${{ env.CONTAINER_CMD }} image load -i "samba-ad-server_${{ env.IMG_TAG }}"
           ${{ env.CONTAINER_CMD }} image tag "localhost/samba-ad-server:${{ env.IMG_TAG }}" "samba-ad-server:${{ env.IMG_TAG }}" || true
       - name: Download file server image
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
           name: "action_image_artifact_samba-server_${{ env.IMG_TAG }}"
       - name: Load file server image
@@ -290,7 +290,7 @@ jobs:
         run: ${CONTAINER_CMD} login -u "${{ secrets.QUAY_USER }}" -p "${{ secrets.QUAY_PASS }}" quay.io
       # pull in already built images we plan on pushing
       - name: Download images
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
           pattern: "action_image_artifact_samba-*"
           path: image_files
