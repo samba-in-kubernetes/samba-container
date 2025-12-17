@@ -94,8 +94,6 @@ jobs:
           # the distro packages for centos do not include an ad-dc
           - package_source: default
             os: centos
-          - os: centos
-            arch: {name: arm64, host: ubuntu-24.04-arm}
     runs-on: ${{ matrix.arch.host }}
     env:
       BUILDAH_FORMAT: oci
@@ -325,6 +323,7 @@ jobs:
           -i samba-ad-server:default-fedora-amd64
           -i samba-ad-server:default-fedora-arm64
           -i samba-ad-server:nightly-centos-amd64
+          -i samba-ad-server:nightly-centos-arm64
           -i samba-ad-server:nightly-fedora-amd64
           -i samba-ad-server:nightly-fedora-arm64
           -i samba-client:default-centos-amd64
@@ -349,6 +348,7 @@ jobs:
           -i ${REPO_BASE}/samba-ad-server:default-fedora-amd64
           -i ${REPO_BASE}/samba-ad-server:default-fedora-arm64
           -i ${REPO_BASE}/samba-ad-server:nightly-centos-amd64
+          -i ${REPO_BASE}/samba-ad-server:nightly-centos-arm64
           -i ${REPO_BASE}/samba-ad-server:nightly-fedora-amd64
           -i ${REPO_BASE}/samba-ad-server:nightly-fedora-arm64
           -i ${REPO_BASE}/samba-client:default-centos-amd64
@@ -381,6 +381,7 @@ jobs:
           -i ${REPO_BASE}/samba-ad-server:default-fedora-amd64
           -i ${REPO_BASE}/samba-ad-server:default-fedora-arm64
           -i ${REPO_BASE}/samba-ad-server:nightly-centos-amd64
+          -i ${REPO_BASE}/samba-ad-server:nightly-centos-arm64
           -i ${REPO_BASE}/samba-ad-server:nightly-fedora-amd64
           -i ${REPO_BASE}/samba-ad-server:nightly-fedora-arm64
           -i ${REPO_BASE}/samba-client:default-centos-amd64
