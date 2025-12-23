@@ -249,9 +249,6 @@ jobs:
       CONTAINER_CMD: docker  # this k3d tool requires docker
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
-      - uses: nolar/setup-k3d-k3s@293b8e5822a20bc0d5bcdd4826f1a665e72aba96
-      - name: get nodes
-        run: kubectl get nodes
       - name: Download ad server image
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
@@ -264,6 +261,15 @@ jobs:
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
           name: "action_image_artifact_samba-server_${{ env.IMG_TAG }}"
+      - name: Set up k3d
+        run: |
+          set -x
+          curl --silent --fail -o install_k3d.sh https://raw.githubusercontent.com/rancher/k3d/main/install.sh
+          TAG="" bash install_k3d.sh
+          k3d --version
+          k3d cluster create --wait
+          while ! kubectl get serviceaccount default >/dev/null; do sleep 1; done
+          kubectl get nodes
       - name: Load file server image
         run: |
           ${{ env.CONTAINER_CMD }} image load -i "samba-server_${{ env.IMG_TAG }}"
