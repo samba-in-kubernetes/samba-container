@@ -6,8 +6,11 @@
 queue_rules:
   - name: default
     queue_conditions:
+      # meta/quality checks
       - check-success=checks
       - check-success=check-commits
+      - check-success=dpulls
+      # builds
       - check-success=build-server (default, centos, amd64)
       - check-success=build-server (default, fedora, amd64)
       - check-success=build-server (default, opensuse, amd64)
@@ -23,6 +26,7 @@ queue_rules:
       - check-success=build-toolbox (centos, amd64)
       - check-success=build-toolbox (fedora, amd64)
       - check-success=build-toolbox (opensuse, amd64)
+      # tests
       - check-success=test-server (default, centos, amd64)
       - check-success=test-server (default, fedora, amd64)
       - check-success=test-server (default, opensuse, amd64)
@@ -32,7 +36,6 @@ queue_rules:
       - check-success=test-ad-server-kubernetes (default, opensuse, amd64)
       - check-success=test-ad-server-kubernetes (nightly, centos, amd64)
       - check-success=test-ad-server-kubernetes (nightly, fedora, amd64)
-      - check-success=dpulls
     merge_method: rebase
     update_method: rebase
 
@@ -49,8 +52,11 @@ pull_request_rules:
   # Perform automatic merge on conditions
   - name: Automatic merge on approval
     conditions:
+      # meta/quality checks
       - check-success=checks
       - check-success=check-commits
+      - check-success=dpulls
+      # builds
       - check-success=build-server (default, centos, amd64)
       - check-success=build-server (default, fedora, amd64)
       - check-success=build-server (default, opensuse, amd64)
@@ -66,6 +72,7 @@ pull_request_rules:
       - check-success=build-toolbox (centos, amd64)
       - check-success=build-toolbox (fedora, amd64)
       - check-success=build-toolbox (opensuse, amd64)
+      # tests
       - check-success=test-server (default, centos, amd64)
       - check-success=test-server (default, fedora, amd64)
       - check-success=test-server (default, opensuse, amd64)
@@ -75,7 +82,6 @@ pull_request_rules:
       - check-success=test-ad-server-kubernetes (default, opensuse, amd64)
       - check-success=test-ad-server-kubernetes (nightly, centos, amd64)
       - check-success=test-ad-server-kubernetes (nightly, fedora, amd64)
-      - check-success=dpulls
       - "-draft"
       # Contributors should set the 'do-not-merge' label if they don't want
       # the PR to be (auto)merged for some reason.
