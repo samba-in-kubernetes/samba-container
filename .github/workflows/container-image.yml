@@ -67,6 +67,7 @@ jobs:
           - package_source: ceph20
             os: centos
             arch: {name: arm64, host: ubuntu-24.04-arm}
+    name: build-server (${{ matrix.package_source}}, ${{ matrix.os }}, ${{ matrix.arch.name }})
     runs-on: ${{ matrix.arch.host }}
     env:
       BUILDAH_FORMAT: oci
@@ -102,6 +103,7 @@ jobs:
           # the distro packages for centos do not include an ad-dc
           - package_source: default
             os: centos
+    name: build-ad-server (${{ matrix.package_source}}, ${{ matrix.os }}, ${{ matrix.arch.name }})
     runs-on: ${{ matrix.arch.host }}
     env:
       BUILDAH_FORMAT: oci
@@ -129,6 +131,7 @@ jobs:
         arch:
           - {name: amd64, host: ubuntu-24.04}
           - {name: arm64, host: ubuntu-24.04-arm}
+    name: build-client (${{ matrix.os }}, ${{ matrix.arch.name }})
     runs-on: ${{ matrix.arch.host }}
     env:
       BUILDAH_FORMAT: oci
@@ -155,6 +158,7 @@ jobs:
       matrix:
         os: [centos, fedora, opensuse]
         arch: [amd64]
+    name: build-toolbox (${{ matrix.os }}, ${{ matrix.arch }})
     needs: build-client
     runs-on: ubuntu-latest
     env:
