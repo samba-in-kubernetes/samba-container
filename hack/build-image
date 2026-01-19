@@ -48,7 +48,6 @@ import shutil
 import subprocess
 import sys
 
-
 logger = logging.getLogger("build-image")
 
 # Set FORCE_ARCH_FLAG if you want to test passing the --arch flag to podman all
