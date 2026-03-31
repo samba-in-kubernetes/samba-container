@@ -20,7 +20,7 @@ enable_copr() {
     if [ "${CHROOT}" ]; then
         # force/override automatically selected chroot
         cmd+=("${CHROOT}")
-    elif [ "$OS_BASE" = centos ]; then
+    elif [ "$OS_BASE" = centos ] && [ "$OS_VERSION" -eq 9 ]; then
         # centos needs a little help determining what repository
         # within the copr to use. By default it only wants
         # to add `epel-9-$arch`.
@@ -106,7 +106,10 @@ install_sambacc() {
     fi
 
     # shellcheck disable=SC1091
-    OS_BASE="$(. /etc/os-release && echo "${ID}")"
+    . /etc/os-release
+
+    OS_BASE="${ID}"
+    OS_VERSION="${VERSION_ID}"
 
     case $action in
         install-wheel)
