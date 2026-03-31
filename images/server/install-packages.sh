@@ -93,7 +93,7 @@ get_epel_repo_if_needed() {
 }
 
 get_glusterfs_repo_if_needed() {
-    if [[ "${OS_BASE}" = centos ]]; then
+    if [[ "${OS_BASE}" = centos && "${OS_VERSION}" -le 9 ]]; then
         dnf install --setopt=install_weak_deps=False -y centos-release-gluster
     fi
 }
@@ -132,7 +132,10 @@ else
 fi
 
 # shellcheck disable=SC1091
-OS_BASE="$(. /etc/os-release && echo "${ID}")"
+. /etc/os-release
+
+OS_BASE="${ID}"
+OS_VERSION="${VERSION_ID}"
 
 get_epel_repo_if_needed
 get_glusterfs_repo_if_needed
@@ -196,13 +199,17 @@ samba_packages=(\
     ctdb)
 case "${package_selection}-${OS_BASE}" in
     *-fedora|allvfs-*)
-        samba_packages+=(samba-vfs-cephfs samba-vfs-glusterfs ctdb-ceph-mutex)
+        samba_packages+=(samba-vfs-cephfs ctdb-ceph-mutex)
     ;;
     *-centos|forcedevbuilds-*)
         support_packages+=(libcephfs-proxy2)
-        samba_packages+=(samba-vfs-cephfs samba-vfs-glusterfs ctdb-ceph-mutex)
+        samba_packages+=(samba-vfs-cephfs ctdb-ceph-mutex)
     ;;
 esac
+
+if [[ "${OS_BASE}" = centos && "${OS_VERSION}" -le 9 ]]; then
+    samba_packages+=(samba-vfs-glusterfs)
+fi
 
 # Assign version suffix to samba packages
 samba_versioned_packages=()
