@@ -42,6 +42,7 @@ jobs:
     # Reminder: the nightly-server images consume nightly samba rpm builds
     # it is not *just* an image that gets built nightly
     strategy:
+      fail-fast: false
       matrix:
         package_source: [default, nightly]
         os: [centos, fedora, opensuse]
@@ -91,6 +92,7 @@ jobs:
 
   build-ad-server:
     strategy:
+      fail-fast: false
       matrix:
         package_source: [default, nightly]
         os: [centos, fedora, opensuse]
@@ -128,6 +130,7 @@ jobs:
 
   build-client:
     strategy:
+      fail-fast: false
       matrix:
         os: [centos, fedora, opensuse]
         arch:
@@ -158,6 +161,7 @@ jobs:
 
   build-toolbox:
     strategy:
+      fail-fast: false
       matrix:
         os: [centos, fedora, opensuse]
         arch: [amd64]
@@ -202,6 +206,7 @@ jobs:
 
   test-server:
     strategy:
+      fail-fast: false
       matrix:
         package_source: [default, nightly]
         os: [centos, fedora, opensuse]
@@ -237,6 +242,7 @@ jobs:
 
   test-ad-server-kubernetes:
     strategy:
+      fail-fast: false
       matrix:
         package_source: [default, nightly]
         os: [centos, fedora, opensuse]
