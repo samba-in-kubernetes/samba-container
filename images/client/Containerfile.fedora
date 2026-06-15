@@ -1,6 +1,6 @@
 # Copyright 2020 Michael Adam
 
-FROM registry.fedoraproject.org/fedora:42
+FROM registry.fedoraproject.org/fedora:44
 
 LABEL org.opencontainers.image.title="Samba Client container"
 LABEL org.opencontainers.image.description="Samba Client container"
