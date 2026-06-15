@@ -9,6 +9,23 @@ ensure_copr() {
     fi
 }
 
+ensure_exclude_invalid_pykmip() {
+    local pkg=python3-pykmip-0.10.0-2.el10_3.noarch
+    local old_exclude
+    local my_exclude
+    old_exclude=$(grep '^exclude=' /etc/dnf/dnf.conf 2>/dev/null | cut -d= -f2)
+    if echo "${old_exclude}" | grep -q "${pkg}" ; then
+        return 0
+    fi
+    my_exclude="${pkg}"
+    if [ "$old_exclude" ]; then
+        my_exclude="${old_exclude} ${my_exclude}"
+    else
+        echo "exclude=" >> /etc/dnf/dnf.conf
+    fi
+    sed -i "s/^exclude=.*$/exclude=${my_exclude}/" /etc/dnf/dnf.conf
+}
+
 enable_copr() {
     if [ "$1" = "--centosonly" ]; then
         if [ "$OS_BASE" != "centos" ]; then return 0; fi
@@ -16,6 +33,7 @@ enable_copr() {
     fi
 
     ensure_copr
+    ensure_exclude_invalid_pykmip
 
     cmd=(dnf copr enable -y "$1")
     if [ "${CHROOT}" ]; then
