@@ -6,33 +6,54 @@
 queue_rules:
   - name: default
     queue_conditions:
+      # meta/quality checks
       - check-success=checks
       - check-success=check-commits
-      - check-success=build-server (default, centos, amd64)
-      - check-success=build-server (default, fedora, amd64)
-      - check-success=build-server (default, opensuse, amd64)
-      - check-success=build-server (nightly, centos, amd64)
-      - check-success=build-server (nightly, fedora, amd64)
+      - check-success=dpulls
+      # builds
       - check-success=build-ad-server (default, fedora, amd64)
+      - check-success=build-ad-server (default, fedora, arm64)
       - check-success=build-ad-server (default, opensuse, amd64)
+      - check-success=build-ad-server (default, opensuse, arm64)
       - check-success=build-ad-server (nightly, centos, amd64)
+      - check-success=build-ad-server (nightly, centos, arm64)
       - check-success=build-ad-server (nightly, fedora, amd64)
+      - check-success=build-ad-server (nightly, fedora, arm64)
       - check-success=build-client (centos, amd64)
+      - check-success=build-client (centos, arm64)
       - check-success=build-client (fedora, amd64)
+      - check-success=build-client (fedora, arm64)
       - check-success=build-client (opensuse, amd64)
+      - check-success=build-client (opensuse, arm64)
+      - check-success=build-server (ceph20, centos, amd64)
+      - check-success=build-server (ceph20, centos, arm64)
+      - check-success=build-server (default, centos, amd64)
+      - check-success=build-server (default, centos, arm64)
+      - check-success=build-server (default, fedora, amd64)
+      - check-success=build-server (default, fedora, arm64)
+      - check-success=build-server (default, opensuse, amd64)
+      - check-success=build-server (default, opensuse, arm64)
+      - check-success=build-server (devbuilds, centos, amd64)
+      - check-success=build-server (devbuilds, centos, arm64)
+      - check-success=build-server (nightly, centos, amd64)
+      - check-success=build-server (nightly, centos, arm64)
+      - check-success=build-server (nightly, fedora, amd64)
+      - check-success=build-server (nightly, fedora, arm64)
       - check-success=build-toolbox (centos, amd64)
       - check-success=build-toolbox (fedora, amd64)
       - check-success=build-toolbox (opensuse, amd64)
-      - check-success=test-server (default, centos, amd64)
-      - check-success=test-server (default, fedora, amd64)
-      - check-success=test-server (default, opensuse, amd64)
-      - check-success=test-server (nightly, centos, amd64)
-      - check-success=test-server (nightly, fedora, amd64)
+      # tests
       - check-success=test-ad-server-kubernetes (default, fedora, amd64)
       - check-success=test-ad-server-kubernetes (default, opensuse, amd64)
       - check-success=test-ad-server-kubernetes (nightly, centos, amd64)
       - check-success=test-ad-server-kubernetes (nightly, fedora, amd64)
-      - check-success=dpulls
+      - check-success=test-server (ceph20, centos, amd64)
+      - check-success=test-server (default, centos, amd64)
+      - check-success=test-server (default, fedora, amd64)
+      - check-success=test-server (default, opensuse, amd64)
+      - check-success=test-server (devbuilds, centos, amd64)
+      - check-success=test-server (nightly, centos, amd64)
+      - check-success=test-server (nightly, fedora, amd64)
     merge_method: rebase
     update_method: rebase
 
@@ -49,33 +70,54 @@ pull_request_rules:
   # Perform automatic merge on conditions
   - name: Automatic merge on approval
     conditions:
+      # meta/quality checks
       - check-success=checks
       - check-success=check-commits
-      - check-success=build-server (default, centos, amd64)
-      - check-success=build-server (default, fedora, amd64)
-      - check-success=build-server (default, opensuse, amd64)
-      - check-success=build-server (nightly, centos, amd64)
-      - check-success=build-server (nightly, fedora, amd64)
+      - check-success=dpulls
+      # builds
       - check-success=build-ad-server (default, fedora, amd64)
+      - check-success=build-ad-server (default, fedora, arm64)
       - check-success=build-ad-server (default, opensuse, amd64)
+      - check-success=build-ad-server (default, opensuse, arm64)
       - check-success=build-ad-server (nightly, centos, amd64)
+      - check-success=build-ad-server (nightly, centos, arm64)
       - check-success=build-ad-server (nightly, fedora, amd64)
+      - check-success=build-ad-server (nightly, fedora, arm64)
       - check-success=build-client (centos, amd64)
+      - check-success=build-client (centos, arm64)
       - check-success=build-client (fedora, amd64)
+      - check-success=build-client (fedora, arm64)
       - check-success=build-client (opensuse, amd64)
+      - check-success=build-client (opensuse, arm64)
+      - check-success=build-server (ceph20, centos, amd64)
+      - check-success=build-server (ceph20, centos, arm64)
+      - check-success=build-server (default, centos, amd64)
+      - check-success=build-server (default, centos, arm64)
+      - check-success=build-server (default, fedora, amd64)
+      - check-success=build-server (default, fedora, arm64)
+      - check-success=build-server (default, opensuse, amd64)
+      - check-success=build-server (default, opensuse, arm64)
+      - check-success=build-server (devbuilds, centos, amd64)
+      - check-success=build-server (devbuilds, centos, arm64)
+      - check-success=build-server (nightly, centos, amd64)
+      - check-success=build-server (nightly, centos, arm64)
+      - check-success=build-server (nightly, fedora, amd64)
+      - check-success=build-server (nightly, fedora, arm64)
       - check-success=build-toolbox (centos, amd64)
       - check-success=build-toolbox (fedora, amd64)
       - check-success=build-toolbox (opensuse, amd64)
-      - check-success=test-server (default, centos, amd64)
-      - check-success=test-server (default, fedora, amd64)
-      - check-success=test-server (default, opensuse, amd64)
-      - check-success=test-server (nightly, centos, amd64)
-      - check-success=test-server (nightly, fedora, amd64)
+      # tests
       - check-success=test-ad-server-kubernetes (default, fedora, amd64)
       - check-success=test-ad-server-kubernetes (default, opensuse, amd64)
       - check-success=test-ad-server-kubernetes (nightly, centos, amd64)
       - check-success=test-ad-server-kubernetes (nightly, fedora, amd64)
-      - check-success=dpulls
+      - check-success=test-server (ceph20, centos, amd64)
+      - check-success=test-server (default, centos, amd64)
+      - check-success=test-server (default, fedora, amd64)
+      - check-success=test-server (default, opensuse, amd64)
+      - check-success=test-server (devbuilds, centos, amd64)
+      - check-success=test-server (nightly, centos, amd64)
+      - check-success=test-server (nightly, fedora, amd64)
       - "-draft"
       # Contributors should set the 'do-not-merge' label if they don't want
       # the PR to be (auto)merged for some reason.

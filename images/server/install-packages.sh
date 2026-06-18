@@ -93,7 +93,7 @@ get_epel_repo_if_needed() {
 }
 
 get_glusterfs_repo_if_needed() {
-    if [[ "${OS_BASE}" = centos ]]; then
+    if [[ "${OS_BASE}" = centos && "${OS_VERSION}" -le 9 ]]; then
         dnf install --setopt=install_weak_deps=False -y centos-release-gluster
     fi
 }
@@ -101,8 +101,9 @@ get_glusterfs_repo_if_needed() {
 get_ceph_shaman_repo() {
     ceph_ref="${CEPH_REPO_REF:-main}"
     ceph_sha="${CEPH_REPO_SHA:-latest}"
+    ceph_base=$( ([[ "${OS_VERSION}" -le 9 ]] && echo "centos") || echo "rocky" )
     ceph_arch=$( ([[ "$(arch)" = "aarch64" ]] && echo "arm64") || arch )
-    url="https://shaman.ceph.com/api/search/?project=ceph&distros=${OS_BASE}/9/${ceph_arch}&flavor=default&ref=${ceph_ref}&sha1=${ceph_sha}&status=ready"
+    url="https://shaman.ceph.com/api/search/?project=ceph&distros=${ceph_base}/${OS_VERSION}/${ceph_arch}&flavor=default&ref=${ceph_ref}&sha1=${ceph_sha}&status=ready"
     generate_repo_from_shaman "${url}" "ceph-${ceph_ref}.repo"
     cat "/etc/yum.repos.d/ceph-${ceph_ref}.repo"
 }
@@ -132,7 +133,10 @@ else
 fi
 
 # shellcheck disable=SC1091
-OS_BASE="$(. /etc/os-release && echo "${ID}")"
+. /etc/os-release
+
+OS_BASE="${ID}"
+OS_VERSION="${VERSION_ID}"
 
 get_epel_repo_if_needed
 get_glusterfs_repo_if_needed
@@ -196,13 +200,17 @@ samba_packages=(\
     ctdb)
 case "${package_selection}-${OS_BASE}" in
     *-fedora|allvfs-*)
-        samba_packages+=(samba-vfs-cephfs samba-vfs-glusterfs ctdb-ceph-mutex)
+        samba_packages+=(samba-vfs-cephfs ctdb-ceph-mutex)
     ;;
     *-centos|forcedevbuilds-*)
         support_packages+=(libcephfs-proxy2)
-        samba_packages+=(samba-vfs-cephfs samba-vfs-glusterfs ctdb-ceph-mutex)
+        samba_packages+=(samba-vfs-cephfs ctdb-ceph-mutex)
     ;;
 esac
+
+if [[ "${OS_BASE}" = centos && "${OS_VERSION}" -le 9 ]]; then
+    samba_packages+=(samba-vfs-glusterfs)
+fi
 
 # Assign version suffix to samba packages
 samba_versioned_packages=()

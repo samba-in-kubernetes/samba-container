@@ -1,4 +1,4 @@
-FROM registry.fedoraproject.org/fedora:42
+FROM registry.fedoraproject.org/fedora:44
 ARG INSTALL_PACKAGES_FROM=default
 ARG SAMBA_VERSION_SUFFIX="-4.22.6"
 ARG SAMBACC_VERSION_SUFFIX="-0.8-1.fc42"

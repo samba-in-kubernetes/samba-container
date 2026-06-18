@@ -160,7 +160,7 @@ test-nightly-server: $(BUILDFILE_NIGHTLY_SERVER)
 
 ### Check Rules: static checks, quality tools ###
 
-check: check-shell-scripts check-yaml
+check: check-shell-scripts check-yaml check-python
 .PHONY: check
 # rule requires shellcheck and find to run
 check-shell-scripts: $(filter $(ALT_BIN)%,$(SHELLCHECK))
@@ -176,6 +176,15 @@ check-yaml: $(filter $(ALT_BIN)%,$(YAMLLINT_CMD))
 check-gitlint: $(filter $(ALT_BIN)%,$(GITLINT))
 	$(GITLINT) -C .gitlint --commits origin/master.. lint
 .PHONY: check-gitlint
+
+check-python: _py
+	_py/bin/flake8 hack/build-image
+	_py/bin/black --check -l78 hack/build-image
+.PHONY: check-python
+
+_py:
+	python3 -m venv _py
+	_py/bin/pip install flake8 black
 
 
 ### Misc. Rules ###

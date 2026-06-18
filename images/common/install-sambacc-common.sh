@@ -10,22 +10,17 @@ ensure_copr() {
 }
 
 enable_copr() {
-    if [ "$1" = "--centos9only" ]; then
+    if [ "$1" = "--centosonly" ]; then
         if [ "$OS_BASE" != "centos" ]; then return 0; fi
         shift
     fi
+
     ensure_copr
 
     cmd=(dnf copr enable -y "$1")
     if [ "${CHROOT}" ]; then
         # force/override automatically selected chroot
         cmd+=("${CHROOT}")
-    elif [ "$OS_BASE" = centos ]; then
-        # centos needs a little help determining what repository
-        # within the copr to use. By default it only wants
-        # to add `epel-9-$arch`.
-        chroot="centos-stream+epel-next-9-$(uname -p)"
-        cmd+=("${chroot}")
     fi
     "${cmd[@]}"
 }
@@ -64,8 +59,8 @@ install_sambacc() {
     done
 
 
-    local action="" 
-    echo "INFO: determining sambacc installation source." 
+    local action=""
+    echo "INFO: determining sambacc installation source."
     if [ "${#wheels[@]}" -gt 0 ]; then
         echo "INFO: wheel found"
         if [ "${#wheels[@]}" -gt 1 ]; then
@@ -106,7 +101,9 @@ install_sambacc() {
     fi
 
     # shellcheck disable=SC1091
-    OS_BASE="$(. /etc/os-release && echo "${ID}")"
+    . /etc/os-release
+
+    OS_BASE="${ID}"
 
     case $action in
         install-wheel)
@@ -121,13 +118,13 @@ install_sambacc() {
         install-from-repo)
             local tgt="${repofiles[0]}"
             cp "${tgt}" /etc/yum.repos.d/"$(basename "${tgt}")"
-            enable_copr --centos9only "$SAMBACC_DEPS_COPR"
+            enable_copr --centosonly "$SAMBACC_DEPS_COPR"
             dnf_install "python3-sambacc${sambacc_version_suffix}"
             dnf clean all
             container_json_file="/usr/share/sambacc/examples/${DEFAULT_JSON_FILE}"
         ;;
         install-from-copr-repo)
-            enable_copr --centos9only "$SAMBACC_DEPS_COPR"
+            enable_copr --centosonly "$SAMBACC_DEPS_COPR"
             enable_copr "$SAMBACC_COPR"
             dnf_install "python3-sambacc${sambacc_version_suffix}"
             dnf clean all
