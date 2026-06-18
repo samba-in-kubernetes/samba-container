@@ -199,6 +199,9 @@ samba_packages=(\
     samba-vfs-iouring \
     ctdb)
 case "${package_selection}-${OS_BASE}" in
+    *devbuilds-*|*nightly-*)
+        samba_packages+=(samba-vfs-cephrgw)
+    ;;&
     *-fedora|allvfs-*)
         samba_packages+=(samba-vfs-cephfs ctdb-ceph-mutex)
     ;;
