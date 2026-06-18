@@ -202,10 +202,10 @@ case "${package_selection}-${OS_BASE}" in
     *devbuilds-*|*nightly-*)
         samba_packages+=(samba-vfs-cephrgw)
     ;;&
-    *-fedora|allvfs-*)
+    allvfs-*)
         samba_packages+=(samba-vfs-cephfs ctdb-ceph-mutex)
     ;;
-    *-centos|forcedevbuilds-*)
+    *-fedora|*-centos|forcedevbuilds-*)
         support_packages+=(libcephfs-proxy2)
         samba_packages+=(samba-vfs-cephfs ctdb-ceph-mutex)
     ;;
