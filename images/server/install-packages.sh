@@ -163,7 +163,7 @@ case "${install_packages_from}" in
         package_selection=${package_selection:-custom-devbuilds}
     ;;
     ceph20)
-        get_sig_samba_repo "4.23"
+        get_sig_samba_repo "4.24"
         get_distro_ceph_repo "tentacle"
         package_selection=${package_selection:-stable}
     ;;
