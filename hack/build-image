@@ -104,7 +104,15 @@ NIGHTLY = "nightly"
 DEVBUILDS = "devbuilds"
 CUSTOM = "custom"
 CEPH20 = "ceph20"
-PACKAGE_SOURCES = [DEFAULT, NIGHTLY, DEVBUILDS, CUSTOM, CEPH20]
+CEPH21 = "ceph21"
+PACKAGE_SOURCES = [
+    DEFAULT,
+    NIGHTLY,
+    DEVBUILDS,
+    CUSTOM,
+    CEPH20,
+    CEPH21,
+]
 
 PACKAGES_FROM = {
     DEFAULT: "",
@@ -112,6 +120,7 @@ PACKAGES_FROM = {
     DEVBUILDS: "devbuilds",
     CUSTOM: "custom-repos",
     CEPH20: "ceph20",
+    CEPH21: "ceph21",
 }
 
 # SOURCE_DIRS - image source paths
