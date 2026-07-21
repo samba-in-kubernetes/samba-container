@@ -165,6 +165,11 @@ case "${install_packages_from}" in
         get_distro_ceph_repo "tentacle"
         package_selection=${package_selection:-stable}
     ;;
+    ceph21)
+        get_sig_samba_repo "4.24"
+        get_distro_ceph_repo "umbrella"
+        package_selection=${package_selection:-stable}
+    ;;
     *)
         get_sig_samba_repo
         get_distro_ceph_repo
