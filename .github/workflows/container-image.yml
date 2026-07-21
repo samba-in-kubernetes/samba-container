@@ -68,6 +68,14 @@ jobs:
           - package_source: ceph20
             os: centos
             arch: {name: arm64, host: ubuntu-24.04-arm}
+          # include ceph21 (umbrella) on centos only
+          - package_source: ceph21
+            os: centos
+            arch: {name: amd64, host: ubuntu-24.04}
+          - package_source: ceph21
+            os: centos
+            arch: {name: arm64, host: ubuntu-24.04-arm}
+
     name: build-server (${{ matrix.package_source}}, ${{ matrix.os }}, ${{ matrix.arch.name }})
     runs-on: ${{ matrix.arch.host }}
     env:
@@ -218,6 +226,9 @@ jobs:
           - package_source: ceph20
             os: centos
             arch: amd64
+          - package_source: ceph21
+            os: centos
+            arch: amd64
     needs: build-server
     runs-on: ubuntu-latest
     env:
@@ -333,6 +344,8 @@ jobs:
           --no-distro-qualified
           -i samba-server:ceph20-centos-amd64
           -i samba-server:ceph20-centos-arm64
+          -i samba-server:ceph21-centos-amd64
+          -i samba-server:ceph21-centos-arm64
           -i samba-server:default-centos-amd64
           -i samba-server:default-centos-arm64
           -i samba-server:default-fedora-amd64
@@ -361,6 +374,8 @@ jobs:
           --container-engine=${CONTAINER_CMD}
           -i ${REPO_BASE}/samba-server:ceph20-centos-amd64
           -i ${REPO_BASE}/samba-server:ceph20-centos-arm64
+          -i ${REPO_BASE}/samba-server:ceph21-centos-amd64
+          -i ${REPO_BASE}/samba-server:ceph21-centos-arm64
           -i ${REPO_BASE}/samba-server:default-centos-amd64
           -i ${REPO_BASE}/samba-server:default-centos-arm64
           -i ${REPO_BASE}/samba-server:default-fedora-amd64
@@ -397,6 +412,8 @@ jobs:
           --push-format=oci
           -i ${REPO_BASE}/samba-server:ceph20-centos-amd64
           -i ${REPO_BASE}/samba-server:ceph20-centos-arm64
+          -i ${REPO_BASE}/samba-server:ceph21-centos-amd64
+          -i ${REPO_BASE}/samba-server:ceph21-centos-arm64
           -i ${REPO_BASE}/samba-server:default-centos-amd64
           -i ${REPO_BASE}/samba-server:default-centos-arm64
           -i ${REPO_BASE}/samba-server:default-fedora-amd64
