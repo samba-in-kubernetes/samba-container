@@ -14,9 +14,6 @@ get_custom_repos() {
     if [[ -n $1 ]]; then
         urls=$1
         need_curl
-        if [[ $ceph_from_custom -ne 1 ]]; then
-            get_distro_ceph_repo
-        fi
         for url in $urls; do
             fname="$(basename "$url")"
             dest="/etc/yum.repos.d/${fname}"
@@ -110,6 +107,7 @@ get_ceph_shaman_repo() {
 
 if [[ "$1" =~ ^--.+$ ]]; then
     # named (activated if first arg starts with `--`
+    # shellcheck disable=SC2034
     for arg in "$@"; do
         case "$arg" in
             --install-packages-from=*) install_packages_from="${arg/*=/}" ;;
