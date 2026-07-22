@@ -188,6 +188,7 @@ fi
 # support the functioning of the container
 support_packages=(\
     findutils \
+    nss-altfiles \
     python-pip \
     python3-samba \
     python3-pyxattr \
