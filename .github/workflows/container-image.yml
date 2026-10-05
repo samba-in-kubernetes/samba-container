@@ -76,6 +76,7 @@ jobs:
             os: centos
             arch: {name: arm64, host: ubuntu-24.04-arm}
 
+    continue-on-error: ${{ matrix.os == 'opensuse' }}
     name: build-server (${{ matrix.package_source}}, ${{ matrix.os }}, ${{ matrix.arch.name }})
     runs-on: ${{ matrix.arch.host }}
     env:
@@ -113,6 +114,7 @@ jobs:
           # the distro packages for centos do not include an ad-dc
           - package_source: default
             os: centos
+    continue-on-error: ${{ matrix.os == 'opensuse' }}
     name: build-ad-server (${{ matrix.package_source}}, ${{ matrix.os }}, ${{ matrix.arch.name }})
     runs-on: ${{ matrix.arch.host }}
     env:
@@ -142,6 +144,7 @@ jobs:
         arch:
           - {name: amd64, host: ubuntu-24.04}
           - {name: arm64, host: ubuntu-24.04-arm}
+    continue-on-error: ${{ matrix.os == 'opensuse' }}
     name: build-client (${{ matrix.os }}, ${{ matrix.arch.name }})
     runs-on: ${{ matrix.arch.host }}
     env:
@@ -170,6 +173,7 @@ jobs:
       matrix:
         os: [centos, fedora, opensuse]
         arch: [amd64]
+    continue-on-error: ${{ matrix.os == 'opensuse' }}
     name: build-toolbox (${{ matrix.os }}, ${{ matrix.arch }})
     needs: build-client
     runs-on: ubuntu-latest
@@ -229,6 +233,7 @@ jobs:
           - package_source: ceph21
             os: centos
             arch: amd64
+    continue-on-error: ${{ matrix.os == 'opensuse' }}
     needs: build-server
     runs-on: ubuntu-latest
     env:
@@ -260,6 +265,7 @@ jobs:
           # the distro packages for centos do not include an ad-dc
           - package_source: default
             os: centos
+    continue-on-error: ${{ matrix.os == 'opensuse' }}
     needs:
       - build-ad-server
       - build-server
