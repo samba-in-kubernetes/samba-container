@@ -52,7 +52,7 @@ done
 
 dnf_cmd=(dnf)
 if [[ "${OS_BASE}" = centos ]]; then
-    dnf install -y epel-next-release
+    dnf install -y epel-release
     dnf_cmd+=(--enablerepo=crb)
 fi
 
